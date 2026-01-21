@@ -1138,18 +1138,20 @@ export function makeSplitUiPlugin(): UiPlugin {
         has_midi_output: 0,
         description: "",
         controls: [
-            new UiControl().applyProperties({
+            new UiControl().deserialize({
                 symbol: "splitType",
                 name: "Type",
                 index: 0,
                 is_input: true,
                 min_value: 0.0,
                 max_value: 2.0,
+                default_value: 0.0,
+
                 enumeration_property: true,
                 scale_points: [
                     new ScalePoint().deserialize({ value: 0, label: "A/B" }),
-                    new ScalePoint().deserialize({ value: 1, label: "mix" }),
-                    new ScalePoint().deserialize({ value: 1, label: "L/R" }),
+                    new ScalePoint().deserialize({ value: 1, label: "Mix" }),
+                    new ScalePoint().deserialize({ value: 2, label: "L/R" }),
                 ],
                 is_bypass: false,
                 is_program_controller: false,
@@ -1157,84 +1159,97 @@ export function makeSplitUiPlugin(): UiPlugin {
                 connection_optional: false,
 
             }),
-            new UiControl().applyProperties({
+            new UiControl().deserialize({
                 symbol: "select",
                 name: "Select",
                 index: 1,
                 is_input: true,
                 min_value: 0.0,
                 max_value: 1.0,
+                default_value: 0.0,
+
                 enumeration_property: true,
                 scale_points: [
                     new ScalePoint().deserialize({ value: 0, label: "A" }),
                     new ScalePoint().deserialize({ value: 1, label: "B" }),
                 ],
+                controlType: ControlType.ABSwitch,
+
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
 
             }),
-
-            new UiControl().applyProperties({
+            
+            new UiControl().deserialize({
                 symbol: "mix",
                 name: "Mix",
                 index: 2,
                 is_input: true,
                 min_value: -1.0,
                 max_value: 1.0,
+                default_value: 0.0,
+                controlType: ControlType.Dial,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
 
             }),
-            new UiControl().applyProperties({
+            new UiControl().deserialize({
                 symbol: "panL",
                 name: "Pan Top",
                 index: 3,
                 is_input: true,
                 min_value: -1.0,
                 max_value: 1.0,
+                default_value: 0.0,
+                controlType: ControlType.Dial,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
 
             }),
-            new UiControl().applyProperties({
+            new UiControl().deserialize({
                 symbol: "volL",
-                name: "Vol Top",
                 index: 4,
                 is_input: true,
                 min_value: -60.0,
                 max_value: 12.0,
+                default_value: 0.0,
                 is_bypass: false,
+                controlType: ControlType.Dial,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
 
             }),
-            new UiControl().applyProperties({
+            new UiControl().deserialize({
                 symbol: "panR",
                 name: "Pan Bottom",
                 index: 5,
                 is_input: true,
                 min_value: -1.0,
                 max_value: 1.0,
+                default_value: 0.0,
+                controlType: ControlType.Dial,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
 
             }),
-            new UiControl().applyProperties({
+            new UiControl().deserialize({
                 symbol: "volR",
                 name: "Vol Bottom",
                 index: 6,
                 is_input: true,
                 min_value: -60.0,
                 max_value: 12.0,
+                default_value: 0.0,
+                controlType: ControlType.Dial,
                 is_bypass: false,
                 is_program_controller: false,
                 custom_units: "",

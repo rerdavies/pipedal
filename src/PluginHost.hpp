@@ -527,6 +527,7 @@ namespace pipedal
             }
         }
         bool IsPathProperty(const std::string &uri) const;
+        uint32_t getBypassPortIndex() const;
 
     public:
         virtual ~Lv2PluginInfo();

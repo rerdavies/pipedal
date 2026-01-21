@@ -226,7 +226,7 @@ export class SnapshotValue {
         this.isEnabled = input.isEnabled;
         this.instanceId = input.instanceId;
         this.controlValues = ControlValue.deserializeArray(input.controlValues);
-        this.lv2State = input.lv2state;
+        this.lv2State = input.lv2State;
         this.pathProperties = input.pathProperties;
         return this;
     }
@@ -514,7 +514,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         }
         return null;
     }
-    deleteItem_(instanceId: number,items: PedalboardItem[]): number | null
+    private deleteItem_(instanceId: number,items: PedalboardItem[]): number | null
     {
         for (let i = 0; i < items.length; ++i)
         {
@@ -686,9 +686,9 @@ export class Pedalboard implements Deserializable<Pedalboard> {
             new ControlValue(PedalboardSplitItem.SELECT_KEY,0),
             new ControlValue(PedalboardSplitItem.MIX_KEY,0),
             new ControlValue(PedalboardSplitItem.PANL_KEY,0),
-            new ControlValue(PedalboardSplitItem.VOLL_KEY,-3),
+            new ControlValue(PedalboardSplitItem.VOLL_KEY,0),
             new ControlValue(PedalboardSplitItem.PANR_KEY,0),
-            new ControlValue(PedalboardSplitItem.VOLR_KEY,-3)
+            new ControlValue(PedalboardSplitItem.VOLR_KEY,0)
         ];
 
 

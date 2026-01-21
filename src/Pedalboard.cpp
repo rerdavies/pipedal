@@ -135,6 +135,7 @@ bool Pedalboard::SetItemUseModUi(int64_t pedalItemId, bool enabled)
 bool Pedalboard::SetItemEnabled(int64_t pedalItemId, bool enabled)
 {
     PedalboardItem*item = GetItem(pedalItemId);
+
     if (!item) return false;
     if (item->isEnabled() != enabled)
     {
@@ -360,19 +361,19 @@ bool PedalboardItem::IsStructurallyIdentical(const PedalboardItem&other) const
     }
     if (this->isSplit()) // so is the other by virtue of idential uris.
     {
-        // provisionally, it seems ok to change the split type.
-        // auto myValue = this->GetControlValue("splitType");
-        // auto otherValue = other.GetControlValue("splitType");
-        // if (myValue == nullptr || otherValue == nullptr) // actually an error.
-        // {
-        //     return false;
-        // }
 
         // // split type changes potentially trigger buffer allocation changes, 
         // // so different split types are not structurally identical.
-        // if (myValue->value() != otherValue->value()) {
-        //     return false; 
-        // }
+
+        auto myValue = this->GetControlValue("splitType");
+        auto otherValue = other.GetControlValue("splitType");
+        if (myValue == nullptr || otherValue == nullptr) // actually an error.
+        {
+            return false;
+        }
+        if (myValue->value() != otherValue->value()) {
+            return false; 
+        }
         if (topChain().size() != other.topChain().size())
         {
             return false;

@@ -33,6 +33,7 @@ import ToobMLViewFactory from './ToobMLView';
 import ToobPlayerFactory from './ToobPlayerView';
 import ToobNamViewFactory from './ToobNamView';
 import ToobParametericEqViewFactory from './ToobParametricEqView';
+import {ToobParametricEqViewFactoryStereo} from './ToobParametricEqView';
 
 
 let pluginFactories: IControlViewFactory[] = [
@@ -42,7 +43,8 @@ let pluginFactories: IControlViewFactory[] = [
     new ToobMLViewFactory(),
     new ToobPlayerFactory(),
     new ToobNamViewFactory(),
-    new ToobParametericEqViewFactory()
+    new ToobParametericEqViewFactory(),
+    new ToobParametricEqViewFactoryStereo(),
 ];
 
 

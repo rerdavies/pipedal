@@ -2246,6 +2246,19 @@ bool Lv2PluginInfo::WantsWorkerThread() const
 {
     return contains(this->required_features_, LV2_WORKER__schedule) || contains(this->supported_features_, LV2_WORKER__schedule);
 }
+
+uint32_t Lv2PluginInfo::getBypassPortIndex() const
+{
+    for (const auto &port : ports_)
+    {
+        if (port->is_bypass())
+        {
+            return port->index();
+        }
+    }
+    return (uint32_t)-1;
+}
+
 // void PiPedalHostLogError(const std::string &error)
 // {
 //     Lv2Log::error("%s",error.c_str());

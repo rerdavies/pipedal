@@ -736,5 +736,19 @@ class ToobParametricEqViewFactory implements IControlViewFactory {
     }
 
 
-}
+};
 export default ToobParametricEqViewFactory;
+
+class ToobParametricEqViewFactoryStereo implements IControlViewFactory {
+    uri: string = "http://two-play.com/plugins/toob-parametric-eq-stereo";
+
+    Create(model: PiPedalModel, pedalboardItem: PedalboardItem): React.ReactNode {
+        return (<ToobParametricEqView instanceId={pedalboardItem.instanceId} item={pedalboardItem} />);
+    }
+
+
+};
+
+export { ToobParametricEqViewFactoryStereo };
+
+

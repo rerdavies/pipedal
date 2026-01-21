@@ -1538,15 +1538,44 @@ export class PiPedalModel //implements PiPedalModel
     selectSnapshot(index: number) {
         this.webSocket?.send("setSnapshot", index);
     }
+
+    private pruneSnapshotValues(pedalboard: Pedalboard)
+    {
+        let validPluginIds: Set<number> = new Set<number>();
+
+        let it = pedalboard.itemsGenerator();
+        while (true) {
+            let v = it.next();
+            if (v.done) break;
+            validPluginIds.add(v.value.instanceId);
+
+        }
+
+        for (let snapshot of pedalboard.snapshots) {
+            if (snapshot) {
+                let ix = 0;
+                while (ix < snapshot.values.length) {
+                    let value = snapshot.values[ix];
+                    if (validPluginIds.has(value.instanceId)) {
+                        ix++;
+                    } else {
+                        snapshot.values.splice(ix, 1);
+                    }
+                }
+            }
+        }
+    }
     setSnapshots(snapshots: (Snapshot | null)[], selectedSnapshot: number) {
         let pedalboard = this.pedalboard.get().clone();
         pedalboard.snapshots = snapshots;
         if (selectedSnapshot !== -1) {
             pedalboard.selectedSnapshot = selectedSnapshot;
         }
+        this.pruneSnapshotValues(pedalboard);
+        
         this.setModelPedalboard(pedalboard);
 
-        this.webSocket?.send("setSnapshots", { snapshots: snapshots, selectedSnapshot: selectedSnapshot });
+        this.webSocket?.send("setSnapshots", { snapshots: pedalboard.snapshots, selectedSnapshot: selectedSnapshot });
     }
 
     setInputVolume(volume_db: number): void {
@@ -1721,11 +1750,19 @@ export class PiPedalModel //implements PiPedalModel
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
         let newPedalboard = pedalboard.clone();
 
-        let item = newPedalboard.getItem(instanceId);
+        let item: PedalboardItem = newPedalboard.getItem(instanceId);
 
         let changed = value !== item.isEnabled;
         if (changed) {
             item.isEnabled = value;
+            let pluginInfo: UiPlugin | null = this.getUiPlugin(item.uri);
+            if (pluginInfo !== null) {
+                for (let uiControl of pluginInfo.controls) {
+                    if (uiControl.is_bypass) {
+                        this._setPedalboardControlValue(instanceId, uiControl.symbol, value ? 1.0 : 0.0, false);
+                    }
+                }
+            }
             this.setModelPedalboard(newPedalboard);
             if (notifyServer) {
                 let body: PedalboardItemEnableBody = {
@@ -1833,6 +1870,7 @@ export class PiPedalModel //implements PiPedalModel
         let result = newPedalboard.deleteItem(instanceId);
         if (result !== null) {
             newPedalboard.selectedPlugin = result;
+            this.pruneSnapshotValues(newPedalboard);
             this.setModelPedalboard(newPedalboard);
             this.updateServerPedalboard();
         }

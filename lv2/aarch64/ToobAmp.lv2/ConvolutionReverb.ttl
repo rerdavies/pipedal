@@ -53,7 +53,7 @@ toobimpulse:impulseFile
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 72 ;
+        lv2:microVersion 73 ;
         rdfs:comment """
 
 Toob Convolution Reverb Stereo uses convolution reverb impulse/response files in order to produce highly 
@@ -208,7 +208,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:index  2;
                 lv2:symbol "direct_mix" ;
                 lv2:name "Direct";
-                lv2:default -3.0 ;
+                lv2:default 0.0 ;
                 lv2:minimum -40.0 ;
                 lv2:maximum 40.0 ;
                 units:unit units:db ;
@@ -228,7 +228,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:symbol "reverb_mix" ;
                 lv2:name "Reverb";
 
-                lv2:default -6.0 ;
+                lv2:default -12.0 ;
                 lv2:minimum -40.0 ;
                 lv2:maximum 40.0 ;
                 units:unit units:db ;
@@ -264,7 +264,6 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 ];
                 rdfs:comment "Removes leading silence in impulse when set to false." ;
         ],  
-
         [
                 a lv2:InputPort ,
                 lv2:ControlPort ;
@@ -291,6 +290,27 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:ControlPort ;
 
                 lv2:index 6 ;
+                lv2:symbol "start" ;
+                lv2:name "Start Offset";
+
+
+                lv2:default 1.0 ;
+                lv2:minimum 1.0;
+                lv2:maximum 300.0 ;
+                
+                units:unit units:ms ;
+                lv2:portProperty  epp:logarithmic;
+                lv2:scalePoint [
+                        rdfs:label "0.00ms" ;
+                        rdf:value 1.0;
+                ];
+                rdfs:comment "Start offset in the I/R file" ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 7 ;
                 lv2:symbol "stretch" ;
                 lv2:name "Stretch";
 
@@ -307,7 +327,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 7 ;
+                lv2:index 8 ;
                 lv2:symbol "decay" ;
                 lv2:name "Decay";
 
@@ -322,7 +342,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a lv2:InputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 8 ;
+                lv2:index 9 ;
                 lv2:symbol "tails" ;
                 lv2:name "Tails";
 
@@ -340,7 +360,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 a lv2:OutputPort ,
                 lv2:ControlPort ;
 
-                lv2:index 9 ;
+                lv2:index 10 ;
                 lv2:symbol "loading_state" ;
                 lv2:name "Status";
 
@@ -380,14 +400,14 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 10 ;
+                lv2:index 11 ;
                 lv2:symbol "in" ;
                 lv2:name "In"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 11 ;
+                lv2:index 12 ;
                 lv2:symbol "out" ;
                 lv2:name "Out"
         ],
@@ -399,7 +419,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 lv2:designation lv2:control ;
                 atom:supports patch:Message ;
 
-                lv2:index 12 ;
+                lv2:index 13 ;
                 lv2:symbol "control" ;
                 lv2:name "Control" ;
                 rdfs:comment "Control" ;
@@ -409,7 +429,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 13;
+                lv2:index 14;
                 lv2:symbol "notify" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Notification" ;

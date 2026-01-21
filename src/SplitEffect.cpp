@@ -126,7 +126,7 @@ static Lv2PluginInfo makeSplitterPluginInfo()
     volLControl->index(4);
     volLControl->min_value(-60);
     volLControl->max_value(12);
-    volLControl->default_value(-3);
+    volLControl->default_value(0);
     volLControl->scale_points().push_back(
         Lv2ScalePoint(-60, "-INF"));
 
@@ -152,7 +152,7 @@ static Lv2PluginInfo makeSplitterPluginInfo()
     volRControl->index(6);
     volRControl->min_value(-60);
     volRControl->max_value(12);
-    volRControl->default_value(-3);
+    volRControl->default_value(0);
     volRControl->scale_points().push_back(
         Lv2ScalePoint(-60, "-INF"));
 
@@ -327,6 +327,28 @@ void SplitEffect::mixTo(float value)
     this->targetBlendLBottom = this->targetBlendRBottom = blend;
     mixToTarget();
 }
+static inline void applyHardPan(float pan, float*left, float*right) {
+    // linear panning law.
+    // float panClipped = pan;
+    // if (panClipped < -1) panClipped = -1;
+    // if (panClipped > 1) panClipped = 1;
+    // panClipped = (panClipped + 1) * 0.5f; // 0..1
+    // *left = 1.0f - panClipped;
+    // *right = panClipped;
+    
+    // Hard pan law
+    float panClipped = pan;
+    if (panClipped < -1) panClipped = -1;
+    if (panClipped > 1) panClipped = 1;
+    if (pan <= 0) {
+        *left = 1.0f;
+        *right = 1.0f + panClipped;
+    } else {
+        *left = 1.0f - panClipped;
+        *right = 1.0f;
+    }
+}
+
 void SplitEffect::mixTo(float panL, float volL, float panR, float volR)
 {
     float aTop = (volL <= SPLIT_DB_MIN) ? 0 : db2a(volL);
@@ -339,12 +361,15 @@ void SplitEffect::mixTo(float panL, float volL, float panR, float volR)
     }
     else
     {
-        float blendTop = (panL + 1) * 0.5;
-        float blendBottom = (panR + 1) * 0.5;
-        this->targetBlendLTop = (1 - blendTop) * aTop;
-        this->targetBlendRTop = (blendTop)*aTop;
-        this->targetBlendLBottom = (1 - blendBottom) * aBottom;
-        this->targetBlendRBottom = (blendBottom)*aBottom;
+        float panTopL, panTopR;
+        applyHardPan(panL,&panTopL, &panTopR);
+        float panBottomL, panBottomR;
+        applyHardPan(panR,&panBottomL, &panBottomR);
+
+        this->targetBlendLTop = panTopL * aTop;
+        this->targetBlendRTop = panTopR*aTop;
+        this->targetBlendLBottom = panBottomL * aBottom;
+         this->targetBlendRBottom = panBottomR * aBottom;
     }
     mixToTarget();
 }
