@@ -1775,7 +1775,7 @@ export default withStyles(
                 return true;
             } 
             let fileNameOnly = pathFileNameOnly(fileName);
-            if (fileNameOnly === "LICENSE" || fileNameOnly === "README")
+            if (fileNameOnly.toUpperCase() === "LICENSE" || fileNameOnly.toUpperCase() === "README")
             {
                 return true;
             }

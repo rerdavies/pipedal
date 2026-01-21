@@ -18,6 +18,7 @@
 - Split controls behave unpredictably if the type of a Split is changed when switching between presets that have otherwise identical structure.
 - File selections are lost when switching between presets that have identical structure.
 - Snapshot plugin states are not trimmed when a plugin is removed.
+- Allow license.txt/.md and readme.txt/.md files to be uploaded via .zip files.
 
 ## PiPedal 1.5.95 Beta
 

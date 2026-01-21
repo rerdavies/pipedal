@@ -43,6 +43,7 @@
 #include "Utf8Utils.hpp"
 #include "AtomConverter.hpp"
 #include "FileBrowserFilesFeature.hpp"
+#include <string.h>
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -65,7 +66,7 @@ Storage::Storage()
 
 inline bool isSafeCharacter(char c)
 {
-    return (c >= '0' && c <= '9') | (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '-';
+    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '-';
 }
 
 static int fromhexStrict(char c)
@@ -2074,15 +2075,29 @@ static bool ensureNoDotDot(const std::filesystem::path &path)
     return true;
 }
 
+static bool isInfoFile(const std::string&fileName)
+{
+    if (strcasecmp(fileName.c_str(),"license.txt") == 0) 
+    {
+        return true;
+    }
+    if (strcasecmp(fileName.c_str(),"license.md") == 0) 
+    {
+        return true;
+    }
+    if (strcasecmp(fileName.c_str(),"readme.txt") == 0) 
+    {
+        return true;
+    }
+    if (strcasecmp(fileName.c_str(),"readme.md") == 0) 
+    {
+        return true;
+    }
+    return false;
+}
 static bool isInfoFile(const FileEntry &l)
 {
-    if (l.displayName_.starts_with("LICENSE"))
-        return true;
-    if (l.displayName_.starts_with("README"))
-        return true;
-    if (l.displayName_.find(".md") == l.displayName_.length() - 3)
-        return true;
-    return false;
+    return isInfoFile(l.displayName_);
 }
 
 static void AddFilesToResult(
@@ -2557,6 +2572,11 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
     return result;
 }
 
+bool Storage::IsValidReadmeFile(const std::filesystem::path &fullPath)
+{
+    return isInfoFile(fullPath.filename().string());
+}
+
 bool Storage::IsValidArtworkFile(const std::filesystem::path &fullPath)
 {
     if (IsInAudioTracksDirectory(fullPath) && isArtworkFileName(fullPath.filename().string()))
@@ -2590,7 +2610,7 @@ std::string Storage::UploadUserFile(const std::string &directory,
         throw std::logic_error("Permission denied. Path is outside the upload storage directory.");
     }
 
-    if (!(uiFileProperty->IsValidExtension(relativePath) || IsValidArtworkFile(path)))
+    if (!(uiFileProperty->IsValidExtension(relativePath) || IsValidArtworkFile(path) || IsValidReadmeFile(path)))
     {
         throw std::logic_error("Permission denied. Invalid file extension for this directory.");
     }

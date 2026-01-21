@@ -178,6 +178,7 @@ public:
     bool IsInUploadsDirectory(const std::filesystem::path&path) const;
     bool IsInAudioTracksDirectory(const std::filesystem::path&path) const;
     bool IsValidArtworkFile(const std::filesystem::path& fullPath);
+    bool IsValidReadmeFile(const std::filesystem::path& fullpath);
     
     FileRequestResult GetFileList2(const std::string&relativePath,const UiFileProperty&fileProperty);
 
