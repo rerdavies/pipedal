@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tone3000 Download Received</title>
+</head>
+<body>
+    <script>
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const toneUrl = urlParams.get('tone_url');
+
+        // Send the data back to the opener window
+        if (window.opener) {
+            window.opener.postMessage({
+                type: 'tone3000Download',
+                toneUrl: toneUrl
+            }, '*');
+        }
+
+        // Close the window after sending the data
+        window.close();
+    </script>
+</body>
+</html>
