@@ -1120,6 +1120,8 @@ export class UiPlugin implements Deserializable<UiPlugin> {
 
 
 
+
+
 export function makeSplitUiPlugin(): UiPlugin {
 
     return new UiPlugin().deserialize({
@@ -1138,7 +1140,7 @@ export function makeSplitUiPlugin(): UiPlugin {
         has_midi_output: 0,
         description: "",
         controls: [
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "splitType",
                 name: "Type",
                 index: 0,
@@ -1159,7 +1161,7 @@ export function makeSplitUiPlugin(): UiPlugin {
                 connection_optional: false,
 
             }),
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "select",
                 name: "Select",
                 index: 1,
@@ -1182,7 +1184,7 @@ export function makeSplitUiPlugin(): UiPlugin {
 
             }),
             
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "mix",
                 name: "Mix",
                 index: 2,
@@ -1195,9 +1197,10 @@ export function makeSplitUiPlugin(): UiPlugin {
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
+                scale_points: [],
 
             }),
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "panL",
                 name: "Pan Top",
                 index: 3,
@@ -1210,10 +1213,12 @@ export function makeSplitUiPlugin(): UiPlugin {
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
+                scale_points: [],
 
             }),
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "volL",
+                name: "Vol Top",
                 index: 4,
                 is_input: true,
                 min_value: -60.0,
@@ -1224,9 +1229,10 @@ export function makeSplitUiPlugin(): UiPlugin {
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
+                scale_points: [],
 
             }),
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "panR",
                 name: "Pan Bottom",
                 index: 5,
@@ -1239,9 +1245,10 @@ export function makeSplitUiPlugin(): UiPlugin {
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
+                scale_points: [],
 
             }),
-            new UiControl().deserialize({
+            new UiControl().applyProperties({
                 symbol: "volR",
                 name: "Vol Bottom",
                 index: 6,
@@ -1254,6 +1261,8 @@ export function makeSplitUiPlugin(): UiPlugin {
                 is_program_controller: false,
                 custom_units: "",
                 connection_optional: false,
+                scale_points: [],
+
             })
         ],
         port_groups: [],
