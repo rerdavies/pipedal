@@ -364,6 +364,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
 
     static readonly START_CONTROL = -2; // synthetic PedalboardItem for input volume.
     static readonly END_CONTROL = -3; // synthetic PedalboardItem for output volume.
+    static readonly CHANNEL_MIXER_INSTANCE_ID = -4; // Synthetic instance ID for the channel routing mixer.
     static readonly START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";
     static readonly END_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#End";
 

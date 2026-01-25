@@ -46,6 +46,7 @@ import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 import { getDefaultModGuiPreference } from './ModGuiHost';
+import ChannelMixerSettings from './ChannelMixerSettings';
 
 export enum State {
     Loading,
@@ -529,6 +530,13 @@ export class PiPedalModel //implements PiPedalModel
     jackServerSettings: ObservableProperty<JackServerSettings>
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
 
+    channelMixerControlValues: ObservableProperty<ControlValue[]> = new ObservableProperty<ControlValue[]>([]);
+    channelMixerSettings: ObservableProperty<ChannelMixerSettings> = new ObservableProperty<ChannelMixerSettings>(new ChannelMixerSettings());
+
+    setChannelMixerSettings(settings: ChannelMixerSettings) {
+        this.channelMixerSettings.set(settings);
+        this.channelMixerControlValues.set(settings.controls);
+    }
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
     wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings> = new ObservableProperty<WifiDirectConfigSettings>(new WifiDirectConfigSettings());
     governorSettings: ObservableProperty<GovernorSettings> = new ObservableProperty<GovernorSettings>(new GovernorSettings());
@@ -1643,35 +1651,52 @@ export class PiPedalModel //implements PiPedalModel
 
     private lastControlMessageWasSentbyMe = false;
 
+    private _setChannelMixerControlValue(key: string, value: number, notifyServer: boolean) : void {
+        let channelMixerSettings = this.channelMixerSettings.get();
+        let changed = channelMixerSettings.setControlValue(key, value);
+        if (changed) 
+        {
+            this.channelMixerControlValues.set(this.channelMixerSettings.get().controls);
+            if (notifyServer) {
+                this.lastControlMessageWasSentbyMe = true;
+                this._setServerControl("setControl", Pedalboard.CHANNEL_MIXER_INSTANCE_ID, key, value);
+            }
+        }
+    }
     private _setPedalboardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
-        let newPedalboard = pedalboard.clone();
 
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
-            this._setInputVolume(value, notifyServer);
+        if (instanceId == Pedalboard.CHANNEL_MIXER_INSTANCE_ID) {
+            this._setChannelMixerControlValue(key,value,notifyServer);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL) {
-            this._setOutputVolume(value, notifyServer);
-            return;
-        }
-        let item = newPedalboard.getItem(instanceId);
-        let changed = item.setControlValue(key, value);
+        } else {
+            let changed: boolean;
+            let newPedalboard = pedalboard.clone();
 
-        if (changed) {
-            if (notifyServer) {
-                this.lastControlMessageWasSentbyMe = true;
-                this._setServerControl("setControl", instanceId, key, value);
+            if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
+                this._setInputVolume(value, notifyServer);
+                return;
+            } else if (instanceId === Pedalboard.END_CONTROL) {
+                this._setOutputVolume(value, notifyServer);
+                return;
             }
-            this.setModelPedalboard(newPedalboard);
-            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
-                let item = this._controlValueChangeItems[i];
-                if (instanceId === item.instanceId) {
-                    item.onValueChanged(key, value);
+            let item = newPedalboard.getItem(instanceId);
+            changed = item.setControlValue(key, value);
+            if (changed) {
+                if (notifyServer) {
+                    this.lastControlMessageWasSentbyMe = true;
+                    this._setServerControl("setControl", instanceId, key, value);
+                }
+                this.setModelPedalboard(newPedalboard);
+                for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+                    let item = this._controlValueChangeItems[i];
+                    if (instanceId === item.instanceId) {
+                        item.onValueChanged(key, value);
+                    }
                 }
             }
         }
-
     }
     private _setVst3PedalboardControlValue(instanceId: number, key: string, value: number, state: string, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
