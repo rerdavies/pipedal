@@ -230,11 +230,52 @@ class Pedalboard {
 
     int64_t selectedPlugin_ = -1;
 
+    static constexpr int64_t TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
+    static constexpr int64_t TWO_POWER_48 = 281474976710656; // Number of possible instance IDs for Main Pedalboards.
+    static constexpr int64_t MAX_INSTANCE_ID = TWO_POWER_48;
+
 public:
+
+    enum class InstanceType {
+        MainPedalboard,
+        MainInsert,
+        AuxInsert
+    };
+    static constexpr int64_t MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52-2*MAX_INSTANCE_ID;
+    static constexpr int64_t  AUX_INSERT_INSTANCE_BASE = TWO_POWER_52-1*MAX_INSTANCE_ID;
+
+    static constexpr int64_t  CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Controls.
+
+    static constexpr int64_t START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
+    static constexpr int64_t END_CONTROL_ID = -3; // synthetic PedalboardItem for output volume.
+    static constexpr int64_t MAIN_INSERT_START_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
+    static constexpr int64_t MAIN_INSERT_END_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
+    static constexpr int64_t AUX_INSERT_START_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
+    static constexpr int64_t AUX_INSERT_END_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
+
+    static InstanceType GetInstanceTypeFromInstanceId(int64_t instanceId) { 
+        if (instanceId == START_CONTROL_ID) return InstanceType::MainPedalboard;
+        if (instanceId == END_CONTROL_ID) return InstanceType::MainPedalboard;
+
+        if (instanceId >= MAIN_INSERT_INSTANCE_BASE) {
+            return InstanceType::MainInsert;
+        } else if (instanceId >= AUX_INSERT_INSTANCE_BASE) {
+            return InstanceType::AuxInsert;
+        } else {
+            return InstanceType::MainPedalboard;
+        }
+    }
+    InstanceType GetInstanceType() const {
+        return GetInstanceTypeFromInstanceId(this->nextInstanceId_); // instanceId is irrelevant here.
+    }   
+
+
+
+    Pedalboard(InstanceType instanceType = InstanceType::MainPedalboard);
+
     // deep copy, breaking shared pointers.
     Pedalboard DeepCopy(); 
-    static constexpr int64_t INPUT_VOLUME_ID = -2; // synthetic PedalboardItem for input volume.
-    static constexpr int64_t OUTPUT_VOLUME_ID = -3; // synthetic PedalboardItem for output volume.
+    
     bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
     bool SetItemTitle(int64_t pedalItemId, const std::string &title, const std::string&iconColor);
     bool SetItemEnabled(int64_t pedalItemId, bool enabled);
@@ -266,7 +307,7 @@ public:
     PedalboardItem MakeSplit();
 
 
-    static Pedalboard MakeDefault();
+    static Pedalboard MakeDefault(Pedalboard::InstanceType instanceType);
 };
 
 #undef GETTER_SETTER_REF

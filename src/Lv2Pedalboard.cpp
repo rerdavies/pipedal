@@ -574,7 +574,7 @@ void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samp
     {
         int index = vuConfiguration->enabledIndexes[i];
         VuUpdate *pUpdate = &vuConfiguration->vuUpdateWorkingData[i];
-        if (index == Pedalboard::INPUT_VOLUME_ID)
+        if (index == Pedalboard::START_CONTROL_ID)
         {
             if (this->pedalboardInputBuffers.size() > 1)
             {
@@ -588,7 +588,7 @@ void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samp
                 pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), samples); // after input volume applied.
             }
         }
-        else if (index == Pedalboard::OUTPUT_VOLUME_ID)
+        else if (index == Pedalboard::END_CONTROL_ID)
         {
             if (this->pedalboardOutputBuffers.size() > 1)
             {

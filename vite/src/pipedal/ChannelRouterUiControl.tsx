@@ -19,13 +19,12 @@
 import Units from './Units';
 import {UiPlugin, UiControl, PluginType, ControlType, ScalePoint} from './Lv2Plugin';
 
-export const ChannelMixerUiUri = "uri://two-play/pipedal/ppChannelMixer";
-export const CHANNEL_MIXER_INSTANCE_ID = -4;
+export const ChannelRouterUiUri = "uri://two-play/pipedal/ppChannelRouter";
 
 export function makeChanelMixerUiPlugin(): UiPlugin {
 
     return new UiPlugin().deserialize({
-        uri: ChannelMixerUiUri,
+        uri: ChannelRouterUiUri,
         name: "Channel Mixer",
         brand: "",
         label: "",

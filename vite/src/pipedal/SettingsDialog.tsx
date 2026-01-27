@@ -20,8 +20,8 @@
 
 import React, { SyntheticEvent, Component } from 'react';
 import Switch from "@mui/material/Switch";
-import ChannelMixerSettings from './ChannelMixerSettings';
-import ChannelMixerSettingsDialog from './ChannelMixerSettingsDialog';
+import ChannelRouterSettings from './ChannelRouterSettings';
+import ChannelRouterSettingsDialog from './ChannelRouterSettingsDialog';
 import OkCancelDialog from './OkCancelDialog';
 import RadioSelectDialog from './RadioSelectDialog';
 import IconButtonEx from './IconButtonEx';
@@ -78,7 +78,7 @@ interface SettingsDialogState {
     showStatusMonitorDialog: boolean;
     jackConfiguration: JackConfiguration;
     jackSettings: JackChannelSelection | null;
-    channelMixerSettings: ChannelMixerSettings | null;
+    channelRouterSettings: ChannelRouterSettings | null;
     jackServerSettings: JackServerSettings;
     alsaSequencerConfiguration: AlsaSequencerConfiguration;
     keepScreenOn: boolean;
@@ -101,7 +101,7 @@ interface SettingsDialogState {
     showMidiSelectDialog: boolean;
     showThemeSelectDialog: boolean;
     showJackServerSettingsDialog: boolean;
-    showChannelMixerSettingsDialog: boolean;
+    showChannelRouterSettingsDialog: boolean;
     shuttingDown: boolean;
     restarting: boolean;
     isAndroidHosted: boolean;
@@ -194,7 +194,7 @@ const SettingsDialog = withStyles(
                 showStatusMonitorDialog: false,
 
                 jackServerSettings: this.model.jackServerSettings.get(),
-                channelMixerSettings: this.model.channelMixerSettings.get(),
+                channelRouterSettings: this.model.channelRouterSettings.get(),
                 jackConfiguration: this.model.jackConfiguration.get(),
                 jackStatus: undefined,
                 jackSettings: this.model.jackSettings.get(),
@@ -215,7 +215,7 @@ const SettingsDialog = withStyles(
                 showMidiSelectDialog: false,
                 showThemeSelectDialog: false,
                 showJackServerSettingsDialog: false,
-                showChannelMixerSettingsDialog: false,
+                showChannelRouterSettingsDialog: false,
                 shuttingDown: false,
                 restarting: false,
                 showShutdownOkDialog: false,
@@ -228,7 +228,7 @@ const SettingsDialog = withStyles(
             this.handleAlsaSequencerConfigurationChanged = this.handleAlsaSequencerConfigurationChanged.bind(this);
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
-            this.handleChannelMixerSettingsChanged = this.handleChannelMixerSettingsChanged.bind(this);
+            this.handleChannelRouterSettingsChanged = this.handleChannelRouterSettingsChanged.bind(this);
             this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
             this.handleWifiDirectConfigSettingsChanged = this.handleWifiDirectConfigSettingsChanged.bind(this);
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
@@ -330,10 +330,10 @@ const SettingsDialog = withStyles(
                 continueDisabled: !this.model.jackServerSettings.get().valid
             });
         }
-        handleChannelMixerSettingsChanged(): void {
+        handleChannelRouterSettingsChanged(): void {
             this.setState({
-                channelMixerSettings: this.model.channelMixerSettings.get(),
-                continueDisabled: !this.model.channelMixerSettings.get().configured
+                channelRouterSettings: this.model.channelRouterSettings.get(),
+                continueDisabled: !this.model.channelRouterSettings.get().configured
             });
         }
 
@@ -378,7 +378,7 @@ const SettingsDialog = withStyles(
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.alsaSequencerConfiguration.addOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
-                    this.model.channelMixerSettings.addOnChangedHandler(this.handleChannelMixerSettingsChanged);
+                    this.model.channelRouterSettings.addOnChangedHandler(this.handleChannelRouterSettingsChanged);
                     this.model.wifiConfigSettings.addOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.wifiDirectConfigSettings.addOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
                     this.model.governorSettings.addOnChangedHandler(this.handleGovernorSettingsChanged);
@@ -401,7 +401,7 @@ const SettingsDialog = withStyles(
                     this.handleJackSettingsChanged();
                     this.handleShowStatusMonitorChanged();
                     this.handleJackServerSettingsChanged();
-                    this.handleChannelMixerSettingsChanged();
+                    this.handleChannelRouterSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
                     this.handleWifiDirectConfigSettingsChanged();
                     this.setState({ hasWifiDevice: this.model.hasWifiDevice.get() });
@@ -420,7 +420,7 @@ const SettingsDialog = withStyles(
                     this.model.alsaSequencerConfiguration.removeOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
-                    this.model.channelMixerSettings.removeOnChangedHandler(this.handleChannelMixerSettingsChanged);
+                    this.model.channelRouterSettings.removeOnChangedHandler(this.handleChannelRouterSettingsChanged);
                     this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.wifiDirectConfigSettings.removeOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
                     this.model.governorSettings.removeOnChangedHandler(this.handleGovernorSettingsChanged);
@@ -720,10 +720,10 @@ const SettingsDialog = withStyles(
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">{this.state.jackServerSettings.getSummaryText()}</Typography>
                                     </div>
                                 </ButtonBase>
-                                {this.state.showChannelMixerSettingsDialog && (
-                                    <ChannelMixerSettingsDialog
-                                        open={this.state.showChannelMixerSettingsDialog}
-                                        onClose={() => this.setState({ showChannelMixerSettingsDialog: false })}
+                                {this.state.showChannelRouterSettingsDialog && (
+                                    <ChannelRouterSettingsDialog
+                                        open={this.state.showChannelRouterSettingsDialog}
+                                        onClose={() => this.setState({ showChannelRouterSettingsDialog: false })}
                                     />
                                 )}
                                 {this.state.showJackServerSettingsDialog && (
@@ -744,7 +744,7 @@ const SettingsDialog = withStyles(
                                 <ButtonBase className={classes.setting}
                                     onClick={() => {
                                         this.setState({
-                                            showChannelMixerSettingsDialog: true
+                                            showChannelRouterSettingsDialog: true
                                         });
                                     }}
                                     disabled={!hasAudioConfig}

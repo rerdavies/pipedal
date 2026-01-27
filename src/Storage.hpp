@@ -32,6 +32,8 @@
 #include <map>
 #include "FilePropertyDirectoryTree.hpp"
 #include "AlsaSequencer.hpp"
+#include "ChannelRouterSettings.hpp"
+
 
 
 namespace pipedal {
@@ -117,6 +119,15 @@ private:
     WifiDirectConfigSettings wifiDirectConfigSettings;
 
     UserSettings userSettings;
+
+    ChannelRouterSettings::ptr channelRouterSettings;
+    ChannelSelection channelSelection;
+
+    void UpgradeChannelRouterSettings();
+    std::filesystem::path GetChannelRouterSettingsPath() const;
+    void SaveChannelRouterSettings(ChannelRouterSettings::ptr settings);
+    ChannelRouterSettings::ptr LoadChannelRouterSettings();
+
 public:
     Storage();
     void Initialize();
@@ -124,8 +135,8 @@ public:
 
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
-    const std::filesystem::path&GetConfigRoot();
-    const std::filesystem::path&GetDataRoot();
+    const std::filesystem::path&GetConfigRoot() const;
+    const std::filesystem::path&GetDataRoot() const;
 
     const std::filesystem::path &GetPluginUploadDirectory() const;
 
@@ -205,6 +216,11 @@ public:
 
     void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
     AlsaSequencerConfiguration GetAlsaSequencerConfiguration() const;
+
+    void SetChannelRouterSettings(ChannelRouterSettings::ptr settings);
+    ChannelRouterSettings::ptr GetChannelRouterSettings();
+
+    const ChannelSelection& GetChannelSelection() const;
 
 
     //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);

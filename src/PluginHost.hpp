@@ -43,6 +43,7 @@
 #include "PiPedalUI.hpp"
 #include "MapPathFeature.hpp"
 #include "ModGui.hpp"
+#include "ChannelRouterSettings.hpp"
 
 namespace pipedal
 {
@@ -54,6 +55,7 @@ namespace pipedal
     class PluginHost;
     class JackConfiguration;
     class JackChannelSelection;
+    class ChannelRouterSettings;
 
 #ifndef LV2_PROPERTY_GETSET
 #define LV2_PROPERTY_GETSET(name)             \
@@ -893,8 +895,8 @@ namespace pipedal
         size_t maxBufferSize = 1024;
         size_t maxAtomBufferSize = 16 * 1024;
         bool hasMidiInputChannel;
-        int numberOfAudioInputChannels = 1;
-        int numberOfAudioOutputChannels = 1;
+        ChannelSelection channelSelection;
+
         double sampleRate = 48000;
 
         std::string vst3CachePath;
@@ -955,13 +957,12 @@ namespace pipedal
 
     private:
         // IHost implementation.
-        virtual void SetMaxAudioBufferSize(size_t size) { maxBufferSize = size; }
-        virtual size_t GetMaxAudioBufferSize() const { return maxBufferSize; }
-        virtual size_t GetAtomBufferSize() const { return maxAtomBufferSize; }
-        virtual bool HasMidiInputChannel() const { return hasMidiInputChannel; }
-        virtual int GetNumberOfInputAudioChannels() const { return numberOfAudioInputChannels; }
-        virtual int GetNumberOfOutputAudioChannels() const { return numberOfAudioOutputChannels; }
-        virtual LV2_Feature *const *GetLv2Features() const { return (LV2_Feature *const *)&(this->lv2Features[0]); }
+        virtual void SetMaxAudioBufferSize(size_t size) override { maxBufferSize = size; }
+        virtual size_t GetMaxAudioBufferSize() const override { return maxBufferSize; }
+        virtual size_t GetAtomBufferSize() const override { return maxAtomBufferSize; }
+        virtual bool HasMidiInputChannel() const override  { return hasMidiInputChannel; }
+        virtual LV2_Feature *const *GetLv2Features() const override { return (LV2_Feature *const *)&(this->lv2Features[0]); }
+        virtual const ChannelSelection &GetChannelSelection() const override { return this->channelSelection; }
 
     public:
         virtual MapFeature &GetMapFeature() override { return this->mapFeature; }
@@ -1027,7 +1028,8 @@ namespace pipedal
         Urids *urids = nullptr;
         ModGuiUris *mod_gui_uris = nullptr;
 
-        void OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings);
+        void OnConfigurationChanged(const JackConfiguration &configuration, const ChannelSelection &channelSelection);
+
 
         std::shared_ptr<Lv2PluginClass> GetPluginClass(const std::string &uri) const;
         bool is_a(const std::string &class_, const std::string &target_class);

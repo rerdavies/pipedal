@@ -372,7 +372,7 @@ const ToobParametricEqView =
                         ])}
                         {panel("", [
                             controls.gain
-                        ])}
+                       ])}
                         {divider()}
                         {panel("Low",
                             [controls.low_level,

@@ -1,3 +1,4 @@
+A way to force input to mono?
 
 
 ls 

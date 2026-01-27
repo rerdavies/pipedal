@@ -46,7 +46,7 @@ import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 import { getDefaultModGuiPreference } from './ModGuiHost';
-import ChannelMixerSettings from './ChannelMixerSettings';
+import ChannelRouterSettings from './ChannelRouterSettings';
 
 export enum State {
     Loading,
@@ -530,13 +530,9 @@ export class PiPedalModel //implements PiPedalModel
     jackServerSettings: ObservableProperty<JackServerSettings>
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
 
-    channelMixerControlValues: ObservableProperty<ControlValue[]> = new ObservableProperty<ControlValue[]>([]);
-    channelMixerSettings: ObservableProperty<ChannelMixerSettings> = new ObservableProperty<ChannelMixerSettings>(new ChannelMixerSettings());
+    channelRouterControlValues: ObservableProperty<ControlValue[]> = new ObservableProperty<ControlValue[]>([]);
+    channelRouterSettings: ObservableProperty<ChannelRouterSettings> = new ObservableProperty<ChannelRouterSettings>(new ChannelRouterSettings());
 
-    setChannelMixerSettings(settings: ChannelMixerSettings) {
-        this.channelMixerSettings.set(settings);
-        this.channelMixerControlValues.set(settings.controls);
-    }
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
     wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings> = new ObservableProperty<WifiDirectConfigSettings>(new WifiDirectConfigSettings());
     governorSettings: ObservableProperty<GovernorSettings> = new ObservableProperty<GovernorSettings>(new GovernorSettings());
@@ -1255,6 +1251,11 @@ export class PiPedalModel //implements PiPedalModel
                     await this.getWebSocket().request<any>("getJackServerSettings")
                 )
             );
+            this.channelRouterSettings.set(
+                new ChannelRouterSettings().deserialize(
+                    await this.getWebSocket().request<any>("getChannelRouterSettings")
+                )
+            )
             this.jackConfiguration.set(new JackConfiguration().deserialize(
                 await this.getWebSocket().request<JackConfiguration>("getJackConfiguration")
             ));
@@ -1651,15 +1652,15 @@ export class PiPedalModel //implements PiPedalModel
 
     private lastControlMessageWasSentbyMe = false;
 
-    private _setChannelMixerControlValue(key: string, value: number, notifyServer: boolean) : void {
-        let channelMixerSettings = this.channelMixerSettings.get();
-        let changed = channelMixerSettings.setControlValue(key, value);
+    private _setChannelRouterControlValue(key: string, value: number, notifyServer: boolean) : void {
+        let channelRouterSettings = this.channelRouterSettings.get();
+        let changed = channelRouterSettings.setControlValue(key, value);
         if (changed) 
         {
-            this.channelMixerControlValues.set(this.channelMixerSettings.get().controls);
+            this.channelRouterControlValues.set(this.channelRouterSettings.get().controlValues);
             if (notifyServer) {
                 this.lastControlMessageWasSentbyMe = true;
-                this._setServerControl("setControl", Pedalboard.CHANNEL_MIXER_INSTANCE_ID, key, value);
+                this._setServerControl("setControl", Pedalboard.CHANNEL_ROUTER_CONTROLS_INSTANCE_ID, key, value);
             }
         }
     }
@@ -1667,8 +1668,8 @@ export class PiPedalModel //implements PiPedalModel
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
 
-        if (instanceId == Pedalboard.CHANNEL_MIXER_INSTANCE_ID) {
-            this._setChannelMixerControlValue(key,value,notifyServer);
+        if (instanceId == Pedalboard.CHANNEL_ROUTER_CONTROLS_INSTANCE_ID) {
+            this._setChannelRouterControlValue(key,value,notifyServer);
             return;
         } else {
             let changed: boolean;
@@ -2313,12 +2314,6 @@ export class PiPedalModel //implements PiPedalModel
             m = message.toString();
         }
         this.alertMessage.set(m);
-    }
-
-
-    setJackSettings(jackSettings: JackChannelSelection): void {
-        this.expectDisconnect(ReconnectReason.LoadingSettings);
-        this.webSocket?.send("setJackSettings", jackSettings);
     }
 
 
@@ -3310,7 +3305,6 @@ export class PiPedalModel //implements PiPedalModel
         if (this.webSocket) {
             this.webSocket.send("setFavorites", newFavorites);
         }
-        // stub: update server.
     }
 
 
@@ -3680,6 +3674,15 @@ export class PiPedalModel //implements PiPedalModel
         }
         this.removeInvalidSidechains(pedalboard);
     }
+
+    setChannelRouterSettings(settings: ChannelRouterSettings) {
+        this.channelRouterSettings.set(settings);
+        this.channelRouterControlValues.set(settings.controlValues);
+        if (this.webSocket) {
+            this.webSocket.send("setChannelRouterSettings", settings);
+        }
+    }
+
 };
 
 let instance: PiPedalModel | undefined = undefined;

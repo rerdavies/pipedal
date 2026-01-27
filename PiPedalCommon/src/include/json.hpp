@@ -57,6 +57,17 @@
     }                  \
     ;
 
+
+#define JSON_GETTER_SETTER_REF(name)                               \
+    const decltype(name##_) &name() const { return name##_; } \
+    decltype(name##_) &name() { return name##_; } \
+    void name(const decltype(name##_) &value) { name##_ = value; }
+
+#define JSON_GETTER_SETTER(name)                            \
+    decltype(name##_) name() const { return name##_; } \
+    void name(decltype(name##_) value) { name##_ = value; }
+
+
 namespace pipedal
 {
     class JsonException: public std::runtime_error {

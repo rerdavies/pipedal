@@ -240,7 +240,7 @@ namespace pipedal
                     {
                         // zero length? We can never have a zero-length bank.
                         // Add a default preset and make it the selected preset.
-                        Pedalboard pedalboard = Pedalboard::MakeDefault();
+                        Pedalboard pedalboard = Pedalboard::MakeDefault(Pedalboard::InstanceType::MainPedalboard);
                         this->addPreset(pedalboard);
                         newSelection = presets_[0]->instanceId();
                     }

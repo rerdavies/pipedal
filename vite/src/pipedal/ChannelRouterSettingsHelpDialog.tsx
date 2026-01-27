@@ -18,33 +18,30 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React from 'react';
-import Button from '@mui/material/Button';
 import DialogEx from './DialogEx';
-import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import Typography from '@mui/material/Typography';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import Divider from '@mui/material/Divider';
 import DialogTitle from '@mui/material/DialogTitle';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButtonEx from './IconButtonEx';
 
 
-export interface ChannelMixerSettingsHelpDialogProps {
+export interface ChannelRouterSettingsHelpDialogProps {
     open: boolean,
     onClose: () => void,
 };
 
-export interface ChannelMixerSettingsHelpDialogState {
+export interface ChannelRouterSettingsHelpDialogState {
     fullScreen: boolean;
 };
 
-export default class ChannelMixerSettingsHelpDialog extends ResizeResponsiveComponent<ChannelMixerSettingsHelpDialogProps, ChannelMixerSettingsHelpDialogState> {
+export default class ChannelRouterSettingsHelpDialog extends ResizeResponsiveComponent<ChannelRouterSettingsHelpDialogProps, ChannelRouterSettingsHelpDialogState> {
 
     refText: React.RefObject<HTMLInputElement | null>;
 
-    constructor(props: ChannelMixerSettingsHelpDialogProps) {
+    constructor(props: ChannelRouterSettingsHelpDialogProps) {
         super(props);
         this.state = {
             fullScreen: false
@@ -136,6 +133,16 @@ export default class ChannelMixerSettingsHelpDialog extends ResizeResponsiveComp
                             summed together on those output channels. For stereo mixing, assign the same left and  right output
                             channels to both the Main and Aux routes. If you have a 2x4 or 4x4 audio interface with two guitar input channels
                             you can also pass  through stereo dry signals by configuring Main and Aux input  and output channels appropriately.
+                        </p>
+                        <p>The Send route, in conjunction with the TooB Send plugin allows you to send and return audio signals to an external physical device
+                            from within a PiPedal preset. This allows you to integrate external hardware effects into your PiPedal presets.
+                            Connect a cable from the audio interface output <i>Send</i>  channel(s) selected here to the input of your 
+                            hardware effect, and a cable from the output of your hardware effect to the audio interface's <i>Return</i> channel
+                            assigned here. Then insert the TooB Send plugin into your PiPedal preset. The input of the 
+                            TooB Send plugin will be sent to the external hardware effect, and the output the external hardware 
+                            effect will be returned to PiPedal at the output of the TooB Send plugin. PiPedal currently supports 
+                            only one Send plugin instance per preset; and the Send and Return channels may not be shared with the Main 
+                            or Aux routes.
                         </p>
                     </div>
 

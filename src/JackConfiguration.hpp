@@ -124,5 +124,4 @@ namespace pipedal
         DECLARE_JSON_MAP(JackChannelSelection);
     };
 
-
 } // namespace.

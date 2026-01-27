@@ -32,6 +32,7 @@
 #include "Promise.hpp"
 #include "json_variant.hpp"
 #include "RealtimeMidiEventType.hpp"
+#include "ChannelRouterSettings.hpp"
 
 namespace pipedal
 {
@@ -227,7 +228,7 @@ namespace pipedal
 
         virtual std::string AtomToJson(const LV2_Atom *atom) = 0;
 
-        virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection) = 0;
+        virtual void Open(const JackServerSettings &jackServerSettings, const ChannelSelection &channelSelection) = 0;
         virtual void Close() = 0;
 
         virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;

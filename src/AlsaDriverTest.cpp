@@ -218,16 +218,16 @@ public:
         if (testType == TestType::NullTest) return;
 
 
-        size_t inputs = audioDriver->InputBufferCount();
-        size_t outputs = audioDriver->OutputBufferCount();
+        size_t inputs = audioDriver->MainInputBufferCount();
+        size_t outputs = audioDriver->MainOutputBufferCount();
 
         for (size_t i = 0; i < inputs; ++i)
         {
-            inputBuffers[i] = audioDriver->GetInputBuffer(i);
+            inputBuffers[i] = audioDriver->GetMainInputBuffer(i);
         }
         for (size_t i = 0; i < outputs; ++i)
         {
-            outputBuffers[i] = audioDriver->GetOutputBuffer(i);
+            outputBuffers[i] = audioDriver->GetMainOutputBuffer(i);
         }
         if (this->testType == TestType::Oscillator)
         {

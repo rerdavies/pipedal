@@ -204,6 +204,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    ChannelRouterSettings.cpp ChannelRouterSettings.hpp
     CrashGuard.cpp CrashGuard.hpp
     ModTemplateGenerator.cpp ModTemplateGenerator.hpp
     WebServerMod.cpp WebServerMod.hpp

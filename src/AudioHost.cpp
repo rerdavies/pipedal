@@ -18,6 +18,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#include "PiPedalCommon.hpp"
 #include "AudioHost.hpp"
 #include "util.hpp"
 #include <lv2/atom/atom.h>
@@ -519,12 +520,17 @@ private:
     SystemMidiBinding rebootMidiBinding;
     SystemMidiBinding shutdownMidiBinding;
 
-    JackChannelSelection channelSelection;
+    ChannelSelection channelSelection;
     std::atomic<bool> active = false;
     std::atomic<bool> audioStopped = false;
     std::atomic<bool> isDummyAudioDriver = false;
 
     std::shared_ptr<Lv2Pedalboard> currentPedalboard;
+    std::shared_ptr<Lv2Pedalboard> currentMainInsertPedalboard;
+    std::shared_ptr<Lv2Pedalboard> currentAuxInsertPedalboard;
+
+
+
     std::vector<std::shared_ptr<Lv2Pedalboard>> activePedalboards; // pedalboards that have been sent to the audio queue.
     Lv2Pedalboard *realtimeActivePedalboard = nullptr;
 
@@ -620,9 +626,9 @@ private:
 
     void ZeroOutputBuffers(size_t nframes)
     {
-        for (size_t i = 0; i < audioDriver->OutputBufferCount(); ++i)
+        for (size_t i = 0; i < audioDriver->MainOutputBufferCount(); ++i)
         {
-            float * out = (float *)audioDriver->GetOutputBuffer(i);
+            float * out = (float *)audioDriver->GetMainOutputBuffer(i);
             if (out)
             {
                 ZeroBuffer(out, nframes);
@@ -1173,9 +1179,9 @@ private:
                 float *inputBuffers[4];
                 float *outputBuffers[4];
                 bool buffersValid = true;
-                for (int i = 0; i < audioDriver->InputBufferCount(); ++i)
+                for (int i = 0; i < audioDriver->MainInputBufferCount(); ++i)
                 {
-                    float *input = (float *)audioDriver->GetInputBuffer(i);
+                    float *input = (float *)audioDriver->GetMainInputBuffer(i);
                     if (input == nullptr)
                     {
                         buffersValid = false;
@@ -1183,11 +1189,11 @@ private:
                     }
                     inputBuffers[i] = input;
                 }
-                inputBuffers[audioDriver->InputBufferCount()] = nullptr;
+                inputBuffers[audioDriver->MainInputBufferCount()] = nullptr;
 
-                for (int i = 0; i < audioDriver->OutputBufferCount(); ++i)
+                for (int i = 0; i < audioDriver->MainOutputBufferCount(); ++i)
                 {
-                    float *output = audioDriver->GetOutputBuffer(i);
+                    float *output = audioDriver->GetMainOutputBuffer(i);
                     if (output == nullptr)
                     {
                         buffersValid = false;
@@ -1195,7 +1201,7 @@ private:
                     }
                     outputBuffers[i] = output;
                 }
-                outputBuffers[audioDriver->OutputBufferCount()] = nullptr;
+                outputBuffers[audioDriver->MainOutputBufferCount()] = nullptr;
 
                 if (buffersValid)
                 {
@@ -1670,7 +1676,7 @@ public:
         return result;
     }
 
-    virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
+    virtual void Open(const JackServerSettings &jackServerSettings, const ChannelSelection &channelSelection_)
     {
 
         std::lock_guard guard(mutex);
@@ -1692,11 +1698,6 @@ public:
             this->audioDriver = std::unique_ptr<AudioDriver>(CreateAlsaDriver(this));
         }
 
-        if (channelSelection.GetInputAudioPorts().size() == 0 || channelSelection.GetOutputAudioPorts().size() == 0)
-        {
-            return;
-        }
-
         this->currentSample = 0;
         this->underruns = 0;
 
@@ -1707,7 +1708,7 @@ public:
         this->realtimeReader.Reset();
         this->realtimeWriter.Reset();
 
-        this->channelSelection = channelSelection;
+        this->channelSelection = channelSelection_;
 
         StartReaderThread();
 
@@ -1794,6 +1795,7 @@ public:
             }
         }
     }
+
 
     virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> &values)
     {
@@ -1896,6 +1898,49 @@ public:
         pendingSnapshots.clear();
     }
 
+    PIPEDAL_NON_INLINE RealtimePedalboardItemIndex GetRealtimeItemIndex(int64_t instanceId)
+    {
+        Pedalboard::InstanceType instanceType = Pedalboard::GetInstanceTypeFromInstanceId(instanceId);
+        int64_t index = -1;
+        switch (instanceType)
+        {
+            case Pedalboard::InstanceType::MainPedalboard:
+                if (this->currentPedalboard) {
+                    if (instanceId == Pedalboard::START_CONTROL_ID) {
+                        index = Pedalboard::START_CONTROL_ID; 
+                    } else if (instanceId == Pedalboard::END_CONTROL_ID) {
+                        index = Pedalboard::END_CONTROL_ID; 
+                    } else {
+                        index = this->currentPedalboard->GetIndexOfInstanceId(instanceId);
+                    }
+                }
+                break;
+            case Pedalboard::InstanceType::MainInsert:
+                if (this->currentMainInsertPedalboard) {
+                    if (instanceId == Pedalboard::MAIN_INSERT_START_CONTROL_ID) {
+                        index = Pedalboard::MAIN_INSERT_START_CONTROL_ID; 
+                    } else if (instanceId == Pedalboard::MAIN_INSERT_END_CONTROL_ID) {
+                        index = Pedalboard::END_CONTROL_ID; 
+                    } else {
+                        index = this->currentMainInsertPedalboard->GetIndexOfInstanceId(instanceId);
+                    }
+                }   
+                break;
+            case Pedalboard::InstanceType::AuxInsert:
+                if (this->currentAuxInsertPedalboard) {
+                    if (instanceId == Pedalboard::AUX_INSERT_START_CONTROL_ID) {
+                        index = Pedalboard::START_CONTROL_ID; 
+                    } else if (instanceId == Pedalboard::AUX_INSERT_END_CONTROL_ID) {
+                        index = Pedalboard::END_CONTROL_ID; 
+                    } else {
+                        index = this->currentAuxInsertPedalboard->GetIndexOfInstanceId(instanceId);
+                    }
+                }
+                break;
+        }
+        RealtimePedalboardItemIndex result { instanceType, index};
+        return result;
+    }
     virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds)
     {
         std::lock_guard guard(mutex);
@@ -1917,7 +1962,7 @@ public:
                     auto effect = this->currentPedalboard->GetEffect(instanceId);
                     if (effect)
                     {
-                        int index = this->currentPedalboard->GetIndexOfInstanceId(instanceIds[i]);
+                        RealtimePedalboardItemIndex index = this->GetRealtimeItemIndex(instanceIds[i]);
                         vuConfig->enabledIndexes.push_back(index);
                         VuUpdate v;
                         v.instanceId_ = instanceId;
@@ -1929,20 +1974,41 @@ public:
                         vuConfig->vuUpdateWorkingData.push_back(v);
                         vuConfig->vuUpdateResponseData.push_back(v);
                     }
-                    else if (instanceId == Pedalboard::INPUT_VOLUME_ID || instanceId == Pedalboard::OUTPUT_VOLUME_ID)
+                    else if (
+                        instanceId == Pedalboard::START_CONTROL_ID || instanceId == Pedalboard::END_CONTROL_ID
+                    || instanceId == Pedalboard::MAIN_INSERT_START_CONTROL_ID || instanceId == Pedalboard::MAIN_INSERT_END_CONTROL_ID
+                    || instanceId == Pedalboard::AUX_INSERT_START_CONTROL_ID || instanceId == Pedalboard::AUX_INSERT_END_CONTROL_ID 
+                    )
                     {
-                        int index = (int)instanceId;
+                        auto index = GetRealtimeItemIndex(instanceId);
                         VuUpdate v;
                         vuConfig->enabledIndexes.push_back(index);
+                            
                         v.instanceId_ = instanceId;
-                        if (instanceId == Pedalboard::INPUT_VOLUME_ID)
+                        size_t nChannels = 0;
+
+                        switch (instanceId) 
                         {
-                            v.isStereoInput_ = v.isStereoOutput_ = this->pHost->GetNumberOfInputAudioChannels() > 1;
+                            case Pedalboard::START_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainInputChannels().size();
+                                break;
+                            case Pedalboard::END_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
+                                break;
+                            case Pedalboard::MAIN_INSERT_START_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
+                                break;
+                            case Pedalboard::MAIN_INSERT_END_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
+                                break;
+                            case Pedalboard::AUX_INSERT_START_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().auxInputChannels().size();
+                                break;
+                            case Pedalboard::AUX_INSERT_END_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().auxOutputChannels().size();
+                                break;
                         }
-                        else
-                        {
-                            v.isStereoInput_ = v.isStereoOutput_ = this->pHost->GetNumberOfOutputAudioChannels() > 1;
-                        }
+                        v.isStereoInput_ = v.isStereoOutput_ = nChannels > 1;
                         vuConfig->vuUpdateWorkingData.push_back(v);
                         vuConfig->vuUpdateResponseData.push_back(v);
                     }

@@ -35,6 +35,8 @@ namespace pipedal {
 
     using ProcessCallback = std::function<void (size_t)>;
 
+    class ChannelSelection;
+
 
     class AudioDriverHost {
     public:
@@ -58,14 +60,26 @@ namespace pipedal {
         virtual size_t GetMidiInputEventCount() = 0;
         virtual MidiEvent*GetMidiEvents() = 0;
 
-        virtual size_t InputBufferCount() const = 0;
-        virtual float*GetInputBuffer(size_t channel) = 0;
+        virtual size_t DeviceInputBufferCount() const = 0;
+        virtual size_t DeviceOutputBufferCount() const = 0;
+        virtual size_t MainInputBufferCount() const = 0;
+        virtual float*GetMainInputBuffer(size_t channel) = 0;
+        virtual size_t MainOutputBufferCount() const = 0;
+        virtual float*GetMainOutputBuffer(size_t channe) = 0;
 
 
-        virtual size_t OutputBufferCount() const = 0;
-        virtual float*GetOutputBuffer(size_t channe) = 0;
+        virtual size_t AuxInputBufferCount() const = 0;
+        virtual float*GetAuxInputBuffer(size_t channel) = 0;
+        virtual size_t AuxOutputBufferCount() const = 0;
+        virtual float*GetAuxOutputBuffer(size_t channel) = 0;
 
-        virtual void Open(const JackServerSettings & jackServerSettings,const JackChannelSelection &channelSelection) = 0;
+        virtual size_t SendInputBufferCount() const = 0;
+        virtual float*GetSendInputBuffer(size_t channel) = 0;
+        virtual size_t SendOutputBufferCount() const = 0;
+        virtual float*GetSendOutputBuffer(size_t channel) = 0;
+
+
+        virtual void Open(const JackServerSettings & jackServerSettings,const ChannelSelection &channelSelection) = 0;
         virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) = 0;
         virtual void Activate() = 0;
         virtual void Deactivate() = 0;

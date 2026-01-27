@@ -81,7 +81,7 @@ PiPedalModel::PiPedalModel()
     this->updater = Updater::Create();
     this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
-    this->pedalboard = Pedalboard::MakeDefault();
+    this->pedalboard = Pedalboard::MakeDefault(Pedalboard::InstanceType::MainPedalboard);
 #if JACK_HOST
     this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
     this->jackServerSettings.ReadJackDaemonConfiguration();
@@ -216,6 +216,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.Initialize();
     pluginHost.SetPluginStoragePath(storage.GetPluginUploadDirectory());
 
+    this->channelRouterSettings = storage.GetChannelRouterSettings();
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
 #if JACK_HOST
@@ -298,7 +299,7 @@ void PiPedalModel::Load()
     if (CrashGuard::HasCrashed())
     {
         // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
-        this->pedalboard = Pedalboard::MakeDefault();
+        this->pedalboard = Pedalboard::MakeDefault(Pedalboard::InstanceType::MainPedalboard);
     }
     else
     {
@@ -1422,12 +1423,8 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
             throw std::runtime_error("Audio configuration not valid.");
         }
 
-        auto channelSelection = this->storage.GetJackChannelSelection(jackConfiguration);
+        const auto & channelSelection = this->storage.GetChannelSelection();
 
-        if (!channelSelection.isValid())
-        {
-            throw std::runtime_error("Audio configuration not valid.");
-        }
         this->audioHost->Open(jackServerSettings, channelSelection);
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
@@ -1528,21 +1525,6 @@ std::vector<AlsaSequencerPortSelection> PiPedalModel::GetAlsaSequencerPorts()
     return result;
 }
 
-void PiPedalModel::SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection)
-{
-    {
-        std::lock_guard<std::recursive_mutex> lock(mutex); // copy atomically.
-        this->storage.SetJackChannelSelection(channelSelection);
-
-        this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
-
-        CancelAudioRetry();
-    }
-
-    RestartAudio(); // no lock to avoid mutex deadlock when reader thread is sending notifications..
-
-    this->FireChannelSelectionChanged(clientId);
-}
 
 void PiPedalModel::FireChannelSelectionChanged(int64_t clientId)
 {
@@ -1671,7 +1653,7 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
     for (int i = 0; i < activeVuSubscriptions.size(); ++i)
     {
         auto instanceId = activeVuSubscriptions[i].instanceid;
-        if (pedalboard.HasItem(instanceId) || instanceId == Pedalboard::INPUT_VOLUME_ID || instanceId == Pedalboard::OUTPUT_VOLUME_ID)
+        if (pedalboard.HasItem(instanceId) || instanceId == Pedalboard::START_CONTROL_ID || instanceId == Pedalboard::END_CONTROL_ID)
         {
             addedInstances.insert(activeVuSubscriptions[i].instanceid);
         }
@@ -3330,3 +3312,27 @@ int64_t PiPedalModel::CopyPresetsToBank(int64_t bankInstanceId, const std::vecto
     return lastAdded;
 
 }
+
+
+ChannelRouterSettings::ptr PiPedalModel::GetChannelRouterSettings()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    return this->channelRouterSettings;
+}
+
+void PiPedalModel::SetChannelRouterSettings(int64_t clientId,ChannelRouterSettings::ptr &settings)
+{
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        this->channelRouterSettings = settings;
+        this->storage.SetChannelRouterSettings(settings);
+        this->pluginHost.OnConfigurationChanged(jackConfiguration, *settings);
+        CancelAudioRetry();
+    }
+    RestartAudio(); // no lock to avoid mutex deadlock when reader thread is sending notifications..
+
+    this->FireChannelSelectionChanged(clientId);
+
+}
+
+

@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Robin Davies
+// Copyright (c) 2026 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -1422,12 +1422,6 @@ public:
             this->model.AddNotificationSubscription(shared_from_this());
             Reply(replyTo, "ehlo", clientId);
         }
-        else if (message == "setJackSettings")
-        {
-            JackChannelSelection jackSettings;
-            pReader->read(&jackSettings);
-            this->model.SetJackChannelSelection(this->clientId, jackSettings);
-        }
         else if (message == "setShowStatusMonitor")
         {
             bool showStatusMonitor;
@@ -1847,6 +1841,14 @@ public:
             pReader->read(&args);
             auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
             this->Reply(replyTo,"copyPresetsToBank",result);
+        } else if (message == "getChannelRouterSettings") 
+        {
+            ChannelRouterSettings::ptr result = this->model.GetChannelRouterSettings();
+            this->Reply(replyTo, "getChannelRouterSettings", result);
+        } else if (message == "setChannelRouterSettings") {
+            ChannelRouterSettings::ptr args;
+            pReader->read(&args);
+            this->model.SetChannelRouterSettings(this->clientId, args);
         }
         else
         {
