@@ -42,6 +42,11 @@ import DialogEx from './DialogEx';
 
 import { PiPedalModelFactory } from './PiPedalModel';
 
+
+let debugInputChannels: number | null = 2;
+let debugOutputChannels: number | null = 4;
+
+
 export interface ChannelRouterSettingsDialogProps {
     open: boolean;
     onClose: () => void;
@@ -309,6 +314,12 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
 
     let ChannelSelect = (routeType: RouteType, channelIndex: number, input: boolean, icon: boolean = true) => {
         let channelCount = input ? config.inputAudioPorts.length : config.outputAudioPorts.length;
+        if (input && debugInputChannels != null) {
+            channelCount = debugInputChannels;
+        }
+        if (!input && debugOutputChannels != null) {
+            channelCount = debugOutputChannels;
+        }
 
         let value: number;
 
@@ -336,7 +347,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                 }
                 onChange={(event) => {
                     let newValue = event.target.value as number;
-                    let newSettings = Object.assign(new ChannelRouterSettings(), settings);
+                    let newSettings =  new ChannelRouterSettings().deserialize(settings);
                     switch (routeType) {
                         case RouteType.Main:
                             if (input) {
@@ -385,7 +396,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
         }
         for (let preset of channelRouterPresets) {
             if (preset.id === presetId) {
-                model.setChannelRouterSettings(preset.settings);
+                let newPreset = Object.assign(new ChannelRouterSettings(), preset.settings);
+                // mark the presets as inserts.
+                newPreset.mainInserts.nextInstanceId = Pedalboard.MAIN_INSERT_INSTANCE_BASE;
+                newPreset.auxInserts.nextInstanceId = Pedalboard.AUX_INSERT_INSTANCE_BASE;
+                model.setChannelRouterSettings(newPreset);
                 return;
             }
         }
@@ -759,7 +774,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                 {ChannelSelect(RouteType.Send, 0, true, false)}
                             </td>
                             <td style={cellLeft}>
-                                {ChannelSelect(RouteType.Send, 1, false, false)}
+                                {ChannelSelect(RouteType.Send, 1, true, false)}
                             </td>
                             <td></td>
                         </tr>

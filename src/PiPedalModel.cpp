@@ -81,7 +81,7 @@ PiPedalModel::PiPedalModel()
     this->updater = Updater::Create();
     this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
-    this->pedalboard = Pedalboard::MakeDefault(Pedalboard::InstanceType::MainPedalboard);
+    this->pedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
 #if JACK_HOST
     this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
     this->jackServerSettings.ReadJackDaemonConfiguration();
@@ -216,14 +216,20 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     storage.Initialize();
     pluginHost.SetPluginStoragePath(storage.GetPluginUploadDirectory());
 
-    this->channelRouterSettings = storage.GetChannelRouterSettings();
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
 #if JACK_HOST
     this->jackConfiguration = this->jackConfiguration.JackInitialize();
 #else
     this->jackServerSettings = storage.GetJackServerSettings();
+    this->jackConfiguration.AlsaInitialize(jackServerSettings);
 #endif
+
+    this->channelRouterSettings = storage.GetChannelRouterSettings();
+    pluginHost.OnConfigurationChanged(
+        jackConfiguration,
+        storage.GetChannelSelection());
+
 }
 
 void PiPedalModel::LoadLv2PluginInfo()
@@ -299,7 +305,7 @@ void PiPedalModel::Load()
     if (CrashGuard::HasCrashed())
     {
         // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
-        this->pedalboard = Pedalboard::MakeDefault(Pedalboard::InstanceType::MainPedalboard);
+        this->pedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
     }
     else
     {
@@ -1429,7 +1435,7 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
 
-        FireChannelSelectionChanged(-1);
+        FireChannelRouterSettingsChanged(-1);
         LoadCurrentPedalboard();
 
         this->UpdateRealtimeVuSubscriptions();
@@ -1526,17 +1532,17 @@ std::vector<AlsaSequencerPortSelection> PiPedalModel::GetAlsaSequencerPorts()
 }
 
 
-void PiPedalModel::FireChannelSelectionChanged(int64_t clientId)
+void PiPedalModel::FireChannelRouterSettingsChanged(int64_t clientId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         // take a snapshot incase a client unsusbscribes in the notification handler (in which case the mutex won't protect us)
-        JackChannelSelection channelSelection = storage.GetJackChannelSelection(this->jackConfiguration);
+        ChannelRouterSettings::ptr channelRouterSettings = this->channelRouterSettings;
 
         std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
         for (auto &subscriber : t)
         {
-            subscriber->OnChannelSelectionChanged(clientId, channelSelection);
+            subscriber->OnChannelRouterSettingsChanged(clientId, *channelRouterSettings);
         }
     }
 }
@@ -3331,7 +3337,7 @@ void PiPedalModel::SetChannelRouterSettings(int64_t clientId,ChannelRouterSettin
     }
     RestartAudio(); // no lock to avoid mutex deadlock when reader thread is sending notifications..
 
-    this->FireChannelSelectionChanged(clientId);
+    this->FireChannelRouterSettingsChanged(clientId);
 
 }
 

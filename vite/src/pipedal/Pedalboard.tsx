@@ -381,10 +381,10 @@ export class Pedalboard implements Deserializable<Pedalboard> {
 
     static readonly START_CONTROL = -2; // synthetic PedalboardItem for input volume.
     static readonly END_CONTROL = -3; // synthetic PedalboardItem for output volume.
-    static readonly MAIN_INSERT_START_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
-    static readonly MAIN_INSERT_END_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
-    static readonly AUX_INSERT_START_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
-    static readonly AUX_INSERT_END_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
+    static readonly MAIN_INSERT_START_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + -2 +  MAX_INSTANCE_ID;
+    static readonly MAIN_INSERT_END_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + -3 + MAX_INSTANCE_ID;
+    static readonly AUX_INSERT_START_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + -2 + MAX_INSTANCE_ID
+    static readonly AUX_INSERT_END_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + -3 + MAX_INSTANCE_ID;
 
 
     static readonly START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";

@@ -73,7 +73,7 @@ namespace pipedal
         virtual void OnSnapshotModified(int64_t selectedSnapshot, bool modified) = 0;
         virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
-        virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection) = 0;
+        virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings) = 0;
         virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates) = 0;
         virtual void OnBankIndexChanged(const BankIndex &bankIndex) = 0;
         virtual void OnJackServerSettingsChanged(const JackServerSettings &jackServerSettings) = 0;
@@ -206,7 +206,7 @@ namespace pipedal
         void FirePresetChanged(bool changed);
         void FirePluginPresetsChanged(const std::string &pluginUri);
         void FirePedalboardChanged(int64_t clientId, bool reloadAudioThread = true);
-        void FireChannelSelectionChanged(int64_t clientId);
+        void FireChannelRouterSettingsChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
         void FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State);

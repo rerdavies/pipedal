@@ -19,13 +19,12 @@
 
 #pragma once
 
-#include "lilv/lilv.h"
 #include "lv2/state/state.h"
 #include <cstddef>
 #include "json_variant.hpp"
 #include "MapFeature.hpp"
 #include "IHost.hpp"
-#include "lilv/lilv.h"
+#include <lilv/lilv.h>
 
 namespace pipedal
 {

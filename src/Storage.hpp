@@ -100,7 +100,7 @@ private:
     void LoadCurrentBank();
     void SaveCurrentBank();
 
-    void LoadChannelSelection();
+    void LoadJackChannelSelection();
     void SaveChannelSelection();
 
     void LoadAlsaSequencerConfiguration();

@@ -354,11 +354,6 @@ namespace pipedal
 
         std::vector<OutputBufferMix> outputBufferMixes;
 
-
-
-        std::vector<float *> deviceCaptureBuffers;
-        std::vector<float *> devicePlaybackBuffers;
-
         std::vector<uint8_t> rawCaptureBuffer;
         std::vector<uint8_t> rawPlaybackBuffer;
 

@@ -431,9 +431,9 @@ interface MonitorPortOutputBody {
 }
 
 
-interface ChannelSelectionChangedBody {
+interface ChannelRouterSettingsChangedBody {
     clientId: number;
-    jackChannelSelection: JackChannelSelection;
+    channelRouterSettings: ChannelRouterSettings;
 }
 interface RenamePresetBody {
     clientId: number;
@@ -730,10 +730,11 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onShowStatusMonitorChanged") {
             let value = body as boolean;
             this.showStatusMonitor.set(value);
-        } else if (message === "onChannelSelectionChanged") {
-            let channelSelectionBody = body as ChannelSelectionChangedBody;
-            let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
-            this.jackSettings.set(channelSelection);
+        } else if (message === "onChannelRouterSettingsChanged") {
+            let channelRouterSettingChangedBody = body as ChannelRouterSettingsChangedBody;
+            let channelRouterSettings = new ChannelRouterSettings().deserialize(
+                channelRouterSettingChangedBody.channelRouterSettings);
+            this.channelRouterSettings.set(channelRouterSettings);
         } else if (message === "onSnapshotModified") {
             let { snapshotIndex, modified } = (body as { snapshotIndex: number, modified: boolean });
             let snapshots = this.pedalboard.get().snapshots;

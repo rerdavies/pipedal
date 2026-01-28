@@ -320,6 +320,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList, ExistingEffectMap *existingEffects)
 {
     this->pHost = pHost;
+    this->pedalboardType = pedalboard.GetInstanceType();
 
     inputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
     outputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
@@ -329,13 +330,15 @@ void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardE
     inputVolume.SetTarget(pedalboard.input_volume_db());
     outputVolume.SetTarget(pedalboard.output_volume_db());
 
-    for (int i = 0; i < pHost->GetNumberOfInputAudioChannels(); ++i)
+    size_t nInputs = std::max(GetNumberOfAudioInputChannels(),(size_t)1);
+
+    for (size_t i = 0; i < nInputs; ++i)
     {
         this->pedalboardInputBuffers.push_back(bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize()));
     }
 
     auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers, errorList, existingEffects);
-    int nOutputs = pHost->GetNumberOfOutputAudioChannels();
+    size_t nOutputs = GetNumberOfAudioOutputChannels();
     if (nOutputs == 1)
     {
         this->pedalboardOutputBuffers.push_back(outputs[0]);
@@ -572,7 +575,12 @@ void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samp
 {
     for (size_t i = 0; i < vuConfiguration->enabledIndexes.size(); ++i)
     {
-        int index = vuConfiguration->enabledIndexes[i];
+        auto& rtIndex = vuConfiguration->enabledIndexes[i];
+        if (rtIndex.instanceType != this->pedalboardType)
+        {
+            continue;
+        }
+        int index = rtIndex.index;
         VuUpdate *pUpdate = &vuConfiguration->vuUpdateWorkingData[i];
         if (index == Pedalboard::START_CONTROL_ID)
         {
@@ -1014,5 +1022,34 @@ void Lv2Pedalboard::handleTapTempo(uint8_t value, const MidiTimestamp& timestamp
             }
         }
         mapping.lastTapTimestamp = timestamp;
+    }
+}
+
+
+size_t Lv2Pedalboard::GetNumberOfAudioInputChannels() const {
+    switch (pedalboardType)
+    {
+    case Pedalboard::PedalboardType::MainPedalboard:
+        return pHost->GetChannelSelection().mainInputChannels().size();
+    case Pedalboard::PedalboardType::MainInsert:
+        return pHost->GetChannelSelection().mainOutputChannels().size();
+    case Pedalboard::PedalboardType::AuxInsert:
+        return pHost->GetChannelSelection().auxInputChannels().size();
+    default:
+        throw std::runtime_error("Invalid argument");
+    }
+}
+
+size_t Lv2Pedalboard::GetNumberOfAudioOutputChannels() const {
+    switch (pedalboardType)
+    {
+    case Pedalboard::PedalboardType::MainPedalboard:
+        return pHost->GetChannelSelection().mainOutputChannels().size();
+    case Pedalboard::PedalboardType::MainInsert:
+        return pHost->GetChannelSelection().mainOutputChannels().size();
+    case Pedalboard::PedalboardType::AuxInsert:
+        return pHost->GetChannelSelection().auxOutputChannels().size();
+    default:
+        throw std::runtime_error("Invalid argument");
     }
 }

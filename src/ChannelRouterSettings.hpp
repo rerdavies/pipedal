@@ -49,7 +49,7 @@ namespace pipedal
 
         std::vector<ControlValue> controlValues_;
 
-    public: 
+    public:
         using self = ChannelRouterSettings;
         using ptr = std::shared_ptr<self>;
 
@@ -57,7 +57,7 @@ namespace pipedal
 
         uint64_t numberOfAudioInputChannels() const;
         uint64_t numberOfAudioOutputChannels() const;
-        
+
         JSON_GETTER_SETTER(configured)
         JSON_GETTER_SETTER(channelRouterPresetId)
         JSON_GETTER_SETTER_REF(mainInputChannels)
@@ -70,28 +70,34 @@ namespace pipedal
         JSON_GETTER_SETTER_REF(sendOutputChannels)
         JSON_GETTER_SETTER_REF(controlValues)
 
-
         DECLARE_JSON_MAP(ChannelRouterSettings);
-
     };
 
-        // just the channel selecttions.
-    class ChannelSelection {
+    // just the channel selecttions.
+    class ChannelSelection
+    {
     public:
         ChannelSelection() = default;
-        ChannelSelection(ChannelRouterSettings&settings);
-        ChannelSelection(const ChannelSelection&other) = default;
-        ChannelSelection(ChannelSelection&&other) = default;
-        ChannelSelection& operator=(const ChannelSelection&other) = default;
-        ChannelSelection& operator=(ChannelSelection&&other) = default;
+        ChannelSelection(ChannelRouterSettings &settings);
+        ChannelSelection(const ChannelSelection &other) = default;
+        ChannelSelection(ChannelSelection &&other) = default;
+        ChannelSelection &operator=(const ChannelSelection &other) = default;
+        ChannelSelection &operator=(ChannelSelection &&other) = default;
         ~ChannelSelection() = default;
 
-        const std::vector<int64_t>&mainInputChannels() const { return mainInputChannels_; }
-        const std::vector<int64_t>&mainOutputChannels() const { return mainOutputChannels_; }
-        const std::vector<int64_t>&auxInputChannels() const { return auxInputChannels_; }
-        const std::vector<int64_t>&auxOutputChannels() const { return auxOutputChannels_; }
-        const std::vector<int64_t>&sendInputChannels() const { return sendInputChannels_; }
-        const std::vector<int64_t>&sendOutputChannels() const { return sendOutputChannels_; }    
+        const std::vector<int64_t> &mainInputChannels() const { return mainInputChannels_; }
+        const std::vector<int64_t> &mainOutputChannels() const { return mainOutputChannels_; }
+        const std::vector<int64_t> &auxInputChannels() const { return auxInputChannels_; }
+        const std::vector<int64_t> &auxOutputChannels() const { return auxOutputChannels_; }
+        const std::vector<int64_t> &sendInputChannels() const { return sendInputChannels_; }
+        const std::vector<int64_t> &sendOutputChannels() const { return sendOutputChannels_; }
+
+        std::vector<int64_t> &mainInputChannels() { return mainInputChannels_; }
+        std::vector<int64_t> &mainOutputChannels() { return mainOutputChannels_; }
+        std::vector<int64_t> &auxInputChannels() { return auxInputChannels_; }
+        std::vector<int64_t> &auxOutputChannels() { return auxOutputChannels_; }
+        std::vector<int64_t> &sendInputChannels() { return sendInputChannels_; }
+        std::vector<int64_t> &sendOutputChannels() { return sendOutputChannels_; }
 
     private:
         void normalizeChannelSelection();
