@@ -27,6 +27,7 @@ import { Pedalboard, PedalboardItem, ControlValue, Snapshot } from './Pedalboard
 import PluginClass from './PluginClass';
 import ScreenOrientation from './ScreenOrientation';
 import PiPedalSocket, { PiPedalMessageHeader } from './PiPedalSocket';
+import {Tone3000DownloadHandler} from './Tone3000Dialog';
 import { nullCast } from './Utility'
 import { JackConfiguration, JackChannelSelection } from './Jack';
 import { BankIndex } from './Banks';
@@ -60,7 +61,7 @@ export enum State {
     HotspotChanging,
 };
 
-function getErrorMessage(error: any) {
+export function getErrorMessage(error: any) {
     if (error instanceof Error) {
         return (error as Error).message;
     }
@@ -494,7 +495,6 @@ export class PiPedalModel //implements PiPedalModel
     static getInstance(): PiPedalModel {
         return PiPedalModelFactory.getInstance();
     }
-    hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
 
     canKeepScreenOn: boolean = false;
     keepScreenOn: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
@@ -551,6 +551,8 @@ export class PiPedalModel //implements PiPedalModel
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
     uiPluginsByUri: Map<string, UiPlugin> = new Map<string, UiPlugin>();
+
+    private tone3000DownloadHandler: Tone3000DownloadHandler | null = null;
 
     svgImgUrl(svgImage: string): string {
         // return this.varServerUrl + "img/" + svgImage;
@@ -651,6 +653,53 @@ export class PiPedalModel //implements PiPedalModel
         return true;
 
     }
+
+    async downloadModelsFromTone3000(
+        tone3000DownloadUrl: string,
+        downloadPath: string
+    ): Promise<void> {
+        try {
+            if (!this.webSocket) {
+                return;
+            }
+            this.webSocket.send("downloadModelsFromTone3000",
+                {
+                    downloadPath: downloadPath, 
+                    tone3000Url: tone3000DownloadUrl
+                });
+        } catch (error) {   
+            this.showAlert(getErrorMessage(error));
+        }
+    }
+
+    showTone3000DownloadDialog(
+        downloadPath: string,
+        onClosed: () => void,
+        onDownloadStarted: () => void,
+        onDownloadComplete: () => void
+
+    ): void {
+        if (this.tone3000DownloadHandler === null) {
+            this.tone3000DownloadHandler = new Tone3000DownloadHandler(this);
+        }
+        this.tone3000DownloadHandler.launchTone3000Dialog(
+            downloadPath,
+            onClosed,
+            (errorMessage: string) => {
+                this.showAlert(errorMessage);
+                onClosed();
+            },
+            onDownloadStarted,
+            onDownloadComplete
+        );
+
+    };
+    closeTone3000DownloadDialog(): void {
+        if (this.tone3000DownloadHandler) {
+            this.tone3000DownloadHandler.closeTone3000Dialog();
+        }
+    }
+
     private updateEnabledItems(pedalboard: Pedalboard) {
         for (let item of pedalboard.itemsGenerator()) {
             this.updatePedalboardItemEnabled(item.instanceId, item.isEnabled);
@@ -862,10 +911,7 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onErrorMessage") {
             this.showAlert(body as string);
 
-        } else if (message == "onTone3000AuthChanged") {
-            this.hasTone3000Auth.set(body as boolean);
-        }
-        else if (message === "onLv2PluginsChanging") {
+        } else if (message === "onLv2PluginsChanging") {
             this.onLv2PluginsChanging();
         } else if (message === "onUpdateStatusChanged") {
             let updateStatus = new UpdateStatus().deserialize(body);
@@ -1256,9 +1302,6 @@ export class PiPedalModel //implements PiPedalModel
             this.alsaSequencerConfiguration.set(new AlsaSequencerConfiguration().deserialize(
                 await this.getWebSocket().request<any>("getAlsaSequencerConfiguration")
             ));
-            this.hasTone3000Auth.set(
-                await this.getWebSocket().request<boolean>("getHasTone3000Auth")
-            );
             this.banks.set(new BankIndex().deserialize(await this.getWebSocket().request<any>("getBankIndex")));
 
             this.favorites.set(await this.getWebSocket().request<FavoritesList>("getFavorites"));
@@ -1539,8 +1582,7 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("setSnapshot", index);
     }
 
-    private pruneSnapshotValues(pedalboard: Pedalboard)
-    {
+    private pruneSnapshotValues(pedalboard: Pedalboard) {
         let validPluginIds: Set<number> = new Set<number>();
 
         let it = pedalboard.itemsGenerator();
@@ -1572,7 +1614,7 @@ export class PiPedalModel //implements PiPedalModel
             pedalboard.selectedSnapshot = selectedSnapshot;
         }
         this.pruneSnapshotValues(pedalboard);
-        
+
         this.setModelPedalboard(pedalboard);
 
         this.webSocket?.send("setSnapshots", { snapshots: pedalboard.snapshots, selectedSnapshot: selectedSnapshot });
@@ -2752,6 +2794,29 @@ export class PiPedalModel //implements PiPedalModel
         document.body.removeChild(link);
     }
 
+    async uploadTone3000File(url: string) : Promise<boolean> {
+        try {
+            let response = await fetch(
+                url,
+                {
+                    method: "GET",
+                }
+            );
+            
+            let json = await response.json();
+
+            if (json.success === true) {
+                return true;
+            }
+            if (json.errorMessage !== undefined) 
+            {
+                throw new Error(json.errorMessage);
+            }
+            throw new Error("Invalid server response.");
+        } catch (error) {
+            throw new Error("Upload to PiPedal server failed. " + getErrorMessage(error));
+        }
+    }
     uploadUserFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
         let result = new Promise<string>((resolve, reject) => {
             try {

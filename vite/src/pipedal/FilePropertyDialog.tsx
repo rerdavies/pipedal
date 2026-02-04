@@ -21,8 +21,6 @@
 import React from 'react';
 import { createStyles } from './WithStyles';
 
-import Tone3000Dialog from './Tone3000Dialog';
-
 import TextInfoDialog from './TextInfoDialog';
 import Tone3000HelpDialog from './Tone3000HelpDialog';
 import GuitarMLHelpDialog from './GuitarMlHelpDialog';
@@ -69,6 +67,7 @@ import OkCancelDialog from './OkCancelDialog';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
 import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
+import { Tone3000DownloadDialog } from './Tone3000Dialog';
 
 
 const ToobNamModelFileUrl = "http://two-play.com/plugins/toob-nam#modelFile";
@@ -705,7 +704,7 @@ export default withStyles(
             if (this.state.previousSelection == selectedItem) {
                 return;
             }
-            if (!this.isLicenseFile(selectedItem) && !this.isFolderArtwork(selectedItem)) {
+            if (!this.isTextFile(selectedItem) && !this.isFolderArtwork(selectedItem)) {
                 this.props.onApply(fileProperty, selectedItem);
             }
             this.setState({ previousSelection: selectedItem });
@@ -1071,9 +1070,7 @@ export default withStyles(
         handleTone3000Dialog(e: React.MouseEvent<HTMLButtonElement>) {
             e.stopPropagation();
             e.preventDefault();
-
             this.setState({ openTone3000Dialog: true });
-
         }
 
 
@@ -1743,14 +1740,13 @@ export default withStyles(
                             )
                         }
                         {this.state.openTone3000Dialog && (
-                            <Tone3000Dialog
-                                open={this.state.openTone3000Dialog}
-                                onCancel={() => this.setState({ openTone3000Dialog: false })}
-                                onDownload={(toneUrl: string) => {
-                                    alert("Donload tone url: " + toneUrl);
+                            <Tone3000DownloadDialog
+                                onClose={() => this.setState({ openTone3000Dialog: false })}
+                                downloadPath={this.state.currentDirectory}
+                                onDownloadComplete={() => {
                                     this.setState({ openTone3000Dialog: false });
-                                }
-                                }
+                                    this.requestFiles(this.state.navDirectory);
+                                }}
                             />
                         )}
                         {this.state.openTone3000Help && (
@@ -1774,13 +1770,9 @@ export default withStyles(
                     </DialogEx>
                 );
         }
-        isLicenseFile(fileName: string) {
+        isTextFile(fileName: string) {
             let extension = pathExtension(fileName);
             if (extension === ".txt" || extension === ".md") {
-                return true;
-            }
-            let fileNameOnly = pathFileNameOnly(fileName);
-            if (fileNameOnly.toUpperCase() === "LICENSE" || fileNameOnly.toUpperCase() === "README") {
                 return true;
             }
             return false;
@@ -1801,7 +1793,7 @@ export default withStyles(
                 this.requestFiles(this.state.selectedFile);
                 this.setState({ navDirectory: this.state.selectedFile });
             } else {
-                if (this.isLicenseFile(this.state.selectedFile)) {
+                if (this.isTextFile(this.state.selectedFile)) {
                     this.handleShowTextFile(this.state.selectedFile);
                 } else {
                     this.props.onOk(this.props.fileProperty, this.state.selectedFile);

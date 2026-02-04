@@ -20,6 +20,7 @@
 
 
 import React, { SyntheticEvent } from 'react';
+import './TextInfoDialog.css';
 import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
@@ -27,7 +28,10 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, {defaultSchema} from 'rehype-sanitize';
 import rehypeExternalLinks from 'rehype-external-links'
+import remarkGfm from 'remark-gfm';
 import { PiPedalError } from './PiPedalError';
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -139,7 +143,6 @@ const TextInfoDialog = class extends ResizeResponsiveComponent<TextInfoDialogPro
                 onEnterKey={() => { this.props.onClose() }}
                 style={{ userSelect: "none" }}
             >
-
                 <div style={{ display: "flex", flexDirection: "column", flexWrap: "nowrap", width: "100%", height: "100%", overflow: "hidden" }}>
                     <div style={{ flex: "0 0 auto" }}>
                         <AppBar style={{
@@ -168,8 +171,14 @@ const TextInfoDialog = class extends ResizeResponsiveComponent<TextInfoDialogPro
                             display: "flex", flexDirection: "row", flexWrap: "nowrap", alignItems: "start",
                         }}>
                             <div style={{ flex: "1 1 0px" }} />
-                            <div style={{ flex: "1 1 auto",maxWidth: 650 }} >
-                                <ReactMarkdown   rehypePlugins={[[rehypeExternalLinks, {target: '_blank'}]]}>
+                            <div className="text-info-dialog-content" style={{ flex: "1 1 auto",maxWidth: 650 }} >
+                                <ReactMarkdown   rehypePlugins={
+                                    [
+                                        [remarkGfm],
+                                        [rehypeExternalLinks, {target: '_blank'}],
+                                        rehypeRaw,
+                                        [rehypeSanitize, defaultSchema]
+                                    ]}>
                                     {this.state.textFileContent}
                                 </ReactMarkdown>
                             </div>

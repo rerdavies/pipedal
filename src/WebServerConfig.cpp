@@ -40,6 +40,7 @@
 #include "util.hpp"
 #include "HtmlHelper.hpp"
 #include "WebServerMod.hpp"
+#include "Tone3000Download.hpp"
 
 #define OLD_PRESET_EXTENSION ".piPreset"
 #define PRESET_EXTENSION ".piPreset"
@@ -145,6 +146,11 @@ public:
             return false;
         }
         std::string segment = request_uri.segment(1);
+
+        if (segment == "tone3000Upload")
+        {
+            return true;
+        }
         if (segment == "downloadMediaFile")
         {
             return true;
@@ -186,10 +192,6 @@ public:
             return true;
         }
         else if (segment == "Thumbnail")
-        {
-            return true;
-        }
-        else if (segment == "Tone3000Auth")
         {
             return true;
         }
@@ -418,11 +420,11 @@ public:
             return true;
         }
         auto filename = path.stem();
-        if (filename == "LICENSE" || filename == "README") {
+        if (filename == "LICENSE" || filename == "README")
+        {
             return true;
         }
         return false;
-
     }
 
     virtual void get_response(
@@ -435,6 +437,44 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
+            if (segment == "tone3000Upload")
+            {
+
+                tone3000::Tone3000DownloadResult result;
+                try
+                {
+                    fs::path downloadPath = request_uri.query("path");
+                    if (downloadPath.empty())
+                    {
+                        throw std::runtime_error("Invalid query parameters.");
+                    }
+                    if (!this->model->IsInUploadsDirectory(downloadPath) || HasDotDot(downloadPath))
+                    {
+                        throw std::runtime_error("Invalid path.");
+                    }
+                    std::string downloadUrl = request_uri.query("url");
+                    uri downloadUri{downloadUrl};
+                    if (!downloadUri.authority().ends_with(".tone3000.com"))
+                    {
+                        throw std::runtime_error("Invalid Tone3000 URL address.");
+                    }
+                    tone3000::DownloadTone3000Bundle(downloadPath, downloadUrl);
+                }
+                catch (const std::exception &e)
+                {
+                    result = tone3000::Tone3000DownloadResult(e);
+                }
+                std::ostringstream os;
+                json_writer writer(os);
+                writer.write(&result);
+                std::string strResult = os.str();
+
+                res.set(HttpField::content_type,"application/json");
+                res.set(HttpField::cache_control, "no-cache");
+                res.setBody(strResult);
+
+                return;
+            }
             if (segment == "downloadMediaFile")
             {
                 fs::path path = request_uri.query("path");
@@ -765,19 +805,7 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "Tone3000Auth")
-            {
-                // https://www.tone3000.com/api/v1/auth?redirect_url=http://10.0.0.151:8080/var/Tone3000Auth&otp_only=true
-                std::string apiKey = request_uri.query("api_key");
-
-                model->SetTone3000Auth(apiKey);
-
-                res.set(HttpField::content_type, "application/json");
-                res.set(HttpField::cache_control, "no-cache");
-
-                res.setBody("\"OK\"");
-            }
-            else if (segment == "uploadPluginPresets")
+            if (segment == "uploadPluginPresets")
             {
                 PluginPresets presets;
                 fs::path filePath = req.get_body_temporary_file();

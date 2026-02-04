@@ -245,7 +245,7 @@ std::string HtmlHelper::Rfc5987EncodeFileName(const std::string &name)
 
 #define MAX_FILE_NAME_LENGHT 96
 
-const std::string SF_SPECIALS = " <>@;:\"\'/[]?=";
+const std::string SF_SPECIALS = " <>@;:\"\'/[]?=+";
 
 std::string HtmlHelper::SafeFileName(const std::string &name)
 {

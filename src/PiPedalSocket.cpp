@@ -78,6 +78,21 @@ JSON_MAP_BEGIN(RequestBankPresetsBody)
 JSON_MAP_REFERENCE(RequestBankPresetsBody, bankInstanceId)
 JSON_MAP_END()
 
+
+class DownloadTone3000Body {
+public:
+    int64_t handle_;
+    std::string tone3000DownloadUrl_;
+
+    DECLARE_JSON_MAP(DownloadTone3000Body);
+};
+
+JSON_MAP_BEGIN(DownloadTone3000Body)
+JSON_MAP_REFERENCE(DownloadTone3000Body, handle)
+JSON_MAP_REFERENCE(DownloadTone3000Body, tone3000DownloadUrl)
+JSON_MAP_END()
+
+
 class PathPatchPropertyChangedBody
 {
 public:
@@ -1494,10 +1509,6 @@ public:
             pReader->read(&instanceId);
             uint64_t result = model.DeleteBank(this->clientId, instanceId);
             this->Reply(replyTo, "deleteBankItem", result);
-        } else if (message == "getHasTone3000Auth") 
-        {
-            bool result = model.HasTone3000Auth();
-            this->Reply(replyTo, "getHasTone3000Auth", result);
         }
         else if (message == "renameBank")
         {
@@ -1848,6 +1859,21 @@ public:
             auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
             this->Reply(replyTo,"copyPresetsToBank",result);
         }
+        else if (message == "downloadModelsFromTone3000")
+        {
+            struct DownloadModelsFromTone3000Body {
+                std::string downloadPath_;
+                std::string tone3000Url_;
+            };
+            DownloadModelsFromTone3000Body args;
+            pReader->read(&args);
+            auto result = this->model.DownloadModelsFromTone3000(
+                this->clientId,
+                args.downloadPath_,
+                args.tone3000Url_
+            );
+            this->Reply(replyTo,"downloadModelsFromTone3000",result);
+        }
         else
         {
             Lv2Log::error("Unknown message received: %s", message.c_str());
@@ -1963,10 +1989,6 @@ private:
         catch (const std::exception &ignored)
         {
         }
-    }
-    virtual void OnTone3000AuthChanged(bool value) 
-    {
-        Send("onTone3000AuthChanged", value);
     }
 
     virtual void OnErrorMessage(const std::string &message)

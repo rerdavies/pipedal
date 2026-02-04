@@ -44,6 +44,7 @@
 #include "AtomConverter.hpp"
 #include "FileBrowserFilesFeature.hpp"
 #include <string.h>
+#include "util.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -375,7 +376,6 @@ void Storage::Initialize()
     LoadPluginPresetIndex();
     LoadBankIndex();
     LoadCurrentBank();
-    LoadTone3000Auth();
     try
     {
         LoadChannelSelection();
@@ -434,10 +434,6 @@ std::filesystem::path Storage::GetCurrentPresetPath() const
     return this->dataRoot / "currentPreset.json";
 }
 
-std::filesystem::path Storage::GetTone3000AuthPath() const
-{
-    return this->dataRoot / "tone3000.json";
-}
 
 std::filesystem::path Storage::GetChannelSelectionFileName()
 {
@@ -2139,13 +2135,13 @@ static void AddFilesToResult(
                     if (match && !name.starts_with("."))
                     {
                         resultFiles.push_back(
-                            FileEntry(path, name, false, false));
+                            FileEntry(path, safeFilenameToString(name), false, false));
                     }
                 }
             }
             else if (dir_entry.is_directory())
             {
-                resultFiles.push_back(FileEntry{path, name, true, fs::is_symlink(path)});
+                resultFiles.push_back(FileEntry{path, safeFilenameToString(name), true, fs::is_symlink(path)});
             }
         }
     }
@@ -2325,7 +2321,10 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
             {
                 rootModDirectory = modDirectoryInfo;
                 modDirectoryPath = uploadsDirectory / modDirectoryInfo->pipedalPath;
-                result.breadcrumbs_.push_back({modDirectoryPath.string(), modDirectoryInfo->displayName});
+                result.breadcrumbs_.push_back({
+                    modDirectoryPath.string(), 
+                    (modDirectoryInfo->displayName)}
+                );
                 break;
             }
         }
@@ -2335,7 +2334,9 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         if (IsSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
         {
             modDirectoryPath = uploadsDirectory / fileProperty.directory();
-            result.breadcrumbs_.push_back({modDirectoryPath.string(), fs::path(fileProperty.directory()).filename().string()});
+            result.breadcrumbs_.push_back({
+                modDirectoryPath.string(), 
+                safeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
         }
         else
         {
@@ -2360,7 +2361,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         while (iRp != rp.end())
         {
             cumulativePath /= (*iRp);
-            result.breadcrumbs_.push_back({cumulativePath, *iRp});
+            result.breadcrumbs_.push_back({cumulativePath, safeFilenameToString(*iRp)});
             ++iRp;
         }
     }
@@ -2450,7 +2451,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
         while (iAbsolutePath != fsAbsolutePath.end())
         {
             cumulativePath /= (*iAbsolutePath);
-            result.breadcrumbs_.push_back({cumulativePath.string(), iAbsolutePath->string()});
+            result.breadcrumbs_.push_back({cumulativePath.string(), safeFilenameToString(iAbsolutePath->string())});
             ++iAbsolutePath;
         }
     }
@@ -2978,46 +2979,7 @@ const PluginPresetIndex &Storage::GetPluginPresetIndex()
     return pluginPresetIndex;
 }
 
-void Storage::LoadTone3000Auth()
-{
-    fs::path path = GetTone3000AuthPath();
-    try
-    {
-        if (!fs::exists(path))
-        {
-            this->tone3000Auth = "";
-            return;
-        }
-        std::ifstream s(path);
-        json_reader reader(s);
-        reader.read(&(this->tone3000Auth));
-    }
-    catch (const std::exception &e)
-    {
-        Lv2Log::error("Failed to load tone3000Auth: %s", e.what());
-    }
-}
 
-void Storage::SetTone3000Auth(const std::string &apiKey)
-{
-    if (tone3000Auth != apiKey)
-    {
-        tone3000Auth = apiKey;
-
-        pipedal::ofstream_synced os(this->GetTone3000AuthPath());
-        if (!os.is_open())
-        {
-            Lv2Log::error("Failed to open Tone3000 auth file for writing.");
-            return;
-        }
-        json_writer writer(os);
-        writer.write(apiKey);
-    }
-}
-std::string Storage::GetTone3000Auth() const
-{
-    return tone3000Auth;
-}
 
 std::filesystem::path Storage::FromAbstractPathString(const std::string &stringPath)
 {

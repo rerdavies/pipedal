@@ -51,12 +51,13 @@ namespace pipedal
     class Updater;
     class AvahiService;
     class Lv2PluginState;
+    class Tone3000Downloader;
 
     class IPiPedalModelSubscriber
     {
     public:
         using ptr = std::shared_ptr<IPiPedalModelSubscriber>;
-        
+
         virtual int64_t GetClientId() = 0;
         virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
         virtual void OnItemUseModUiChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
@@ -97,8 +98,6 @@ namespace pipedal
         virtual void OnHasWifiChanged(bool hasWifi) = 0;
         virtual void OnAlsaSequencerConfigurationChanged(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
         virtual void Close() = 0;
-        virtual void OnTone3000AuthChanged(bool value) = 0;
-
     };
 
     class HotspotManager;
@@ -113,8 +112,9 @@ namespace pipedal
         using NetworkChangedListener = std::function<void(void)>;
 
     private:
-        PedalboardItem* GetPedalboardItemForFileProperty(const UiFileProperty& fileProperty);
+        PedalboardItem *GetPedalboardItemForFileProperty(const UiFileProperty &fileProperty);
 
+        std::shared_ptr<Tone3000Downloader> tone3000Downloader;
         void CancelAudioRetry();
         clock::time_point lastRestartTime = clock::time_point::min();
         int audioRestartRetries = 0;
@@ -207,7 +207,7 @@ namespace pipedal
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
         void FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State);
-        void UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardItem*pedalboardItem);
+        void UpdateDefaults(SnapshotValue &snapshotValue, const PedalboardItem *pedalboardItem);
         void UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(Pedalboard *pedalboard);
@@ -232,6 +232,7 @@ namespace pipedal
         IPiPedalModelSubscriber *GetNotificationSubscriber(int64_t clientId);
         std::atomic<bool> closed = false;
         bool SyncLv2State();
+
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
         virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
@@ -241,7 +242,7 @@ namespace pipedal
         virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) override;
         virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
-        virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) override;
+        virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex, int64_t snapshotRequestId) override;
         virtual void OnAlsaDriverTerminatedAbnormally() override;
         virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) override;
         virtual void OnAlsaSequencerDeviceRemoved(int client) override;
@@ -267,8 +268,7 @@ namespace pipedal
         PiPedalConfiguration configuration;
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
-        UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId,const std::string&patchPropertyUri);
-
+        UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId, const std::string &patchPropertyUri);
 
     public:
         PiPedalModel();
@@ -280,7 +280,7 @@ namespace pipedal
             Decrease
         };
 
-        Storage&GetStorage() { return storage; }
+        Storage &GetStorage() { return storage; }
         bool GetHasWifi();
 
         void NextBank(Direction direction = Direction::Increase);
@@ -288,6 +288,15 @@ namespace pipedal
         void NextPreset(Direction direction = Direction::Increase);
         void PreviousPreset() { NextPreset(Direction::Decrease); }
 
+        int64_t DownloadModelsFromTone3000(
+            int64_t clientId,
+            const std::string &downloadPath,
+            const std::string &tone3000Url);
+
+        void CancelTone3000Download(
+            int64_t clientId,
+            int64_t downloadHandle
+        );
         void RequestShutdown(bool restart);
 
         virtual PostHandle Post(PostCallback &&fn);
@@ -323,7 +332,7 @@ namespace pipedal
         void SetRestartListener(std::function<void(void)> &&listener);
         void OnLv2PluginsChanged();
         void SetOnboarding(bool value);
-        std::map<std::string,std::string> GetWifiRegulatoryDomains();
+        std::map<std::string, std::string> GetWifiRegulatoryDomains();
 
         void UpdateDnsSd();
 
@@ -336,7 +345,7 @@ namespace pipedal
 
         const PluginHost &GetPluginHost() const { return pluginHost; }
         PluginHost &GetPluginHost() { return pluginHost; }
-        
+
         Pedalboard GetCurrentPedalboardCopy()
         {
             std::lock_guard<std::recursive_mutex> guard(mutex);
@@ -380,7 +389,6 @@ namespace pipedal
         void SaveCurrentPreset(int64_t clientId);
         int64_t SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId = -1);
         int64_t SavePluginPresetAs(int64_t instanceId, const std::string &name);
-
 
         void LoadPreset(int64_t clientId, int64_t instanceId);
         bool UpdatePresets(int64_t clientId, const PresetIndex &presets);
@@ -472,8 +480,8 @@ namespace pipedal
         void DeleteSampleFile(const std::filesystem::path &fileName);
         std::string CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty);
         std::string RenameFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty);
-        std::string CopyFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty,bool overwrite);
-        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty,const std::string&selectedPath);
+        std::string CopyFilePropertyFile(const std::string &oldRelativePath, const std::string &newRelativePath, const UiFileProperty &uiFileProperty, bool overwrite);
+        FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty, const std::string &selectedPath);
 
         bool IsInUploadsDirectory(const std::string &path);
 
@@ -483,14 +491,11 @@ namespace pipedal
         bool LoadCurrentPedalboard();
 
         void MoveAudioFile(
-            const std::string & path, 
-            int32_t from, 
+            const std::string &path,
+            int32_t from,
             int32_t to);
 
-        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title, const std::string&iconColor);
-
-        void SetTone3000Auth(const std::string &apiKey);
-        bool HasTone3000Auth() const;
+        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title, const std::string &iconColor);
 
         void SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId);
 

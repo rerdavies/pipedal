@@ -75,7 +75,6 @@ private:
     BankIndex bankIndex;
     BankFile currentBank;
     PluginPresetIndex pluginPresetIndex;
-    std::string tone3000Auth;
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
@@ -90,7 +89,6 @@ private:
     std::filesystem::path GetChannelSelectionFileName();
     std::filesystem::path GetAlsaSequencerConfigurationFileName();
     std::filesystem::path GetCurrentPresetPath() const;
-    std::filesystem::path GetTone3000AuthPath() const;
 
     void LoadBankIndex();
     void SaveBankIndex();
@@ -267,9 +265,6 @@ public:
         bool overwrite = false);
     FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty,const std::filesystem::path&selectedPath);
 
-    void LoadTone3000Auth();
-    void SetTone3000Auth(const std::string&apiKey);
-    std::string GetTone3000Auth() const;
 
     std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
     int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);

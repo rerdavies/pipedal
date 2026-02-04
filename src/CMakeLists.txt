@@ -204,6 +204,10 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+
+    Tone3000Download.cpp Tone3000Download.hpp
+    Tone3000Downloader.cpp Tone3000Downloader.hpp
+
     CrashGuard.cpp CrashGuard.hpp
     ModTemplateGenerator.cpp ModTemplateGenerator.hpp
     WebServerMod.cpp WebServerMod.hpp
@@ -264,6 +268,7 @@ set (PIPEDAL_SOURCES
     CpuGovernor.cpp CpuGovernor.hpp
     GovernorSettings.cpp GovernorSettings.hpp
     WebServer.cpp WebServer.hpp pch.h Uri.cpp Uri.hpp
+
 
     RequestHandler.hpp 
     Scratch.cpp PluginHost.hpp PluginHost.cpp

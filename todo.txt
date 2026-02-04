@@ -1,4 +1,7 @@
-
+Tooltip on File Property Select: add to release notes.
+sAFEfILEnAMES: RENAME, &C. Safe bank names? 
+NEW BANK
+WINDOW SIZE CALCUALTIONS ARE WRONG ON LINUX HIDEF DISPLAYS.
 
 ls 
 Carla Project icons.

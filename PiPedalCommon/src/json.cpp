@@ -575,7 +575,7 @@ void json_reader::skip_object()
         }
         skip_string(); // name.
         consume(':');
-        skip_object();
+        skip_property();
         if (peek() == ',')
         {
             consume(',');

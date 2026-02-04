@@ -1,0 +1,44 @@
+<html>
+
+<head>
+    <title>Test Tone3000 Select</title>
+
+    <script>
+        window.addEventListener("message", (event) => {
+            localStorage.setItem("t3000popupX", event.data.popupX);
+            localStorage.setItem("t3000popupY", event.data.popupY);
+            localStorage.setItem("t3000popupWidth", event.data.popupWidth);
+            localStorage.setItem("t3000popupHeight", event.data.popupHeight);
+            alert("Message from popup:\n\n" +
+                JSON.stringify(event.data));
+        });
+
+        var popup = null;
+        function onPopupClick() {
+            let savedWidth = localStorage.getItem("t3000popupWidth") ?? window.innerWidth *0.8;
+            let  savedHeight = localStorage.getItem("t3000popupHeight") ?? window.innerHeight *0.8;
+            let  savedX = localStorage.getItem("t3000popupX") || 40;
+            let  savedY = localStorage.getItem("t3000popupY") || 40;
+
+            if (savedX < 0) savedX = 0;
+            if (savedY < 0) savedY = 0;
+            if (savedWidth < 640) savedWidth = 640;
+            if (savedHeight < 480) savedHeight = 480;
+
+            let popupWin =
+                window.open(
+                    "https://www.tone3000.com/api/v1/select?app_id=pipedal_app&redirect_url=http://localhost:5173/public/handleTone3000download.html",
+                    "tone3000SelectPopup",
+                    `screenX=${savedX},screenY=${savedY},innerWidth=${savedWidth},innerHeight=${savedHeight},scrollbars=yes`
+                );
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Test Tone3000 Select Page</h1>
+    <p>This is a test page for Tone3000 select functionality.</p>
+    <Button onclick="onPopupClick()">Open Tone 3000</Button>
+</body>
+
+</html>

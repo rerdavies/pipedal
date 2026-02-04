@@ -46,6 +46,7 @@
 #include "DummyAudioDriver.hpp"
 #include "AudioFiles.hpp"
 #include "CrashGuard.hpp"
+#include "Tone3000Downloader.hpp"
 
 #ifndef NO_MLOCK
 #include <sys/mman.h>
@@ -135,9 +136,14 @@ void PiPedalModel::Close()
     std::unique_ptr<AudioHost> oldAudioHost;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex);
+
         if (closed)
         {
             return;
+        }
+        if (tone3000Downloader)
+        {
+            tone3000Downloader->Close();
         }
         closed = true;
 
@@ -224,6 +230,38 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     this->jackServerSettings = storage.GetJackServerSettings();
 #endif
 }
+
+
+int64_t PiPedalModel::DownloadModelsFromTone3000(
+    int64_t clientId,
+    const std::string &downloadPath,
+    const std::string &tone3000Url)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+
+    if (!tone3000Downloader)
+    {
+        tone3000Downloader = Tone3000Downloader::Create();
+    }
+    return tone3000Downloader->RequestDownload(
+        downloadPath,
+        tone3000Url
+    );
+}
+
+void PiPedalModel::CancelTone3000Download(
+    int64_t clientId,
+    int64_t downloadHandle
+)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    
+    if (tone3000Downloader)
+    {
+        tone3000Downloader->CancelDownload(downloadHandle);
+    }
+}
+
 
 void PiPedalModel::LoadLv2PluginInfo()
 {
@@ -3287,23 +3325,6 @@ void PiPedalModel::SetPedalboardItemTitle(int64_t instanceId, const std::string 
     // no need to reload the pedalboard, but we do need to notify subscribers.
     this->SetPresetChanged(-1, true);
     this->FirePedalboardChanged(-1, false);
-}
-
-void PiPedalModel::SetTone3000Auth(const std::string &apiKey)
-{
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    storage.SetTone3000Auth(apiKey);
-
-    std::vector<IPiPedalModelSubscriber::ptr> t{subscribers.begin(), subscribers.end()};
-    bool hasAuth = apiKey != "";
-    for (auto &subscriber : t)
-    {
-        subscriber->OnTone3000AuthChanged(hasAuth);
-    }
-}
-bool PiPedalModel::HasTone3000Auth() const
-{
-    return storage.GetTone3000Auth() != "";
 }
 
 std::vector<PresetIndexEntry> PiPedalModel::RequestBankPresets(int64_t bankInstanceId)
