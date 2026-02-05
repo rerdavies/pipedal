@@ -24,6 +24,7 @@
 #include "json.hpp"
 #include "viewstream.hpp"
 #include "PiPedalVersion.hpp"
+#include "Tone3000Downloader.hpp"
 #include <atomic>
 #include <limits>
 #include "Lv2Log.hpp"
@@ -45,6 +46,18 @@
 
 using namespace std;
 using namespace pipedal;
+
+class DownloadModelsFromTone3000Body {
+public:
+    std::string downloadPath_;
+    std::string tone3000Url_;
+    DECLARE_JSON_MAP(DownloadModelsFromTone3000Body);
+};
+JSON_MAP_BEGIN(DownloadModelsFromTone3000Body)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadPath)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, tone3000Url)
+JSON_MAP_END()
+
 
 class CopyPresetsToBankBody {
     public: 
@@ -90,6 +103,32 @@ public:
 JSON_MAP_BEGIN(DownloadTone3000Body)
 JSON_MAP_REFERENCE(DownloadTone3000Body, handle)
 JSON_MAP_REFERENCE(DownloadTone3000Body, tone3000DownloadUrl)
+JSON_MAP_END()
+
+class Tone3000DownloadStartedBody {
+public:
+    int64_t handle_;
+    std::string title_;
+
+    DECLARE_JSON_MAP(Tone3000DownloadStartedBody);
+};
+
+JSON_MAP_BEGIN(Tone3000DownloadStartedBody)
+JSON_MAP_REFERENCE(Tone3000DownloadStartedBody, handle)
+JSON_MAP_REFERENCE(Tone3000DownloadStartedBody, title)
+JSON_MAP_END()
+
+class Tone3000DownloadErrorBody {
+public:
+    int64_t handle_;
+    std::string errorMessage_;
+
+    DECLARE_JSON_MAP(Tone3000DownloadErrorBody);
+};
+
+JSON_MAP_BEGIN(Tone3000DownloadErrorBody)
+JSON_MAP_REFERENCE(Tone3000DownloadErrorBody, handle)
+JSON_MAP_REFERENCE(Tone3000DownloadErrorBody, errorMessage)
 JSON_MAP_END()
 
 
@@ -1861,10 +1900,6 @@ public:
         }
         else if (message == "downloadModelsFromTone3000")
         {
-            struct DownloadModelsFromTone3000Body {
-                std::string downloadPath_;
-                std::string tone3000Url_;
-            };
             DownloadModelsFromTone3000Body args;
             pReader->read(&args);
             auto result = this->model.DownloadModelsFromTone3000(
@@ -1873,6 +1908,11 @@ public:
                 args.tone3000Url_
             );
             this->Reply(replyTo,"downloadModelsFromTone3000",result);
+        } else if (message == "cancelTone3000Download") 
+        {
+            int64_t handle = -1;
+            pReader->read(&handle);
+            model.CancelTone3000Download(clientId,handle);
         }
         else
         {
@@ -1995,6 +2035,33 @@ private:
     {
         Send("onErrorMessage", message);
     }
+    
+    virtual void OnTone3000DownloadStarted(int64_t handle, const std::string &title) override
+    {
+        Tone3000DownloadStartedBody body;
+        body.handle_ = handle;
+        body.title_ = title;
+        Send("onTone3000DownloadStarted", body);
+    }
+    
+    virtual void OnTone3000DownloadProgress(const Tone3000DownloadProgress &progress) override
+    {
+        Send("onTone3000DownloadProgress", progress);
+    }
+    
+    virtual void OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath) override
+    {
+        Send("onTone3000DownloadComplete", resultPath);
+    }
+    
+    virtual void OnTone3000DownloadError(int64_t handle, const std::string &errorMessage) override
+    {
+        Tone3000DownloadErrorBody body;
+        body.handle_ = handle;
+        body.errorMessage_ = errorMessage;
+        Send("onTone3000DownloadError", body);
+    }
+    
     // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
     // {
     //     PatchPropertyChangedBody body;
@@ -2376,7 +2443,7 @@ public:
     }
     virtual std::shared_ptr<SocketHandler> CreateHandler(const uri &request)
     {
-        return std::make_shared<PiPedalSocketHandler>(model);
+        return std::shared_ptr<PiPedalSocketHandler>(new PiPedalSocketHandler(model));
     }
 };
 

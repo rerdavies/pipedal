@@ -47,6 +47,7 @@ import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 import { getDefaultModGuiPreference } from './ModGuiHost';
+import Tone3000DownloadProgress from './Tone3000DownloadProgress';
 
 export enum State {
     Loading,
@@ -505,6 +506,8 @@ export class PiPedalModel //implements PiPedalModel
     hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
 
+    onTone3000DownloadCompleteEvent: ObservableEvent<string> = new ObservableEvent<string>();
+
     ui_plugins: ObservableProperty<UiPlugin[]>
         = new ObservableProperty<UiPlugin[]>([]);
     state: ObservableProperty<State> = new ObservableProperty<State>(State.Loading);
@@ -549,6 +552,9 @@ export class PiPedalModel //implements PiPedalModel
             ]
         );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
+
+    tone3000Downloading : ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+    tone3000DownloadProgress : ObservableProperty<Tone3000DownloadProgress | null> = new ObservableProperty<Tone3000DownloadProgress | null>(null);
 
     uiPluginsByUri: Map<string, UiPlugin> = new Map<string, UiPlugin>();
 
@@ -669,6 +675,18 @@ export class PiPedalModel //implements PiPedalModel
                 });
         } catch (error) {   
             this.showAlert(getErrorMessage(error));
+        }
+    }
+    cancelTone3000Download(): void {
+        let downloadProgress = this.tone3000DownloadProgress.get();
+        if (downloadProgress === null) {
+            return;
+        }
+        if (downloadProgress.handle !== -1) {
+            if (!this.webSocket) {
+                return;
+            }
+            this.webSocket.send("cancelTone3000Download",downloadProgress.handle);
         }
     }
 
@@ -923,6 +941,22 @@ export class PiPedalModel //implements PiPedalModel
             let hasWifi = body as boolean;
             this.hasWifiDevice.set(hasWifi);
         }
+        else if (message === "onTone3000DownloadStarted") {
+            let { handle, title } = body as { handle: number, title: string };
+            this.onTone3000DownloadStarted(handle, title);
+        }
+        else if (message === "onTone3000DownloadProgress") {
+            // body is DownloadProgress
+            this.onTone3000DownloadProgress(body);
+        }
+        else if (message === "onTone3000DownloadComplete") {
+            let resultPath = body as string;
+            this.onTone3000DownloadComplete(resultPath);
+        }
+        else if (message === "onTone3000DownloadError") {
+            let { handle, errorMessage } = body as { handle: number, errorMessage: string };
+            this.onTone3000DownloadError(handle, errorMessage);
+        }
     }
 
 
@@ -1022,6 +1056,32 @@ export class PiPedalModel //implements PiPedalModel
         // this.webSocket?.reconnect(); // let the server do it for us.
 
     }
+    
+    // Tone3000 download notification handlers (stub implementations)
+    private onTone3000DownloadStarted(handle: number, title: string): void {
+        this.tone3000Downloading.set(true);
+    }
+
+    private onTone3000DownloadProgress(progress: Tone3000DownloadProgress): void {
+        this.tone3000Downloading.set(true);
+        this.tone3000DownloadProgress.set(progress);
+    }
+
+    private onTone3000DownloadComplete(resultPath: string): void {
+        this.tone3000Downloading.set(false);
+        this.onTone3000DownloadCompleteEvent.fire(resultPath);
+    }
+
+    private onTone3000DownloadError(handle: number, errorMessage: string): void {
+        console.error(`Tone3000 download error: handle=${handle}, error=${errorMessage}`);
+        this.tone3000Downloading.set(false);
+        this.onTone3000DownloadCompleteEvent.fire("");
+        
+        setTimeout(() => {
+            this.showAlert(errorMessage);
+        }, 100);
+    }
+    
     setError(message: string): void {
         this.errorMessage.set(message);
         this.setState(State.Error);
@@ -1083,6 +1143,9 @@ export class PiPedalModel //implements PiPedalModel
         }
         this.vuSubscriptions = [];
         this.monitorPatchPropertyListeners = [];
+
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
 
         if (this.isAndroidHosted()) {
             // if unexpected, go back to the device browser immediately.

@@ -30,8 +30,11 @@
 }
 
 .text-info-dialog-content #user-content-cc_img {
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
+    margin: 1px;
+    opacity: 0.6;
+    vertical-align: middle;
 }
 .text-info-dialog-content #user-content-tone3000_thumbnail {
     width: 130px;

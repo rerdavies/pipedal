@@ -63,6 +63,8 @@ public:
 
     static std::string generateEtag(const std::filesystem::path &path);
 
+    static std::string httpErrorString(int errorCode);
+
 };
 
 } // namespace.

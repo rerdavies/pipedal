@@ -52,6 +52,7 @@ import PresetSelector from './PresetSelector';
 import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
 import BankDialog from './BankDialog';
+import {Tone3000DownloadStaus as Tone3000DownloadStatus} from './Tone3000Dialog';
 
 import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo, wantsReloadingScreen } from './PiPedalModel';
 import ZoomedUiControl from './ZoomedUiControl'
@@ -1099,7 +1100,9 @@ export
                     </DialogActions>
                 </DialogEx>
 
-
+                {/* Status of Tone3000 download */}
+                <Tone3000DownloadStatus zindex={2000}/>
+                {/* Fatal error mask */}
                 <Modal open={this.state.displayState === State.Error}
                     aria-label="fatal-error"
                     aria-describedby="aria-error-text"

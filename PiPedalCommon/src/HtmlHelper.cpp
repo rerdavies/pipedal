@@ -21,6 +21,8 @@
 #include <sstream>
 #include <string>
 #include <cstring>
+#include "ss.hpp"
+#include <map>
 
 using namespace pipedal;
 
@@ -387,4 +389,22 @@ std::string HtmlHelper::generateEtag(const std::filesystem::path &path)
     auto fTime = std::filesystem::last_write_time(path);
     crc = crc64((uint8_t*)&fTime, sizeof(fTime));
     return std::to_string(crc);
+}
+
+static std::map<int,std::string> httpErrorStrings = 
+{
+    {200,"OK"},
+    
+
+};
+
+std::string HtmlHelper::httpErrorString(int errorCode)
+{
+    auto ff = httpErrorStrings.find(errorCode);
+    if (ff != httpErrorStrings.end())
+    {
+        return SS(errorCode << " " << ff->second);
+    }
+    return SS(errorCode);
+
 }

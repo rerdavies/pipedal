@@ -211,6 +211,7 @@ export default withStyles(
         constructor(props: FilePropertyDialogProps) {
             super(props);
 
+            this.handleTone3000DownloadComplete = this.handleTone3000DownloadComplete.bind(this);
 
             this.model = PiPedalModelFactory.getInstance();
 
@@ -560,15 +561,30 @@ export default withStyles(
 
         private requestScroll: boolean = false;
 
+        handleTone3000DownloadComplete(resultPath: string) {
+            if (resultPath === "") {
+                // unknown state. Just refresh anyway.
+                this.requestFiles(this.state.navDirectory);
+                return;
+            }
+            if (resultPath.startsWith(this.state.navDirectory)) {
+                this.setState({
+                    selectedFile: resultPath,
+                });
+                this.requestFiles(this.state.navDirectory);
+            }
+        }
         componentDidMount() {
             super.componentDidMount();
             this.mounted = true;
             this.requestFiles(this.state.navDirectory)
+            this.model.onTone3000DownloadCompleteEvent.addEventHandler(this.handleTone3000DownloadComplete);
             this.requestScroll = true;
         }
         componentWillUnmount() {
             this.stopAutoScroll();
             this.cancelProgressTimeout();
+            this.model.onTone3000DownloadCompleteEvent.removeEventHandler(this.handleTone3000DownloadComplete);
 
             super.componentWillUnmount();
             this.mounted = false;

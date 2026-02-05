@@ -33,6 +33,15 @@ import rehypeSanitize, {defaultSchema} from 'rehype-sanitize';
 import rehypeExternalLinks from 'rehype-external-links'
 import remarkGfm from 'remark-gfm';
 import { PiPedalError } from './PiPedalError';
+
+// Extend the default schema to allow target and rel attributes on anchor tags
+const extendedSchema = {
+    ...defaultSchema,
+    attributes: {
+        ...defaultSchema.attributes,
+        a: [...(defaultSchema.attributes?.a || []), 'target', 'rel']
+    }
+};
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 
@@ -175,9 +184,9 @@ const TextInfoDialog = class extends ResizeResponsiveComponent<TextInfoDialogPro
                                 <ReactMarkdown   rehypePlugins={
                                     [
                                         [remarkGfm],
-                                        [rehypeExternalLinks, {target: '_blank'}],
                                         rehypeRaw,
-                                        [rehypeSanitize, defaultSchema]
+                                        [rehypeSanitize, extendedSchema],
+                                        [rehypeExternalLinks, {target: '_blank'}]
                                     ]}>
                                     {this.state.textFileContent}
                                 </ReactMarkdown>

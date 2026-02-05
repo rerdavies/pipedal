@@ -204,7 +204,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
-
+    Tone3000DownloadProgress.cpp Tone3000DownloadProgress.hpp
     Tone3000Download.cpp Tone3000Download.hpp
     Tone3000Downloader.cpp Tone3000Downloader.hpp
 

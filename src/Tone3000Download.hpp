@@ -25,9 +25,12 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <optional>
 #include "json.hpp"
 #include <filesystem>
 #include <chrono>
+#include <functional>
+#include "Tone3000DownloadProgress.hpp"
 
 namespace pipedal
 {
@@ -59,7 +62,7 @@ namespace pipedal
         {
         private:
             std::string id_;
-            std::string avatar_url_;
+            std::optional<std::string> avatar_url_;
             std::string username_;
             std::string url_;
 
@@ -128,10 +131,13 @@ namespace pipedal
             DECLARE_JSON_MAP(Tone3000DownloadResult);
         };
 
-        extern void DownloadTone3000Bundle
+        extern std::string DownloadTone3000Bundle
         (
             const std::filesystem::path&destinationFolder,
-            const std::string &downloadUrl
+            const std::string &downloadUrl,
+            int64_t downloadHandle,
+            std::function<void(const Tone3000DownloadProgress&progress)> progressCallback,
+            std::function<bool()> isCancelled
         );
     }
 

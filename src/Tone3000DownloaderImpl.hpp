@@ -30,6 +30,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <vector>
+#include <functional>
 
 namespace pipedal {
 
@@ -49,12 +50,21 @@ namespace pipedal {
         ) override;
 
         virtual void Close() override;
-        virtual DownloadProgress GetDownloadStatus() override;
+        virtual Tone3000DownloadProgress GetDownloadStatus() override;
 
     private:
         Listener *listener = nullptr;
 
         void ThreadProc();
+        
+        // Performs the actual download with cancellation support
+        std::string PerformDownload(
+            const std::string &downloadPath,
+            const std::string &downloadUrl,
+            int64_t downloadHandle,
+            std::function<bool()> isCancelled
+        );
+        
         struct DownloadRequest {
             std::atomic<bool> cancelled = false;
             handle_t handle;
@@ -68,8 +78,8 @@ namespace pipedal {
 
         std::vector<std::shared_ptr<DownloadRequest>> requestQueue;
 
-        DownloadProgress fgDownloadProgress;
-        void bgUpdateDownloadProgress(const DownloadProgress &progress);
+        Tone3000DownloadProgress fgDownloadProgress;
+        void bgUpdateDownloadProgress(const Tone3000DownloadProgress &progress);
 
         std::shared_ptr<DownloadRequest> activeRequest;
 

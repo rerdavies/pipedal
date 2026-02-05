@@ -1,11 +1,15 @@
 import { JSX } from "@emotion/react/jsx-dev-runtime";
-import { PiPedalModel, getErrorMessage } from "./PiPedalModel";
+import { PiPedalModel, State, getErrorMessage } from "./PiPedalModel";
 import DialogEx from "./DialogEx";
-import DialogContent from "@mui/material/DialogContent";
-import DialogAction from "@mui/material/DialogActions";
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import LinearProgress from "@mui/material/LinearProgress";
+import Tone3000DownloadProgress from "./Tone3000DownloadProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogActions from "@mui/material/DialogActions";
+
 
 
 export type OnTone3000DownloadHandler = (tone3000DownloadUrl: string) => void;
@@ -24,7 +28,7 @@ export class Tone3000DownloadHandler {
 
             this.handleTone3000DownloadComplete();
 
-            await this.model.downloadModelsFromTone3000(tone3000DownloadUrl,this.downloadPath);
+            await this.model.downloadModelsFromTone3000(tone3000DownloadUrl, this.downloadPath);
             return;
         } catch (e) {
             this.handleTone3000DownloadError(getErrorMessage(e));
@@ -57,7 +61,7 @@ export class Tone3000DownloadHandler {
 
     private popupWindow: Window | null = null;
 
-    private appId: string = "pipedal_app";
+    private appId: string = "pipedal_app3";
     private redirectUrl(): string {
         let hostname = window.location.hostname;
         let port = window.location.port;
@@ -114,22 +118,26 @@ export class Tone3000DownloadHandler {
         this.stopTone3000DialogMonitor();
     }
 
-    private tone3000DialogInterval: number | undefined = undefined;
+    private tone3000DialogTimeout: number | undefined = undefined;
 
     private stopTone3000DialogMonitor() {
-        if (this.tone3000DialogInterval !== undefined) {
-            clearInterval(this.tone3000DialogInterval);
-            this.tone3000DialogInterval = undefined;
+        if (this.tone3000DialogTimeout !== undefined) {
+            clearTimeout(this.tone3000DialogTimeout);
+            this.tone3000DialogTimeout = undefined;
         }
     }
-    private startTone3000DialogMonitor() {
-        this.tone3000DialogInterval = setInterval(() => {
+    private startTone3000DialogMonitor(delay: number = 2000) {
+        this.stopTone3000DialogMonitor();
+        this.tone3000DialogTimeout = window.setTimeout(() => {
             if (this.popupWindow == null || this.popupWindow.closed) {
                 this.stopTone3000DialogMonitor();
                 this.popupWindow = null;
                 this.handleTone3000DialogClosed();
+                this.tone3000DialogTimeout = undefined;
+            } else {
+                this.startTone3000DialogMonitor(500);
             }
-        }, 500);
+        }, delay);
     }
     private downloadPath: string = "";
     private onClosedCallback: (() => void) | undefined = undefined;
@@ -151,13 +159,7 @@ export class Tone3000DownloadHandler {
         this.onDownloadStartedCallback = onDownloadStarted;
         this.onErrorCallback = onError;
 
-        fetch(TONE3000_PING_URL, { cache: "no-cache" })
-            .then((response) => {
-                if (!response.ok) {
-                    this.handleTone3000DownloadError(`Unable to connect to Tone3000: ${response.status}${response.statusText}`);
-                    return;
-                }
-
+        try {
                 // online
                 let popupWidth = Math.floor(window.innerWidth * 0.8);
                 let popupHeight = Math.floor(window.innerHeight * 0.8);
@@ -171,19 +173,28 @@ export class Tone3000DownloadHandler {
                         "popup",
                         `innerWidth=${popupWidth},innerHeight=${popupHeight},scrollbars=yes`
                     );
-                this.startTone3000DialogMonitor();
 
                 if (!this.popupWindow) {
                     console.error("Failed to open Tone3000 dialog popup window.");
                     this.handleTone3000DownloadError("Cannot open popup window.");
                     return;
                 }
-            })
-            .catch((error) => {
+                this.startTone3000DialogMonitor();
+                fetch(TONE3000_PING_URL, { method: "HEAD", cache: "no-cache" }).then(response => {
+                    if (!response.ok) {
+                        // offline
+                        this.handleTone3000DownloadError("Unable to connect to Tone3000 servers. An internet connection is required.");
+                    }
+                }).catch(error => {
+                    // offline
+                    this.handleTone3000DownloadError("Not online. Unable to connect to Tone3000 servers.");
+                });
+            }
+            catch (error) {
                 // offline
                 this.handleTone3000DownloadError("Not online. Unable to connect to Tone3000 servers.");
                 return;
-            });
+            };
 
     }
     public closeTone3000Dialog(): void {
@@ -226,8 +237,15 @@ export function Tone3000DownloadDialog(props: Tone3000DownloadDialogProps): JSX.
                 onDownloadComplete();
             }
         );
+        let onStateChanged = (state: State) => {
+            if (state !== State.Ready) {
+                onClose();
+            }
+        }
+        model.state.addOnChangedHandler(onStateChanged);
         return () => {
             model.closeTone3000DownloadDialog();
+            model.state.removeOnChangedHandler(onStateChanged);
         };
     });
     return (
@@ -239,23 +257,80 @@ export function Tone3000DownloadDialog(props: Tone3000DownloadDialogProps): JSX.
             onEnterKey={() => { }}
         >
             <DialogContent>
-                <Typography variant="body2">Downloading from Tone3000...</Typography>
+                <Typography style={{minWidth: 300, maxWidth: 300}} variant="body2">Downloading from Tone3000...</Typography>
                 {downloading &&
                     <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                         <LinearProgress style={{ marginTop: 16, flexGrow: 1 }} />
                     </div>
                 }
             </DialogContent>
-            <DialogAction>
+            <DialogActions  >
                 {!downloading && (
-                    <Button
+                    <Button variant="dialogSecondary"
                         onClick={() => {
                             onClose();
                         }}>
                         Cancel
                     </Button>
                 )}
-            </DialogAction>
+            </DialogActions>
         </DialogEx>
+    );
+}
+
+export function Tone3000DownloadStaus(
+    props: {
+        zindex: number;
+    }): JSX.Element {
+    const model = PiPedalModel.getInstance();
+    const [downloading, setDownloading] = useState<boolean>(false);
+    const [progress, setProgress] = useState<Tone3000DownloadProgress | null>(null);
+
+    useEffect(() => {
+        let onDownloadingChanged = (value: boolean) => {
+            setDownloading(value);
+        }
+        model.tone3000Downloading.addOnChangedHandler(onDownloadingChanged);
+
+        let onProgressChanged = (value: Tone3000DownloadProgress | null) => {
+            setProgress(value);
+        }
+        model.tone3000DownloadProgress.addOnChangedHandler(onProgressChanged);
+
+        return () => {
+            model.tone3000Downloading.removeOnChangedHandler(onDownloadingChanged);
+            model.tone3000DownloadProgress.removeOnChangedHandler(onProgressChanged);
+        }
+    })
+    let open = downloading && progress !== null && progress.title.length > 0;
+    if (model.state.get() !== State.Ready) {
+        open = false;
+    }
+    return (
+        <Dialog
+            open={open}
+            onClose={() => { /* Do nothing */ }}
+        >
+            <DialogTitle>Downloading from Tone3000</DialogTitle>
+            <DialogContent>
+                <Typography noWrap variant="body2">{progress?.title ?? "\u00A0"}</Typography>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <LinearProgress
+                        style={{ marginTop: 16, flexGrow: 1 }}
+                        variant={(progress?.total ?? 0) === 0 ? "indeterminate" : "determinate"}
+                        value={(progress && progress.total !== 0) ? progress.progress / progress.total * 100 : 0}
+                    />
+                </div>
+            </DialogContent>
+            <DialogActions>
+                <Button variant="dialogSecondary"
+                    onClick={() => {
+                        model.cancelTone3000Download();
+                    }}
+                >Cancel</Button>
+            </DialogActions>
+
+        </Dialog>
+
     );
 }

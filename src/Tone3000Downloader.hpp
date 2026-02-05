@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <cstdint>
+#include "Tone3000DownloadProgress.hpp"
 
 namespace pipedal {
 
@@ -33,19 +34,8 @@ namespace pipedal {
         Tone3000Downloader();
     public:
         using handle_t = int64_t;
-        static constexpr handle_t INVALID_HANDLE = (handle_t)(int64_t)-1;
-
 
         virtual ~Tone3000Downloader();
-
-        class DownloadProgress {
-        public:
-        private:
-            handle_t handle_ = INVALID_HANDLE;
-            std::string title_;
-            uint64_t progress_ = 0;
-            uint64_t total_ = 0;
-        };
 
         class Listener {
         public:
@@ -55,10 +45,16 @@ namespace pipedal {
                 const std::string &title
             ) = 0;
             virtual void OnTone3000Progress(
-                const DownloadProgress& downloadProgress
+                const Tone3000DownloadProgress& downloadProgress
             ) = 0;
             virtual void OnTone3000DownloadComplete(
-                handle_t handle
+                handle_t handle,
+                const std::string&resultPath
+            ) = 0;
+            
+            virtual void OnTone3000DownloadError(
+                handle_t handle,
+                const std::string &errorMessage
             ) = 0;
 
         };
@@ -79,6 +75,6 @@ namespace pipedal {
         ) = 0;
 
         virtual void Close() = 0;
-        virtual DownloadProgress GetDownloadStatus() = 0;
+        virtual Tone3000DownloadProgress GetDownloadStatus() = 0;
     };
 }

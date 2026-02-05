@@ -239,9 +239,26 @@ int64_t PiPedalModel::DownloadModelsFromTone3000(
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
+    // Validate the download path
+    std::filesystem::path path{downloadPath};
+    if (!IsInUploadsDirectory(downloadPath))
+    {
+        throw PiPedalException("Invalid path: not in uploads directory.");
+    }
+    
+    // Check for ".." in path components (security check)
+    for (const auto &component : path)
+    {
+        if (component == "..")
+        {
+            throw PiPedalException("Invalid path: contains '..' component.");
+        }
+    }
+
     if (!tone3000Downloader)
     {
         tone3000Downloader = Tone3000Downloader::Create();
+        tone3000Downloader->SetListener(this);
     }
     return tone3000Downloader->RequestDownload(
         downloadPath,
@@ -255,13 +272,49 @@ void PiPedalModel::CancelTone3000Download(
 )
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    
+
     if (tone3000Downloader)
     {
         tone3000Downloader->CancelDownload(downloadHandle);
     }
 }
 
+// Tone3000Downloader::Listener implementation
+void PiPedalModel::OnStartTone3000Download(int64_t handle, const std::string &title)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    for (auto subscriber : this->subscribers)
+    {
+        subscriber->OnTone3000DownloadStarted(handle, title);
+    }
+}
+
+void PiPedalModel::OnTone3000Progress(const Tone3000DownloadProgress &progress)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    for (auto subscriber : this->subscribers)
+    {
+        subscriber->OnTone3000DownloadProgress(progress);
+    }
+}
+
+void PiPedalModel::OnTone3000DownloadComplete(int64_t handle, const std::string&resultPath)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    for (auto subscriber : this->subscribers)
+    {
+        subscriber->OnTone3000DownloadComplete(handle,resultPath);
+    }
+}
+
+void PiPedalModel::OnTone3000DownloadError(int64_t handle, const std::string &errorMessage)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    for (auto subscriber : this->subscribers)
+    {
+        subscriber->OnTone3000DownloadError(handle, errorMessage);
+    }
+}
 
 void PiPedalModel::LoadLv2PluginInfo()
 {
@@ -317,7 +370,6 @@ void PiPedalModel::LoadLv2PluginInfo()
     }
     storage.SetPluginPresetIndexVersion(1);
 }
-
 void PiPedalModel::Load()
 {
     this->webRoot = configuration.GetWebRoot();

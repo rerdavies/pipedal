@@ -27,6 +27,9 @@
 #include <array>
 #include <ctime>
 #include "util.hpp"
+#include "Tone3000DownloadProgress.hpp"
+#include <thread>
+#include "HtmlHelper.hpp"
 
 using namespace pipedal;
 using namespace pipedal::tone3000;
@@ -75,6 +78,7 @@ JSON_MAP_END()
 
 static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
 
+static bool enableLogging = true;
 static std::string shellEscape(const std::string &input)
 {
     // Escape string for safe use in shell commands by using single quotes
@@ -117,57 +121,107 @@ static std::string getCurlErrorFromExitCode(int exitCode)
         return SS("Failed to download file (exit code: " << (exitCode / 256) << ")");
     }
 }
-static void downloadFile(const std::string &url, const fs::path &path)
+
+static void cancellableSleep(std::chrono::steady_clock::duration duration, std::function<bool()> &isCancelled)
+{
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    while (true)
+    {
+        if (std::chrono::steady_clock::now() - start >= duration)
+        {
+            break;
+        }
+        if (isCancelled())
+        {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
+
+static void downloadFile(
+    const std::string &url,
+    const fs::path &path,
+    std::function<bool()> &isCancelled)
 {
     // Create temporary file for HTTP status code
     TemporaryFile httpCodeFile{WEB_TEMP_DIR};
     fs::path httpCodePath = httpCodeFile.Path();
 
-    // Build curl command with error detection and proper escaping
-    std::ostringstream os;
-    os << "/usr/bin/curl -f -s -S -L --max-time 300 --max-filesize 104857600";
-    os << " -w '%{http_code}' -o ";
-    os << shellEscape(path.string());
-    os << " ";
-    os << shellEscape(url);
-    os << " > ";
-    os << shellEscape(httpCodePath.string());
+    TemporaryFile headersFile{WEB_TEMP_DIR};
+    fs::path headersFilePath = headersFile.Path();
 
-    std::string command = os.str();
-
-    // Execute curl command
-    int exitCode = std::system(command.c_str());
-
-    // Read HTTP status code
-    int httpCode = 0;
-    if (fs::exists(httpCodePath))
+    for (size_t retry = 0; retry < 10; ++retry)
     {
-        std::ifstream httpCodeStream(httpCodePath);
-        std::string httpCodeStr;
-        std::getline(httpCodeStream, httpCodeStr);
-        try
-        {
-            httpCode = std::stoi(httpCodeStr);
-        }
-        catch (...)
-        {
-            // If parsing fails, keep httpCode as 0
-        }
-    }
 
-    if (exitCode != 0)
-    {
-        if (exitCode == 22 * 256) // HTTP error
+        // Build curl command with error detection and proper escaping
+        std::ostringstream os;
+        os << "/usr/bin/curl -f -s -S -L --max-time 60 --retry 5 --retry-delay 1 --retry-max-time 10 --max-filesize 104857600";
+        os << " -w '%{http_code}' -o ";
+        os << shellEscape(path.string());
+        os << " -D " << shellEscape(headersFilePath);
+        os << " ";
+        os << shellEscape(url);
+        os << " > ";
+        os << shellEscape(httpCodePath.string());
+
+        std::string command = os.str();
+
+        // Execute curl command
+        int exitCode = std::system(command.c_str());
+
+        // Read HTTP status code
+        int httpCode = 0;
+        if (fs::exists(httpCodePath))
         {
-            throw std::runtime_error(
-                SS("Server was unabled to download the file. Http error: " << httpCode << " url: " << url));
+            std::ifstream httpCodeStream(httpCodePath);
+            std::string httpCodeStr;
+            std::getline(httpCodeStream, httpCodeStr);
+            try
+            {
+                httpCode = std::stoi(httpCodeStr);
+            }
+            catch (...)
+            {
+                // If parsing fails, keep httpCode as 0
+            }
+        }
+
+        if (exitCode != 0)
+        {
+            if (exitCode == 22 * 256) // HTTP error
+            {
+                std::ifstream headersStream(headersFilePath);
+                std::string headerStr;
+                while (std::getline(headersStream, headerStr))
+                {
+                    std::cout << headerStr << std::endl;
+                }
+                if (httpCode == 429 || httpCode == 403 || httpCode == 503)
+                {
+                    cancellableSleep(std::chrono::milliseconds(2000), isCancelled);
+                    if (isCancelled())
+                    {
+                        return;
+                    }
+                    continue;
+                }
+                throw std::runtime_error(
+                    SS("Server was unabled to download the file. Http error: " 
+                        << HtmlHelper::httpErrorString(httpCode)));
+            }
+            else
+            {
+                throw std::runtime_error(
+                    SS("Server was unable to download the file. "
+                       << getCurlErrorFromExitCode(exitCode)
+                       << " " << "url: " << url));
+            }
         }
         else
         {
-            throw std::runtime_error(
-                SS("Server was unable to download the file. "
-                   << getCurlErrorFromExitCode(exitCode)
-                   << " " << "url: " << url));
+            break;
         }
     }
 
@@ -177,7 +231,6 @@ static void downloadFile(const std::string &url, const fs::path &path)
         throw std::runtime_error("Downloaded file is empty or missing");
     }
 }
-
 
 static std::string mdSanitize(const std::string &str, const std::string &illegalCharacters = "")
 {
@@ -200,7 +253,6 @@ static std::string mdSanitize(const std::string &str, const std::string &illegal
     }
     return os.str();
 }
-
 
 static std::string mdDate(const tone3000_time_point &date_)
 {
@@ -323,54 +375,40 @@ namespace
 }
 
 static std::vector<LicenseInfo> licenses{
-    {
-        .key = "t3k",
-        .displayName = "t3k",
-        .url = "",
-        .licenseFlags = LicenseFlags::None
-    },
-    {
-        .key = "cc-by",
-        .displayName = "CC BY 4.0",
-        .url = "https://creativecommons.org/licenses/by/4.0/",
-        .licenseFlags = LicenseFlags::CcBy
-    },
-    {
-        .key = "cc-by-sa",
-        .displayName = "CC BY-SA 4.0",
-        .url = "https://creativecommons.org/licenses/by-sa/4.0/",
-        .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Sa
-    },
-    {
-        .key = "cc-by-nc",
-        .displayName = "CC BY-NC 4.0",
-        .url = "https://creativecommons.org/licenses/by-nc/4.0/",
-        .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nc
-    },
-    {
-        .key = "cc-by-nc-sa",
-        .displayName = "CC BY-NC-SA 4.0",
-        .url = "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-        .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nc | LicenseFlags::Sa
-    },
-    {
-        .key = "cc-by-nd",
-        .displayName = "CC BY-ND",
-        .url = "https://creativecommons.org/licenses/by-nd/4.0/",
-        .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nd
-    },
-    {
-        .key = "cc-by-nc-nd",
-        .displayName = "CC BY-NC-ND",
-        .url = "https://creativecommons.org/licenses/by-nc-nd/4.0/",
-        .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nc | LicenseFlags::Nd
-    },
+    {.key = "t3k",
+     .displayName = "T3K", 
+     .url = "licenses/t3k_license.html",
+     .licenseFlags = LicenseFlags::None},
+    {.key = "cc-by",
+     .displayName = "CC BY 4.0",
+     .url = "https://creativecommons.org/licenses/by/4.0/",
+     .licenseFlags = LicenseFlags::CcBy},
+    {.key = "cc-by-sa",
+     .displayName = "CC BY-SA 4.0",
+     .url = "https://creativecommons.org/licenses/by-sa/4.0/",
+     .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Sa},
+    {.key = "cc-by-nc",
+     .displayName = "CC BY-NC 4.0",
+     .url = "https://creativecommons.org/licenses/by-nc/4.0/",
+     .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nc},
+    {.key = "cc-by-nc-sa",
+     .displayName = "CC BY-NC-SA 4.0",
+     .url = "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+     .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nc | LicenseFlags::Sa},
+    {.key = "cc-by-nd",
+     .displayName = "CC BY-ND 4.0",
+     .url = "https://creativecommons.org/licenses/by-nd/4.0/",
+     .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nd},
+    {.key = "cc-by-nc-nd",
+     .displayName = "CC BY-NC-ND 4.0",
+     .url = "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+     .licenseFlags = LicenseFlags::CcBy | LicenseFlags::Nc | LicenseFlags::Nd},
     {
         .key = "cco",
         .displayName = "CC0",
         .url = "https://creativecommons.org/publicdomain/zero/1.0/",
         .licenseFlags = LicenseFlags::Cc | LicenseFlags::Cc0,
-        
+
     },
 };
 
@@ -391,92 +429,32 @@ static std::string mdLicenseIcon(LicenseFlags licenseFlag)
     std::ostringstream os;
     std::string url;
 
-    switch (licenseFlag) 
+    switch (licenseFlag)
     {
-        case LicenseFlags::Cc:
-            url = "img/cc.svg";
-            break;
-        case LicenseFlags::By:
-            url = "img/by.svg";
-            break;
-        case LicenseFlags::Sa:
-            url = "img/sa.svg";
-            break;
-        case LicenseFlags::Nc:
-            url = "img/nc.svg";
-            break;
-        case LicenseFlags::Nd:
-            url = "img/nd.svg";
-            break;
-        case LicenseFlags::Cc0:
-            url = "img/cc0.svg";
-            break;
+    case LicenseFlags::Cc:
+        url = "img/cc.svg";
+        break;
+    case LicenseFlags::By:
+        url = "img/by.svg";
+        break;
+    case LicenseFlags::Sa:
+        url = "img/sa.svg";
+        break;
+    case LicenseFlags::Nc:
+        url = "img/nc.svg";
+        break;
+    case LicenseFlags::Nd:
+        url = "img/nd.svg";
+        break;
+    case LicenseFlags::Cc0:
+        url = "img/cc0.svg";
+        break;
 
-        case LicenseFlags::None:
-            throw std::runtime_error("Invalid argument.");
+    case LicenseFlags::None:
+        throw std::runtime_error("Invalid argument.");
     }
     os << "<img id='cc_img' src='" << url << "'/>";
     return os.str();
-}
-static std::string mdLicense(const std::string &license)
-{
-    auto ff = licenseEnum.find(license);
-    LicenseInfo licenseInfo;
-    if (ff != licenseEnum.end())
-    {
-        licenseInfo = ff->second;
-    }
-    else
-    {
-        licenseInfo.displayName = license;
-    }
-
-    std::ostringstream os;
-
-    if (licenseInfo.licenseFlags != LicenseFlags::None) {
-        for (LicenseFlags licenseFlag: std::vector<LicenseFlags>{LicenseFlags::Cc, LicenseFlags::By, LicenseFlags::Cc0, LicenseFlags::Nc, LicenseFlags::Sa,  LicenseFlags::Nd})
-        {
-            if (licenseInfo.licenseFlags & licenseFlag) 
-            {
-                os << mdLicenseIcon(licenseFlag);
-            }
-        }
-        os << " ";
-    }
-
-    if (licenseInfo.url != "")
-    {
-        os << "<a target='_blank' rel='noopener noreferrer' href='" 
-            << licenseInfo.url
-               << "'>" << mdSanitize(licenseInfo.displayName) << "</a>";
-    }
-    else
-    {
-        os << mdSanitize(licenseInfo.displayName);
-    }
-    return os.str();
-}
-static std::map<std::string, std::string> platformEnumValues =
-    {
-        {"nam", "NAM"},
-        {"ir", "I/R"},
-        {"aida-x", "Aida X"},
-        {"aa-snapshot", "aa-snapshot"},
-        {"proteus", "Proteus"}};
-static std::string mdPlatform(const std::string &platform)
-{
-    return mdEnum(platform, platformEnumValues);
-}
-static std::string mdUser(const tone3000::Tone3000User &user)
-{
-    // clang-format off
-        std::ostringstream os;
-        os << 
-            "<a target='_blank' rel='noopener noreferrer' href='" 
-            << mdSanitize(user.url(),"'") 
-               << "'>" << mdSanitize(user.username()) << "</a>";
-        return os.str();
-    // clang-format on
 }
 
 static void mdEscapeString(std::ostream &f, const std::string &str)
@@ -502,6 +480,95 @@ static void mdEscapeString(std::ostream &f, const std::string &str)
         }
     }
 }
+
+static std::string mdHref(const std::string &url)
+{
+    std::ostringstream os;
+    os << '\'';
+    for (char c: url)
+    {
+        if (c == '\'')
+        {
+            continue;
+        }
+        os << c;
+    }
+    os << '\'';
+    return os.str();
+}
+static std::string mdLicense(const std::string &license)
+{
+    
+    auto ff = licenseEnum.find(license);
+    LicenseInfo licenseInfo;
+    if (ff != licenseEnum.end())
+    {
+        licenseInfo = ff->second;
+    }
+    else
+    {
+        licenseInfo.displayName = license;
+    }
+
+    std::ostringstream os;
+
+    if (licenseInfo.licenseFlags != LicenseFlags::None)
+    {
+        for (LicenseFlags licenseFlag : std::vector<LicenseFlags>{LicenseFlags::Cc, LicenseFlags::By, LicenseFlags::Cc0, LicenseFlags::Nc, LicenseFlags::Sa, LicenseFlags::Nd})
+        {
+            if (licenseInfo.licenseFlags & licenseFlag)
+            {
+                os << mdLicenseIcon(licenseFlag);
+            }
+        }
+        os << " ";
+    }
+
+    if (licenseInfo.url != "")
+    {
+        os << "<a href="
+           << mdHref(licenseInfo.url)
+           << " target='_blank' rel='noopener noreferrer' >" << mdSanitize(licenseInfo.displayName) << "</a>";
+    }
+    else
+    {
+        os << mdSanitize(licenseInfo.displayName);
+    }
+    return os.str();
+}
+// static std::string mdTestLicenses()
+// {
+//     std::ostringstream os;
+//     for (auto license: licenseEnum)
+//     {
+//         os << "<br/>" << mdLicense(license.first) << "\n";
+//     }
+//     return os.str();
+// }
+static std::map<std::string, std::string> platformEnumValues =
+    {
+        {"nam", "NAM"},
+        {"ir", "I/R"},
+        {"aida-x", "Aida X"},
+        {"aa-snapshot", "aa-snapshot"},
+        {"proteus", "Proteus"}
+    };
+static std::string mdPlatform(const std::string &platform)
+{
+    return mdEnum(platform, platformEnumValues);
+}
+static std::string mdUser(const tone3000::Tone3000User &user)
+{
+    // clang-format off
+        std::ostringstream os;
+        os << 
+            "<a target='_blank' rel='noopener noreferrer' href='" 
+            << mdSanitize(user.url(),"'") 
+               << "'>" << mdSanitize(user.username()) << "</a>";
+        return os.str();
+    // clang-format on
+}
+
 
 static void mdLink(std::ostream &f, const std::string &label, const std::string &url)
 {
@@ -541,11 +608,14 @@ static void writeReadme(const fs::path &path, const Tone3000Download &download)
                         << mdUser(download.user())
         <<  "            <br/>\n"
         <<  "            " << mdSizes(download.sizes()) << ", "
-                   << mdSizes(download.sizes()) << ", "  
                    << mdGear(download.gear()) << ", " 
                    << mdPlatform(download.platform())
-                   << "<br/>\n"
-        <<  "            License: xxx" << mdLicense(download.license()) << "\n"
+                   << "<br/>\n";
+        if (download.license() != "") {
+            of <<  "            License: " << mdLicense(download.license()) << "\n";
+        }
+        of  
+//        << "          " << mdTestLicenses()
         <<  "        </p>\n"
         <<  "        </div>\n"
         <<  "    </div>\n"
@@ -566,14 +636,28 @@ static void writeReadme(const fs::path &path, const Tone3000Download &download)
     }
 }
 
-void pipedal::tone3000::DownloadTone3000Bundle(
+std::string pipedal::tone3000::DownloadTone3000Bundle(
     const std::filesystem::path &destinationFolder,
-    const std::string &downloadUrl)
+    const std::string &downloadUrl,
+    int64_t handle,
+    std::function<void(const Tone3000DownloadProgress &progress)> progressCallback,
+    std::function<bool()> isCancelled)
 {
     TemporaryFile downloadTemporaryFile{WEB_TEMP_DIR};
     fs::path downloadPath = downloadTemporaryFile.Path();
 
-    downloadFile(downloadUrl, downloadPath);
+    std::string resultDirectory;
+    Tone3000DownloadProgress progress;
+    progress.handle(handle);
+    progressCallback(progress);
+
+    downloadFile(downloadUrl, downloadPath, isCancelled);
+
+    if (isCancelled())
+    {
+
+        return resultDirectory;
+    }
 
     std::ifstream f{downloadPath};
     if (!f.is_open())
@@ -585,21 +669,48 @@ void pipedal::tone3000::DownloadTone3000Bundle(
     Tone3000Download tone3000Download;
     reader.read(&tone3000Download);
 
+    if (isCancelled())
+    {
+        return resultDirectory;
+    }
+    progress.title(tone3000Download.title());
+    progress.total(tone3000Download.models().size());
+    progressCallback(progress);
+
     if (tone3000Download.platform() != "nam")
     {
         throw std::runtime_error(SS("Unexpected file format. (platform=\"" << tone3000Download.platform() << "\")"));
     }
     fs::path bundlePath = destinationFolder / stringToSafeFilename(tone3000Download.title());
+    resultDirectory = bundlePath;
 
     fs::create_directories(bundlePath);
-
+    uint64_t nModel = 0;
     for (auto &model : tone3000Download.models())
     {
+        if (isCancelled())
+        {
+            return resultDirectory;
+        }
         fs::path modelPath = bundlePath / SS(stringToSafeFilename(model.name()) << ".nam");
-        downloadFile(model.model_url(), modelPath);
+        downloadFile(model.model_url(), modelPath, isCancelled);
+        if (isCancelled())
+        {
+            return resultDirectory;
+        }
+
+        progress.progress(++nModel);
+        progressCallback(progress);
+    }
+    if (isCancelled())
+    {
+        return resultDirectory;
     }
     fs::path readmePath = bundlePath / "README.md";
     writeReadme(readmePath, tone3000Download);
+
+    return resultDirectory;
+
 }
 
 Tone3000DownloadResult::Tone3000DownloadResult()
