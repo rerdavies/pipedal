@@ -64,8 +64,6 @@ interface ChannelRouterSettingsPreset {
     settings: ChannelRouterSettings;
 }
 
-let LEFT_LEFT_PRESET_ID = -2;
-let RIGHT_STEREO_PRESET_ID = -3;
 
 let channelRouterPresets: ChannelRouterSettingsPreset[] = [
     {

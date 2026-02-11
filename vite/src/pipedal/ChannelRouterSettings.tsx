@@ -1,6 +1,5 @@
 
 import { Pedalboard, ControlValue } from "./Pedalboard.tsx";
-import JackServerSettings from "./JackServerSettings.tsx";
 import JackConfiguration from "./Jack.tsx";
 
 

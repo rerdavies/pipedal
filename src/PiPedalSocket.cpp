@@ -682,6 +682,15 @@ JSON_MAP_REFERENCE(Vst3ControlChangedBody, value)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
 JSON_MAP_END()
 
+class PiPedalSocketHandler;
+namespace {
+    using PfnMessageHandler = void (PiPedalSocketHandler::*)(int replyTo, json_reader *pReader);
+
+    inline static unordered_map<std::string, PfnMessageHandler> socket_messageHandlers;
+
+
+}
+
 class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber, public std::enable_shared_from_this<PiPedalSocketHandler>
 {
 private:
@@ -1161,6 +1170,26 @@ public:
 
     /***********************/
 
+    class  MessageRegistration {
+    public:
+        MessageRegistration(const std::string&messageName,PfnMessageHandler pfnMessageHandler ) {
+            socket_messageHandlers[messageName] = pfnMessageHandler;
+        }
+    };
+
+    #define REGISTER_MESSAGE_HANDLER(MESSAGE_NAME) \
+        static inline MessageRegistration r_##MESSAGE_NAME{#MESSAGE_NAME,&PiPedalSocketHandler::handle_##MESSAGE_NAME};
+
+    void handle_setControl(int replyTo, json_reader*pReader) {
+        ControlChangedBody message;
+        pReader->read(&message);
+        this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+
+    }
+    static inline MessageRegistration r_xxx{ "setControl", &PiPedalSocketHandler::handle_setControl};
+    REGISTER_MESSAGE_HANDLER(setControl)
+
+
     void handleMessage(int reply, int replyTo, const std::string &message, json_reader *pReader)
     {
         if (reply != -1)
@@ -1201,13 +1230,14 @@ public:
         {
             this->SendError(replyTo, "Server has shut down.");
         }
-        if (message == "setControl")
+
+        auto ffHandler = socket_messageHandlers.find(message);
+        if (ffHandler != socket_messageHandlers.end()) 
         {
-            ControlChangedBody message;
-            pReader->read(&message);
-            this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+            (this->*(ffHandler->second))(replyTo,pReader);
+            return;
         }
-        else if (message == "previewControl")
+        if (message == "previewControl")
         {
             ControlChangedBody message;
             pReader->read(&message);
