@@ -13,7 +13,6 @@
                 "/usr/include/x86_64-linux-gnu",
                 "/usr/lib"
             ],
-            "compilerPath": "/usr/bin/gcc-12",
             "cStandard": "c17",
             "cppStandard": "c++20",
             "intelliSenseMode": "linux-gcc-arm64",

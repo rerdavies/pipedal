@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Robin Davies
+// Copyright (c) 2026 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -594,17 +594,24 @@ JSON_MAP_REFERENCE(SnapshotModifiedBody, snapshotIndex)
 JSON_MAP_REFERENCE(SnapshotModifiedBody, modified)
 JSON_MAP_END()
 
-class ChannelSelectionChangedBody
+class ChannelRouterSettingsChangedBody
 {
 public:
-    int64_t clientId_ = -1;
-    JackChannelSelection *jackChannelSelection_ = nullptr;
+    ChannelRouterSettingsChangedBody(
+        int64_t clientId, 
+        const ChannelRouterSettings &channelRouterSettings
+    ): clientId_(clientId), channelRouterSettings_(channelRouterSettings)
+    {
 
-    DECLARE_JSON_MAP(ChannelSelectionChangedBody);
+    }
+    int64_t clientId_ = -1;
+    ChannelRouterSettings channelRouterSettings_;
+
+    DECLARE_JSON_MAP(ChannelRouterSettingsChangedBody);
 };
-JSON_MAP_BEGIN(ChannelSelectionChangedBody)
-JSON_MAP_REFERENCE(ChannelSelectionChangedBody, clientId)
-JSON_MAP_REFERENCE(ChannelSelectionChangedBody, jackChannelSelection)
+JSON_MAP_BEGIN(ChannelRouterSettingsChangedBody)
+JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, clientId)
+JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, channelRouterSettings)
 JSON_MAP_END()
 
 class PresetsChangedBody
@@ -1481,12 +1488,6 @@ public:
             this->model.AddNotificationSubscription(shared_from_this());
             Reply(replyTo, "ehlo", clientId);
         }
-        else if (message == "setJackSettings")
-        {
-            JackChannelSelection jackSettings;
-            pReader->read(&jackSettings);
-            this->model.SetJackChannelSelection(this->clientId, jackSettings);
-        }
         else if (message == "setShowStatusMonitor")
         {
             bool showStatusMonitor;
@@ -1902,6 +1903,14 @@ public:
             pReader->read(&args);
             auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
             this->Reply(replyTo,"copyPresetsToBank",result);
+        } else if (message == "getChannelRouterSettings") 
+        {
+            ChannelRouterSettings::ptr result = this->model.GetChannelRouterSettings();
+            this->Reply(replyTo, "getChannelRouterSettings", result);
+        } else if (message == "setChannelRouterSettings") {
+            ChannelRouterSettings::ptr args;
+            pReader->read(&args);
+            this->model.SetChannelRouterSettings(this->clientId, args);
         }
         else if (message == "downloadModelsFromTone3000")
         {
@@ -2100,11 +2109,9 @@ private:
         Send("onShowStatusMonitorChanged", show);
     }
 
-    virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection)
+    virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings)
     {
-        ChannelSelectionChangedBody body;
-        body.clientId_ = clientId;
-        body.jackChannelSelection_ = const_cast<JackChannelSelection *>(&channelSelection);
+        ChannelRouterSettingsChangedBody body(clientId, channelRouterSettings);
         Send("onChannelSelectionChanged", body);
     }
 

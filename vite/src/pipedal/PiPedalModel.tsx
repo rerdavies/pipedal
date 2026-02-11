@@ -48,6 +48,7 @@ import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 import { getDefaultModGuiPreference } from './ModGuiHost';
+import ChannelRouterSettings from './ChannelRouterSettings';
 import Tone3000DownloadProgress from './Tone3000DownloadProgress';
 
 export enum State {
@@ -433,9 +434,9 @@ interface MonitorPortOutputBody {
 }
 
 
-interface ChannelSelectionChangedBody {
+interface ChannelRouterSettingsChangedBody {
     clientId: number;
-    jackChannelSelection: JackChannelSelection;
+    channelRouterSettings: ChannelRouterSettings;
 }
 interface RenamePresetBody {
     clientId: number;
@@ -532,6 +533,9 @@ export class PiPedalModel //implements PiPedalModel
         = new ObservableProperty<BankIndex>(new BankIndex());
     jackServerSettings: ObservableProperty<JackServerSettings>
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
+
+    channelRouterControlValues: ObservableProperty<ControlValue[]> = new ObservableProperty<ControlValue[]>([]);
+    channelRouterSettings: ObservableProperty<ChannelRouterSettings> = new ObservableProperty<ChannelRouterSettings>(new ChannelRouterSettings());
 
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
     wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings> = new ObservableProperty<WifiDirectConfigSettings>(new WifiDirectConfigSettings());
@@ -817,10 +821,11 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onShowStatusMonitorChanged") {
             let value = body as boolean;
             this.showStatusMonitor.set(value);
-        } else if (message === "onChannelSelectionChanged") {
-            let channelSelectionBody = body as ChannelSelectionChangedBody;
-            let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
-            this.jackSettings.set(channelSelection);
+        } else if (message === "onChannelRouterSettingsChanged") {
+            let channelRouterSettingChangedBody = body as ChannelRouterSettingsChangedBody;
+            let channelRouterSettings = new ChannelRouterSettings().deserialize(
+                channelRouterSettingChangedBody.channelRouterSettings);
+            this.channelRouterSettings.set(channelRouterSettings);
         } else if (message === "onSnapshotModified") {
             let { snapshotIndex, modified } = (body as { snapshotIndex: number, modified: boolean });
             let snapshots = this.pedalboard.get().snapshots;
@@ -1385,6 +1390,11 @@ export class PiPedalModel //implements PiPedalModel
                     await this.getWebSocket().request<any>("getJackServerSettings")
                 )
             );
+            this.channelRouterSettings.set(
+                new ChannelRouterSettings().deserialize(
+                    await this.getWebSocket().request<any>("getChannelRouterSettings")
+                )
+            )
             this.jackConfiguration.set(new JackConfiguration().deserialize(
                 await this.getWebSocket().request<JackConfiguration>("getJackConfiguration")
             ));
@@ -1778,35 +1788,52 @@ export class PiPedalModel //implements PiPedalModel
 
     private lastControlMessageWasSentbyMe = false;
 
+    private _setChannelRouterControlValue(key: string, value: number, notifyServer: boolean) : void {
+        let channelRouterSettings = this.channelRouterSettings.get();
+        let changed = channelRouterSettings.setControlValue(key, value);
+        if (changed) 
+        {
+            this.channelRouterControlValues.set(this.channelRouterSettings.get().controlValues);
+            if (notifyServer) {
+                this.lastControlMessageWasSentbyMe = true;
+                this._setServerControl("setControl", Pedalboard.CHANNEL_ROUTER_CONTROLS_INSTANCE_ID, key, value);
+            }
+        }
+    }
     private _setPedalboardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
-        let newPedalboard = pedalboard.clone();
 
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
-            this._setInputVolume(value, notifyServer);
+        if (instanceId == Pedalboard.CHANNEL_ROUTER_CONTROLS_INSTANCE_ID) {
+            this._setChannelRouterControlValue(key,value,notifyServer);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL) {
-            this._setOutputVolume(value, notifyServer);
-            return;
-        }
-        let item = newPedalboard.getItem(instanceId);
-        let changed = item.setControlValue(key, value);
+        } else {
+            let changed: boolean;
+            let newPedalboard = pedalboard.clone();
 
-        if (changed) {
-            if (notifyServer) {
-                this.lastControlMessageWasSentbyMe = true;
-                this._setServerControl("setControl", instanceId, key, value);
+            if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
+                this._setInputVolume(value, notifyServer);
+                return;
+            } else if (instanceId === Pedalboard.END_CONTROL) {
+                this._setOutputVolume(value, notifyServer);
+                return;
             }
-            this.setModelPedalboard(newPedalboard);
-            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
-                let item = this._controlValueChangeItems[i];
-                if (instanceId === item.instanceId) {
-                    item.onValueChanged(key, value);
+            let item = newPedalboard.getItem(instanceId);
+            changed = item.setControlValue(key, value);
+            if (changed) {
+                if (notifyServer) {
+                    this.lastControlMessageWasSentbyMe = true;
+                    this._setServerControl("setControl", instanceId, key, value);
+                }
+                this.setModelPedalboard(newPedalboard);
+                for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+                    let item = this._controlValueChangeItems[i];
+                    if (instanceId === item.instanceId) {
+                        item.onValueChanged(key, value);
+                    }
                 }
             }
         }
-
     }
     private _setVst3PedalboardControlValue(instanceId: number, key: string, value: number, state: string, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
@@ -2423,12 +2450,6 @@ export class PiPedalModel //implements PiPedalModel
             m = message.toString();
         }
         this.alertMessage.set(m);
-    }
-
-
-    setJackSettings(jackSettings: JackChannelSelection): void {
-        this.expectDisconnect(ReconnectReason.LoadingSettings);
-        this.webSocket?.send("setJackSettings", jackSettings);
     }
 
 
@@ -3420,7 +3441,6 @@ export class PiPedalModel //implements PiPedalModel
         if (this.webSocket) {
             this.webSocket.send("setFavorites", newFavorites);
         }
-        // stub: update server.
     }
 
 
@@ -3790,6 +3810,15 @@ export class PiPedalModel //implements PiPedalModel
         }
         this.removeInvalidSidechains(pedalboard);
     }
+
+    setChannelRouterSettings(settings: ChannelRouterSettings) {
+        this.channelRouterSettings.set(settings);
+        this.channelRouterControlValues.set(settings.controlValues);
+        if (this.webSocket) {
+            this.webSocket.send("setChannelRouterSettings", settings);
+        }
+    }
+
 };
 
 let instance: PiPedalModel | undefined = undefined;

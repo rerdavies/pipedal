@@ -562,8 +562,8 @@ void json_reader::skip_array()
 
 void json_reader::skip_object()
 {
-    int c;
     consume('{');
+    int c;
     while (true)
     {
         c = peek();
@@ -571,7 +571,7 @@ void json_reader::skip_object()
         if (c == '}')
         {
             c = get();
-            break;
+            return;
         }
         skip_string(); // name.
         consume(':');

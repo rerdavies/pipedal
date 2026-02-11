@@ -40,6 +40,7 @@
 #include "Promise.hpp"
 #include "AtomConverter.hpp"
 #include "FileEntry.hpp"
+#include "ChannelRouterSettings.hpp"
 #include <unordered_map>
 #include "Tone3000Downloader.hpp"
 
@@ -73,7 +74,7 @@ namespace pipedal
         virtual void OnSnapshotModified(int64_t selectedSnapshot, bool modified) = 0;
         virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
-        virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection) = 0;
+        virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings) = 0;
         virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates) = 0;
         virtual void OnBankIndexChanged(const BankIndex &bankIndex) = 0;
         virtual void OnJackServerSettingsChanged(const JackServerSettings &jackServerSettings) = 0;
@@ -188,6 +189,8 @@ namespace pipedal
         AtomConverter atomConverter; // must be AFTER pluginHost!
 
         Pedalboard pedalboard;
+        ChannelRouterSettings::ptr channelRouterSettings;
+
         bool previousPedalboardLoaded = false;
         Pedalboard previousPedalboard;
         Storage storage;
@@ -215,7 +218,7 @@ namespace pipedal
         void FirePresetChanged(bool changed);
         void FirePluginPresetsChanged(const std::string &pluginUri);
         void FirePedalboardChanged(int64_t clientId, bool reloadAudioThread = true);
-        void FireChannelSelectionChanged(int64_t clientId);
+        void FireChannelRouterSettingsChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
         void FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State);
@@ -424,7 +427,6 @@ namespace pipedal
 
         JackConfiguration GetJackConfiguration();
 
-        void SetJackChannelSelection(int64_t clientId, const JackChannelSelection &channelSelection);
         JackChannelSelection GetJackChannelSelection();
 
         void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
@@ -521,6 +523,9 @@ namespace pipedal
         std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
         int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
         int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+
+        void SetChannelRouterSettings(int64_t clientId, ChannelRouterSettings::ptr &settings);
+        ChannelRouterSettings::ptr GetChannelRouterSettings();
     };
 
 } // namespace pipedal.

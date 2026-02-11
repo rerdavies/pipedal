@@ -204,6 +204,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    ChannelRouterSettings.cpp ChannelRouterSettings.hpp
     Curl.cpp Curl.hpp
     Tone3000DownloadType.cpp Tone3000DownloadType.hpp
     Tone3000DownloadProgress.cpp Tone3000DownloadProgress.hpp
@@ -358,8 +359,9 @@ target_compile_definitions(libpipedald PUBLIC "_REENTRANT")
 target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES})
 
 target_link_libraries(libpipedald
-    PUBLIC
+   PUBLIC
    PiPedalCommon
+   PRIVATE
    SQLiteCpp
    ${PipeWire_LIBRARIES}
    )
@@ -768,6 +770,7 @@ add_executable(pipedal_latency_test
 
 target_link_libraries(pipedal_latency_test PRIVATE pthread asound PiPedalCommon)
 
+target_include_directories(pipedal_latency_test PRIVATE ${PIPEDAL_INCLUDES})
 
 add_executable(pipedal_alsa_info
     alsaCheck.cpp alsaCheck.hpp
@@ -865,10 +868,14 @@ add_custom_target (
 )
 
 
+
 install (TARGETS pipedalconfig pipedal_kconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-   EXPORT pipedalTargets)
+   EXPORT pipedalTargets
+   )
 
 install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
-   EXPORT pipedalSbinTargets)
+   EXPORT pipedalSbinTargets
+   )
 
+   
 

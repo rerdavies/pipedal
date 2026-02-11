@@ -96,6 +96,24 @@ namespace pipedal
 
     };
 
+    struct RealtimePedalboardItemIndex {
+        RealtimePedalboardItemIndex()
+            : instanceType(Pedalboard::PedalboardType::MainPedalboard), index(-1)
+        {
+        }
+        RealtimePedalboardItemIndex(
+            Pedalboard::PedalboardType instanceType,
+            int64_t index)
+            : instanceType(instanceType), index(index)
+        {
+        }
+        RealtimePedalboardItemIndex(const RealtimePedalboardItemIndex& other) = default;
+        RealtimePedalboardItemIndex& operator=(const RealtimePedalboardItemIndex& other) = default;
+
+        Pedalboard::PedalboardType instanceType = Pedalboard::PedalboardType::MainPedalboard;
+        int64_t index = -1;
+    };
+
     struct RealtimeMidiEventRequest
     {
         RealtimeMidiEventType eventType;
@@ -159,7 +177,7 @@ namespace pipedal
             return &vuUpdateResponseData;
         }
 
-        std::vector<int> enabledIndexes;
+        std::vector<RealtimePedalboardItemIndex> enabledIndexes;
         std::vector<VuUpdate> vuUpdateWorkingData;
         std::vector<VuUpdate> vuUpdateResponseData;
 

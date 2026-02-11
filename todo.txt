@@ -1,3 +1,4 @@
+A way to force input to mono?
 Cab I/Rs: gear="ir"
 
  // yyy: only if the property changed!.

@@ -34,6 +34,7 @@
 #include "lv2/urid/urid.h"
 #include "lv2/ui/ui.h"
 #include "lv2/core/lv2.h"
+#include "ChannelRouterSettings.hpp"
 
 // #include "lv2.h"
 #include "lv2/atom/atom.h"
@@ -315,15 +316,15 @@ PluginHost::PluginHost()
     this->urids = new Urids(mapFeature);
 }
 
-void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings)
+
+void PluginHost::OnConfigurationChanged(const JackConfiguration &configuration, const ChannelSelection &channelSelection)
 {
     this->sampleRate = configuration.sampleRate();
     if (configuration.isValid())
     {
-        this->numberOfAudioInputChannels = settings.GetInputAudioPorts().size();
-        this->numberOfAudioOutputChannels = settings.GetOutputAudioPorts().size();
         this->maxBufferSize = configuration.blockLength();
     }
+    this->channelSelection = channelSelection;
 }
 
 PluginHost::~PluginHost()

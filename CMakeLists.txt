@@ -1,15 +1,26 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 1.5.98
+    VERSION 1.5.99
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
 execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v1.5.98-Beta")
+set (DISPLAY_VERSION "PiPedal v1.5.99-Beta")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
+
+set (LIBZIP_DO_INSTALL OFF CACHE BOOL "Disable libzip install" FORCE)
+set (SQLITECPP_INSTALL OFF CACHE BOOL "Disable SQLiteCpp install" FORCE)
+
+set(SUBMODULE_INSTALL OFF CACHE BOOL "" FORCE)
+
+# Remove SQLiteCPP install files. 
+set(CPACK_SOURCE_IGNORE_FILES
+    "*.a;sqlite3.h;$(CPACK_SOURCE_IGNORE_FILES)"
+)
+
 
 set (PIPEDAL_EXCLUDE_TESTS false)
 include(CTest)
@@ -96,9 +107,9 @@ set(CPACK_DEBIAN_PACKAGE_SECTION sound)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 
-# Accept either libzip4 or libzip5 to satisfy libzip 4 linkage (because Ubuntu nonsense)
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libicu-dev ,lv2-dev, ffmpeg, authbind, curl, gpg, alsa-base| pipewire, alsa-utils")
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libicu-dev ,lv2-dev,iw, ffmpeg, authbind, curl, gpg, alsa-base| pipewire, alsa-utils")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
@@ -118,4 +129,8 @@ set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
    )
 
 
+
 include(CPack)
+
+message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+

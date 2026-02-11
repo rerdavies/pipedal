@@ -1,5 +1,10 @@
 # Release Notes
 
+## PiPedal 1.5.99 Beta
+
+### Bug Fixes
+- Midi Bindings dialog shows blank screen for pedalboards with splits.
+
 ## PiPedal 1.5.98 Beta
 
 ### Features
