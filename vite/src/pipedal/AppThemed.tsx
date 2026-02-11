@@ -1039,6 +1039,7 @@ export
                                 defaultName={this.model_.banks.get().getSelectedEntryName()}
                                 title="Bank Name"
                                 acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
+                                useSafeFilenames={false}
                                 onClose={() => {
                                     this.setState({
                                         renameBankDialogOpen: false,
@@ -1100,7 +1101,7 @@ export
                     </DialogActions>
                 </DialogEx>
 
-                {/* Status of Tone3000 download */}
+                {/* Status of TONE3000 download */}
                 <Tone3000DownloadStatus zindex={2000}/>
                 {/* Fatal error mask */}
                 <Modal open={this.state.displayState === State.Error}

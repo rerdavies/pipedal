@@ -1,4 +1,5 @@
- Refresh on download complete
+Cab I/Rs: gear="ir"
+
  // yyy: only if the property changed!.
 Tooltip on File Property Select: add to release notes.
 sAFEfILEnAMES: RENAME, &C. Safe bank names? 

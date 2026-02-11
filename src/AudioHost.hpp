@@ -157,7 +157,7 @@ namespace pipedal
     {
     public:
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) = 0;
-        virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
+        virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) = 0;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;

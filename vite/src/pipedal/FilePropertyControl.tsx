@@ -34,7 +34,7 @@ import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { PedalboardItem } from './Pedalboard';
 import { isDarkMode } from './DarkMode';
-import {safeFilenameDecode} from './AudioFileMetadata';
+import {safeFilenameDecode} from './SafeFilename';
 
 
 import { withStyles } from "tss-react/mui";

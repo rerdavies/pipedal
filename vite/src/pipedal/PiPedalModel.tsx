@@ -28,6 +28,7 @@ import PluginClass from './PluginClass';
 import ScreenOrientation from './ScreenOrientation';
 import PiPedalSocket, { PiPedalMessageHeader } from './PiPedalSocket';
 import {Tone3000DownloadHandler} from './Tone3000Dialog';
+import Tone3000DownloadType from './Tone3000DownloadType';
 import { nullCast } from './Utility'
 import { JackConfiguration, JackChannelSelection } from './Jack';
 import { BankIndex } from './Banks';
@@ -660,9 +661,23 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
+    async pingTone3000Server() : Promise<boolean> {
+        if (this.webSocket === undefined) {
+            return false;
+
+        }
+        try {
+            let result = await this.webSocket.request<boolean>("pingTone3000Server", {});
+            return result;
+        } catch (error) {
+            console.log("Error pinging TONE3000 Server on PiPedal server: " + getErrorMessage(error));
+            return false;
+        }
+    }
     async downloadModelsFromTone3000(
         tone3000DownloadUrl: string,
-        downloadPath: string
+        downloadPath: string,
+        downloadType: Tone3000DownloadType
     ): Promise<void> {
         try {
             if (!this.webSocket) {
@@ -671,50 +686,59 @@ export class PiPedalModel //implements PiPedalModel
             this.webSocket.send("downloadModelsFromTone3000",
                 {
                     downloadPath: downloadPath, 
-                    tone3000Url: tone3000DownloadUrl
+                    tone3000Url: tone3000DownloadUrl,
+                    downloadType: downloadType
                 });
         } catch (error) {   
             this.showAlert(getErrorMessage(error));
         }
     }
-    cancelTone3000Download(): void {
+    private cancelTone3000Download(): void {
         let downloadProgress = this.tone3000DownloadProgress.get();
-        if (downloadProgress === null) {
-            return;
-        }
-        if (downloadProgress.handle !== -1) {
-            if (!this.webSocket) {
-                return;
+        if (downloadProgress !== null) {
+            if (downloadProgress.handle !== -1) {
+                if (!this.webSocket) {
+                    this.tone3000DownloadProgress.set(null);
+                    this.tone3000Downloading.set(false);
+                    return;
+                }
+                this.webSocket.send("cancelTone3000Download",downloadProgress.handle);
             }
-            this.webSocket.send("cancelTone3000Download",downloadProgress.handle);
         }
     }
 
-    showTone3000DownloadDialog(
-        downloadPath: string,
-        onClosed: () => void,
-        onDownloadStarted: () => void,
-        onDownloadComplete: () => void
-
+    showTone3000DownloadPopup(
+        downloadType: Tone3000DownloadType,         
+        downloadPath: string
     ): void {
         if (this.tone3000DownloadHandler === null) {
             this.tone3000DownloadHandler = new Tone3000DownloadHandler(this);
         }
-        this.tone3000DownloadHandler.launchTone3000Dialog(
+        this.tone3000DownloadHandler.launchTone3000Popup(
+            downloadType,
             downloadPath,
-            onClosed,
-            (errorMessage: string) => {
-                this.showAlert(errorMessage);
-                onClosed();
-            },
-            onDownloadStarted,
-            onDownloadComplete
         );
 
     };
-    closeTone3000DownloadDialog(): void {
+
+    showTone3000DownloadStatus(): void {
+        this.tone3000Downloading.set(true);
+        this.tone3000DownloadProgress.set(null);
+        console.log("Showing TONE3000 download status popup");
+    }
+    hideTone3000DownloadStatus(): void {
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+        console.log("Hiding TONE3000 download status popup");
+    }
+
+    closeTone3000DownloadPopup(): void {
+        this.cancelTone3000Download();
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+
         if (this.tone3000DownloadHandler) {
-            this.tone3000DownloadHandler.closeTone3000Dialog();
+            this.tone3000DownloadHandler.closeTone3000Popup();
         }
     }
 
@@ -1057,7 +1081,7 @@ export class PiPedalModel //implements PiPedalModel
 
     }
     
-    // Tone3000 download notification handlers (stub implementations)
+    // TONE3000 download notification handlers (stub implementations)
     private onTone3000DownloadStarted(handle: number, title: string): void {
         this.tone3000Downloading.set(true);
     }
@@ -1069,12 +1093,14 @@ export class PiPedalModel //implements PiPedalModel
 
     private onTone3000DownloadComplete(resultPath: string): void {
         this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
         this.onTone3000DownloadCompleteEvent.fire(resultPath);
     }
 
     private onTone3000DownloadError(handle: number, errorMessage: string): void {
-        console.error(`Tone3000 download error: handle=${handle}, error=${errorMessage}`);
+        console.error(`TONE3000 download error: handle=${handle}, error=${errorMessage}`);
         this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
         this.onTone3000DownloadCompleteEvent.fire("");
         
         setTimeout(() => {
@@ -1090,9 +1116,12 @@ export class PiPedalModel //implements PiPedalModel
         return "var/" + url;
     }
 
-    setState(state: State) {
+    private setState(state: State) {
         if (this.state.get() !== state) {
             this.state.set(state);
+            if (state === State.Error) {
+                this.closeTone3000DownloadPopup();
+            }
         }
     }
 
@@ -1397,7 +1426,7 @@ export class PiPedalModel //implements PiPedalModel
             m = message.toString();
         }
         this.errorMessage.set(m);
-        this.state.set(State.Error);
+        this.setState(State.Error);
 
     }
 
@@ -1458,6 +1487,7 @@ export class PiPedalModel //implements PiPedalModel
         return false;
     }
 
+
     initialize(): void {
         this.setError("");
         this.setState(State.Loading);
@@ -1465,7 +1495,7 @@ export class PiPedalModel //implements PiPedalModel
         this.requestConfig()
             .then((succeeded) => {
                 if (succeeded) {
-                    this.state.set(State.Ready);
+                    this.setState(State.Ready);
                     if (this.androidHost) {
                         this.hostVersion = new HostVersion(this.androidHost.getHostVersion());
                         if (!this.hostVersion.lessThan(1, 1, 16)) {
@@ -2857,29 +2887,6 @@ export class PiPedalModel //implements PiPedalModel
         document.body.removeChild(link);
     }
 
-    async uploadTone3000File(url: string) : Promise<boolean> {
-        try {
-            let response = await fetch(
-                url,
-                {
-                    method: "GET",
-                }
-            );
-            
-            let json = await response.json();
-
-            if (json.success === true) {
-                return true;
-            }
-            if (json.errorMessage !== undefined) 
-            {
-                throw new Error(json.errorMessage);
-            }
-            throw new Error("Invalid server response.");
-        } catch (error) {
-            throw new Error("Upload to PiPedal server failed. " + getErrorMessage(error));
-        }
-    }
     uploadUserFile(uploadPage: string, file: File, contentType: string = "application/octet-stream", abortController?: AbortController): Promise<string> {
         let result = new Promise<string>((resolve, reject) => {
             try {

@@ -338,6 +338,7 @@ const PluginPresetSelector =
                             title="Rename"
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}
+                            useSafeFilenames={false}
                             onClose={() => this.handleRenameDialogClose()}
                             onOk={(name: string) => this.handleRenameDialogOk(name)} />
                     </div>

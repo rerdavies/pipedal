@@ -30,8 +30,6 @@
 #include "Tone3000DownloadProgress.hpp"
 #include <thread>
 #include "HtmlHelper.hpp"
-#include "Curl.hpp"
-#include "PiPedalModel.hpp"
 
 using namespace pipedal;
 using namespace pipedal::tone3000;
@@ -79,7 +77,8 @@ JSON_MAP_REFERENCE(Tone3000DownloadResult, errorMessage)
 JSON_MAP_END()
 
 static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
-static const std::filesystem::path TONE3000_THUMBNAIL_PATH{"/var/pipedal/tone3000_thumbnails"};
+
+static bool enableLogging = true;
 
 static std::string getCurlErrorFromExitCode(int exitCode)
 {
@@ -120,6 +119,98 @@ static void cancellableSleep(std::chrono::steady_clock::duration duration, std::
     }
 }
 
+static void downloadFile(
+    const std::string &url,
+    const fs::path &path,
+    std::function<bool()> &isCancelled)
+{
+    // Create temporary file for HTTP status code
+    TemporaryFile httpCodeFile{WEB_TEMP_DIR};
+    fs::path httpCodePath = httpCodeFile.Path();
+
+    TemporaryFile headersFile{WEB_TEMP_DIR};
+    fs::path headersFilePath = headersFile.Path();
+
+    for (size_t retry = 0; retry < 10; ++retry)
+    {
+
+        // Build curl command with error detection and proper escaping
+        std::ostringstream os;
+        os << "/usr/bin/curl -f -s -S -L --max-time 60 --retry 5 --retry-delay 1 --retry-max-time 10 --max-filesize 104857600";
+        os << " -w '%{http_code}' -o ";
+        os << ShellEscape(path.string());
+        os << " -D " << ShellEscape(headersFilePath);
+        os << " ";
+        os << ShellEscape(url);
+        os << " > ";
+        os << ShellEscape(httpCodePath.string());
+
+        std::string command = os.str();
+
+        // Execute curl command
+        int exitCode = std::system(command.c_str());
+
+        // Read HTTP status code
+        int httpCode = 0;
+        if (fs::exists(httpCodePath))
+        {
+            std::ifstream httpCodeStream(httpCodePath);
+            std::string httpCodeStr;
+            std::getline(httpCodeStream, httpCodeStr);
+            try
+            {
+                httpCode = std::stoi(httpCodeStr);
+            }
+            catch (...)
+            {
+                // If parsing fails, keep httpCode as 0
+            }
+        }
+
+        if (exitCode != 0)
+        {
+            if (exitCode == 22 * 256) // HTTP error
+            {
+                std::ifstream headersStream(headersFilePath);
+                std::string headerStr;
+                while (std::getline(headersStream, headerStr))
+                {
+                    std::cout << headerStr << std::endl;
+                }
+                if (httpCode == 429 || httpCode == 403 || httpCode == 503)
+                {
+                    cancellableSleep(std::chrono::milliseconds(2000), isCancelled);
+                    if (isCancelled())
+                    {
+                        return;
+                    }
+                    continue;
+                }
+                throw std::runtime_error(
+                    SS("Server was unabled to download the file. Http error: "
+                       << HtmlHelper::httpErrorString(httpCode)));
+            }
+            else
+            {
+                throw std::runtime_error(
+                    SS("Server was unable to download the file. "
+                       << getCurlErrorFromExitCode(exitCode)
+                       << " " << "url: " << url));
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Verify file was downloaded
+    if (!fs::exists(path) || fs::file_size(path) == 0)
+    {
+        throw std::runtime_error("Downloaded file is empty or missing");
+    }
+}
+
 static std::string mdSanitize(const std::string &str, const std::string &illegalCharacters = "")
 {
     std::ostringstream os;
@@ -141,80 +232,6 @@ static std::string mdSanitize(const std::string &str, const std::string &illegal
     }
     return os.str();
 }
-
-#ifdef JUNK
-static std::string mdDataUrl(const std::string &mimeType, const std::filesystem::path &filePath)
-{
-    // maximum 512k!
-    size_t fileSize = fs::file_size(filePath);
-    if (fileSize > 512UL * 1024UL * 1024UL)
-    {
-        return "";
-    }
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open())
-    {
-        return "";
-    }
-
-    static const char kBase64Alphabet[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    std::string result;
-
-    std::ostringstream os;
-    os << "data:" << mimeType << ";base64,";
-
-    result = os.str();
-    size_t encodedDataSize = ((fileSize + 2) / 3) * 4;
-    result.reserve(result.length() + encodedDataSize);
-
-    constexpr size_t kBufferSize = 32 * 1024;
-    std::vector<char> buffer;
-    buffer.resize(kBufferSize);
-
-    size_t offset = 0;
-    while (offset < fileSize)
-    {
-        size_t thisTime = std::min(kBufferSize, fileSize - offset);
-        file.read(buffer.data(), thisTime);
-
-        size_t i = 0;
-        while (i + 2 < thisTime)
-        {
-            unsigned int triple = (buffer[i] << 16) | (buffer[i + 1] << 8) | buffer[i + 2];
-            result.push_back(kBase64Alphabet[(triple >> 18) & 0x3F]);
-            result.push_back(kBase64Alphabet[(triple >> 12) & 0x3F]);
-            result.push_back(kBase64Alphabet[(triple >> 6) & 0x3F]);
-            result.push_back(kBase64Alphabet[triple & 0x3F]);
-            i += 3;
-        }
-
-        if (i < thisTime)
-        {
-            unsigned int triple = buffer[i] << 16;
-            result.push_back(kBase64Alphabet[(triple >> 18) & 0x3F]);
-            if (i + 1 < thisTime)
-            {
-                triple |= buffer[i + 1] << 8;
-                result.push_back(kBase64Alphabet[(triple >> 12) & 0x3F]);
-                result.push_back(kBase64Alphabet[(triple >> 6) & 0x3F]);
-                result.push_back('=');
-            }
-            else
-            {
-                result.push_back(kBase64Alphabet[(triple >> 12) & 0x3F]);
-                result.push_back('=');
-                result.push_back('=');
-            }
-        }
-
-        offset += thisTime;
-    }
-
-    return result;
-}
-#endif
 
 static std::string mdDate(const tone3000_time_point &date_)
 {
@@ -535,48 +552,47 @@ static void mdLink(std::ostream &f, const std::string &label, const std::string 
     f << "[" << mdSanitize(label, "]") << "](" << mdSanitize(url, ")") << ")";
 }
 
-static void writeReadme(const fs::path &path, const std::string &thumbnailUrl, const Tone3000Download &download)
+static void mdImage(std::ostream &f, const std::string url)
+{
+    f << "![" << mdSanitize("Plugin Thumbname", "]") << "](" << mdSanitize(url, "]") << "#tone3000_thumbnail" << ")";
+    f << "\n\n";
+}
+static void writeReadme(const fs::path &path, const Tone3000Download &download)
 {
     std::ofstream of{path};
     if (!of.is_open())
     {
         throw std::runtime_error(SS("Unable to create file " << path));
     }
+    std::string imageLink;
+    if (download.images().size() > 0)
+    {
+        imageLink = download.images()[0];
+    }
 
     // clang-format off
     of <<
         
-            "<div id='tone3000_float'  >\n";
-    if (!thumbnailUrl.empty())
-    {
-
-        of <<  "    <img id='tone3000_thumbnail' src='" 
-                        << thumbnailUrl << "' alt=''  />\n";
-    }
-    of  <<  "    <div id='tone3000_float_content' >\n"
+            "<div id='tone3000_float'  >\n" 
+        <<  "    <img id='tone3000_thumbnail' src='" 
+                        << imageLink << "' alt=''  />\n"
+        <<  "    <div id='tone3000_float_content' >\n"
         <<  "        <h3 id='tone3000_title'>" << mdSanitize(download.title()) << "</h3>\n" 
         <<  "        <div>\n"
         <<  "            <p id='tone3000_subtitle'>\n"
                         << mdDate(download.updated_at()) 
                         << " "
-                        << mdUser(download.user())
-        <<  "            <br/>\n"
-        <<  "            ";
+                        << mdUser(download.user());
         if (download.sizes().has_value()) {
             of
-                << mdSizes(download.sizes().value()) << ", "
+            <<  "            <br/>\n"
+            <<  "            " << mdSizes(download.sizes().value()) << ", "
             ;
         }
-        if (download.platform() == "ir")
-        {
-            of 
-                    << (mdPlatform(download.platform()));
-        } else {
-            of 
-                    << mdGear(download.gear()) << ", " 
-                    << mdPlatform(download.platform());
-        }
-        of           << "<br/>\n";
+        of 
+                   << mdGear(download.gear()) << ", " 
+                   << mdPlatform(download.platform())
+                   << "<br/>\n";
         if (download.license() != "") {
             of <<  "            License: " << mdLicense(download.license()) << "\n";
         }
@@ -602,72 +618,6 @@ static void writeReadme(const fs::path &path, const std::string &thumbnailUrl, c
     }
 }
 
-static void CleanUpFailedDownload(const std::filesystem::path &folder, const std::vector<CurlDownloadRequest> &requests)
-{
-
-    std::error_code ec; // do NOT throw errors.
-
-    if (fs::exists(folder))
-    {
-        for (const auto &request : requests)
-        {
-            if (fs::exists(request.outputFile))
-            {
-                fs::remove(request.outputFile, ec); // ignoring errors.
-            }
-        }
-        // If there's a readme file, remove that too.
-        fs::path readmePath = folder / "README.md";
-        if (fs::exists(readmePath))
-        {
-            fs::remove(readmePath, ec); // ignoring errors
-        }
-
-        // if the folder directory is empty, remove the the folder too.
-        try
-        {
-            if (fs::is_empty(folder))
-            {
-                fs::remove(folder, ec); // ignoring errors.
-            }
-        }
-        catch (const std::exception &)
-        {
-        }
-    }
-}
-
-static std::string GetHeader(const std::string &headerName, const std::vector<std::string> &htmlHeaders)
-{
-    std::string needle = headerName;
-    std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c)
-                   { return std::tolower(c); });
-
-    for (const auto &header : htmlHeaders)
-    {
-        auto pos = header.find(':');
-        if (pos == std::string::npos)
-        {
-            continue;
-        }
-        std::string name = header.substr(0, pos);
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c)
-                       { return std::tolower(c); });
-        if (name != needle)
-        {
-            continue;
-        }
-        std::string value = header.substr(pos + 1);
-        auto first = value.find_first_not_of(" \t\r\n");
-        if (first == std::string::npos)
-        {
-            return "";
-        }
-        auto last = value.find_last_not_of(" \t\r\n");
-        return value.substr(first, last - first + 1);
-    }
-    return "";
-}
 std::string pipedal::tone3000::DownloadTone3000Bundle(
     const std::filesystem::path &destinationFolder,
     const std::string &downloadUrl,
@@ -677,18 +627,13 @@ std::string pipedal::tone3000::DownloadTone3000Bundle(
 {
     TemporaryFile downloadTemporaryFile{WEB_TEMP_DIR};
     fs::path downloadPath = downloadTemporaryFile.Path();
-    std::vector<std::string> headers;
 
     std::string resultDirectory;
     Tone3000DownloadProgress progress;
     progress.handle(handle);
     progressCallback(progress);
 
-    int httpResult = CurlGet(downloadUrl, downloadPath, &headers);
-    if (httpResult != 200)
-    {
-        throw std::runtime_error(SS("Download failed: HTTP " << HtmlHelper::httpErrorString(httpResult)));
-    }
+    downloadFile(downloadUrl, downloadPath, isCancelled);
 
     if (isCancelled())
     {
@@ -722,110 +667,36 @@ std::string pipedal::tone3000::DownloadTone3000Bundle(
     resultDirectory = bundlePath;
 
     fs::create_directories(bundlePath);
-
-    std::vector<CurlDownloadRequest> requests;
-
+    uint64_t nModel = 0;
     for (auto &model : tone3000Download.models())
     {
+        if (isCancelled())
+        {
+            return resultDirectory;
+        }
         fs::path modelPath;
-        if (tone3000Download.platform() == "ir")
+        if (tone3000Download.platform() == "ir") 
         {
             modelPath = bundlePath / SS(StringToSafeFilename(model.name()) << ".wav");
-        }
-        else
-        {
+
+        } else {
             modelPath = bundlePath / SS(StringToSafeFilename(model.name()) << ".nam");
         }
-        requests.push_back(CurlDownloadRequest{url : model.model_url(), outputFile : modelPath});
-    }
-    try
-    {
-        int result = CurlGet(
-            requests,
-            [&](size_t completed, size_t total)
-            {
-                if (isCancelled())
-                {
-                    return false;
-                }
-                progress.progress(completed);
-                progress.total(total);
-                progressCallback(progress);
-                return true;
-            },
-            &headers);
+        downloadFile(model.model_url(), modelPath, isCancelled);
         if (isCancelled())
         {
-            CleanUpFailedDownload(bundlePath, requests);
-            return "";
+            return resultDirectory;
         }
-        if (result != 200)
-        {
-            CleanUpFailedDownload(bundlePath, requests);
-            throw std::runtime_error(SS("Server download failed. HTTP Error " << HtmlHelper::httpErrorString(result)));
-        }
-        fs::path readmePath = bundlePath / "README.md";
 
-        std::string thumbnailUrl;
-        if (tone3000Download.images().has_value() &&  tone3000Download.images().value().size() != 0)
-        {
-
-            TemporaryFile imageFile{TONE3000_THUMBNAIL_PATH};
-
-
-
-            std::string imageUrl = tone3000Download.images().value()[0];
-            std::vector<std::string> imageHeaders;
-            try
-            {
-                if (CurlGet(imageUrl, imageFile.Path(), &imageHeaders) == 200)
-                {
-                    std::string mediaType = GetHeader("Content-Type", imageHeaders);
-                    std::string extension;
-                    if (mediaType == "image/jpeg")
-                    {
-                        extension = ".jpeg";
-                    } else if (mediaType == "image/webp")
-                    {
-                        extension = ".webp";
-                    } else if (mediaType == "image/png") 
-                    {
-                        extension = ".png";
-                    } else {
-                        Lv2Log::warning("Tone3000 thumbnail has an unexpected media type of '%s'", mediaType.c_str());
-                        throw std::runtime_error("Invalid thumbnail media type.");
-                    }
-                    if (mediaType == "image/jpeg")
-                    {
-                        fs::path thumnbailTempPath = imageFile.Detach();
-                        fs::path finalPath = TONE3000_THUMBNAIL_PATH / SS(tone3000Download.id() << extension);
-                        if (fs::exists(finalPath))
-                        {
-                            fs::remove(finalPath);
-                        }
-                        fs::create_directories(finalPath.parent_path());
-                        fs::rename(thumnbailTempPath, finalPath);
-                        thumbnailUrl = SS("var/tone3000_thumbnail?id=" << tone3000Download.id());
-//                        thumbnailUrl = mdDataUrl("image/jpeg", finalPath);
-                    }
-                }
-            }
-            catch (const std::exception &)
-            {
-                // ignore.
-            }
-        }
-        writeReadme(readmePath, thumbnailUrl, tone3000Download);
+        progress.progress(++nModel);
+        progressCallback(progress);
     }
-    catch (const std::exception &e)
+    if (isCancelled())
     {
-        CleanUpFailedDownload(bundlePath, requests);
-        if (isCancelled())
-        {
-            return "";
-        }
-        throw;
+        return resultDirectory;
     }
+    fs::path readmePath = bundlePath / "README.md";
+    writeReadme(readmePath, tone3000Download);
 
     return resultDirectory;
 }

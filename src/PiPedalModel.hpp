@@ -125,6 +125,7 @@ namespace pipedal
         virtual void OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath) override;
         virtual void OnTone3000DownloadError(int64_t handle, const std::string &errorMessage) override;
 
+
         std::shared_ptr<Tone3000Downloader> tone3000Downloader;
         void CancelAudioRetry();
         clock::time_point lastRestartTime = clock::time_point::min();
@@ -246,7 +247,7 @@ namespace pipedal
 
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
-        virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
+        virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) override;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
@@ -291,7 +292,13 @@ namespace pipedal
             Decrease
         };
 
+
+
         Storage &GetStorage() { return storage; }
+
+        virtual std::string Tone3000ThumbnailDirectory() override;
+
+
         bool GetHasWifi();
 
         void NextBank(Direction direction = Direction::Increase);
@@ -301,6 +308,7 @@ namespace pipedal
 
         int64_t DownloadModelsFromTone3000(
             int64_t clientId,
+            Tone3000DownloadType downloadType,
             const std::string &downloadPath,
             const std::string &tone3000Url);
 

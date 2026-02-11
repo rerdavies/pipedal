@@ -103,7 +103,8 @@
         "locale": "cpp",
         "stdfloat": "cpp",
         "text_encoding": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "*.bak": "cpp"
     },
     "cSpell.words": [
         "Alsa",

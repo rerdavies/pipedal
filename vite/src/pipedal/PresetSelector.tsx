@@ -467,6 +467,7 @@ const PresetSelector =
                             title={this.state.renameDialogTitle}
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}
+                            useSafeFilenames={false}
                             onClose={() => this.handleRenameDialogClose()}
                             onOk={(name: string) => this.handleRenameDialogOk(name)} />
                         <UploadPresetDialog

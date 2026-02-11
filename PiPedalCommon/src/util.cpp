@@ -243,17 +243,21 @@ bool pipedal::HasWritePermissions(const std::filesystem::path &path)
     return access(path.c_str(), W_OK) == 0;
 }
 
-const std::string SF_SPECIAL_CHARS = " <>@;:\"\'/[]?=+%.";
+const std::string SAFE_FILENAME_SPECIAL_CHARS = "<>@;:\"\'/[]?=+%.&|*^~`#";
 
 static std::array<bool, 256> makeSfBits()
 {
     std::array<bool, 256> result;
 
-    for (char c : SF_SPECIAL_CHARS)
+    for (char c : SAFE_FILENAME_SPECIAL_CHARS)
     {
         result[(unsigned char)c] = true;
     }
     for (size_t i = 128; i < 256; ++i)
+    {
+        result[i] = true;
+    }
+    for (size_t i = 0; i < 0x20; ++i)
     {
         result[i] = true;
     }
@@ -285,7 +289,7 @@ static char fromHexChars(char c1, char c2)
     return (char)uc;
 }
 
-std::string pipedal::safeFilenameToString(const std::string &filename)
+std::string pipedal::SafeFilenameToString(const std::string &filename)
 {
     size_t ix = 0;
     std::ostringstream os;
@@ -315,7 +319,7 @@ std::string pipedal::safeFilenameToString(const std::string &filename)
     }
     return os.str();
 }
-std::string pipedal::stringToSafeFilename(const std::string &name)
+std::string pipedal::StringToSafeFilename(const std::string &name)
 {
     std::ostringstream os;
     for (char c : name)
@@ -337,4 +341,25 @@ std::string pipedal::stringToSafeFilename(const std::string &name)
         }
     }
     return os.str();
+}
+
+std::string pipedal::ShellEscape(const std::string &input)
+{
+    // Escape string for safe use in shell commands by using single quotes
+    // and escaping any single quotes in the input
+    std::string result = "'";
+    for (char c : input)
+    {
+        if (c == '\'')
+        {
+            // End quote, add escaped single quote, start quote again
+            result += "'\\''";
+        }
+        else
+        {
+            result += c;
+        }
+    }
+    result += "'";
+    return result;
 }

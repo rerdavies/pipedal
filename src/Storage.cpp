@@ -2135,13 +2135,13 @@ static void AddFilesToResult(
                     if (match && !name.starts_with("."))
                     {
                         resultFiles.push_back(
-                            FileEntry(path, safeFilenameToString(name), false, false));
+                            FileEntry(path, SafeFilenameToString(name), false, false));
                     }
                 }
             }
             else if (dir_entry.is_directory())
             {
-                resultFiles.push_back(FileEntry{path, safeFilenameToString(name), true, fs::is_symlink(path)});
+                resultFiles.push_back(FileEntry{path, SafeFilenameToString(name), true, fs::is_symlink(path)});
             }
         }
     }
@@ -2336,7 +2336,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
             modDirectoryPath = uploadsDirectory / fileProperty.directory();
             result.breadcrumbs_.push_back({
                 modDirectoryPath.string(), 
-                safeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
+                SafeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
         }
         else
         {
@@ -2361,7 +2361,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         while (iRp != rp.end())
         {
             cumulativePath /= (*iRp);
-            result.breadcrumbs_.push_back({cumulativePath, safeFilenameToString(*iRp)});
+            result.breadcrumbs_.push_back({cumulativePath, SafeFilenameToString(*iRp)});
             ++iRp;
         }
     }
@@ -2451,7 +2451,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
         while (iAbsolutePath != fsAbsolutePath.end())
         {
             cumulativePath /= (*iAbsolutePath);
-            result.breadcrumbs_.push_back({cumulativePath.string(), safeFilenameToString(iAbsolutePath->string())});
+            result.breadcrumbs_.push_back({cumulativePath.string(), SafeFilenameToString(iAbsolutePath->string())});
             ++iAbsolutePath;
         }
     }

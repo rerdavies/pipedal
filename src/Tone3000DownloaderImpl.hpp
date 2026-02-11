@@ -41,6 +41,7 @@ namespace pipedal {
         virtual void SetListener(Listener*listener) override;
 
         virtual handle_t RequestDownload(
+            Tone3000DownloadType downloadType,
             const std::string &path,
             const std::string &url
         ) override;
@@ -59,6 +60,7 @@ namespace pipedal {
         
         // Performs the actual download with cancellation support
         std::string PerformDownload(
+            Tone3000DownloadType downloadType,
             const std::string &downloadPath,
             const std::string &downloadUrl,
             int64_t downloadHandle,
@@ -66,6 +68,7 @@ namespace pipedal {
         );
         
         struct DownloadRequest {
+            Tone3000DownloadType downloadType;
             std::atomic<bool> cancelled = false;
             handle_t handle;
             const std::string downloadPath;

@@ -60,6 +60,7 @@ Tone3000DownloaderImpl::handle_t Tone3000DownloaderImpl::NextHandle()
     return result;
 }
 Tone3000DownloaderImpl::handle_t Tone3000DownloaderImpl::RequestDownload(
+    Tone3000DownloadType downloadType,
     const std::string &path,
     const std::string &url)
 {
@@ -67,7 +68,8 @@ Tone3000DownloaderImpl::handle_t Tone3000DownloaderImpl::RequestDownload(
     {
         std::lock_guard<std::mutex> lockGuard{this->mutex};
         handle = NextHandle();
-        std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>(false, handle, path, url);
+        std::shared_ptr<DownloadRequest> request =
+            std::make_shared<DownloadRequest>(downloadType, false, handle, path, url);
 
         this->requestQueue.push_back(request);
         request = nullptr;
@@ -144,6 +146,7 @@ Tone3000DownloadProgress Tone3000DownloaderImpl::GetDownloadStatus()
 
 void Tone3000DownloaderImpl::bgUpdateDownloadProgress(const Tone3000DownloadProgress &progress)
 {
+
     std::lock_guard<std::mutex> lockGuard{this->mutex};
     if (closed)
     {
@@ -160,6 +163,7 @@ void Tone3000DownloaderImpl::bgUpdateDownloadProgress(const Tone3000DownloadProg
 }
 
 std::string Tone3000DownloaderImpl::PerformDownload(
+    Tone3000DownloadType downloadType,
     const std::string &downloadPath,
     const std::string &downloadUrl,
     int64_t downloadHandle,
@@ -199,7 +203,7 @@ std::string Tone3000DownloaderImpl::PerformDownload(
     if (isCancelled())
     {
         // maybe there's a partial result.
-        return downloadedDirectory; 
+        return downloadedDirectory;
     }
     return downloadedDirectory;
 }
@@ -249,14 +253,19 @@ void Tone3000DownloaderImpl::ThreadProc()
 
         try
         {
-            std::string outputPath = PerformDownload(request->downloadPath, request->downloadUrl, request->handle, isCancelled);
+            std::string outputPath = PerformDownload(
+                request->downloadType,
+                request->downloadPath,
+                request->downloadUrl,
+                request->handle,
+                isCancelled);
 
-            // Notify completion if not cancelled
+            // Notify completion
             {
                 std::lock_guard lockGuard{mutex};
-                if (!request->cancelled.load() && currentListener)
+                if (currentListener)
                 {
-                    currentListener->OnTone3000DownloadComplete(request->handle,outputPath);
+                    currentListener->OnTone3000DownloadComplete(request->handle, outputPath);
                 }
             }
         }

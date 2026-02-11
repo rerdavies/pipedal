@@ -127,6 +127,31 @@ private:
     std::vector<std::string> extensions;
 };
 
+
+static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, const std::string & id) {
+    std::string stem = id;
+    // find a file in thumbnailDirectory which has a filename of {stem}.*.
+    if (!fs::exists(thumbnailDirectory) || !fs::is_directory(thumbnailDirectory))
+    {
+        return {};
+    }
+
+    for (const auto &entry : fs::directory_iterator(thumbnailDirectory))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+        const auto &path = entry.path();
+        if (path.stem() == stem)
+        {
+            return path;
+        }
+    }
+    return {};
+
+}                 
+
 class DownloadIntercept : public RequestHandler
 {
     PiPedalModel *model;
@@ -145,6 +170,11 @@ public:
             return false;
         }
         std::string segment = request_uri.segment(1);
+
+        if (segment == "tone3000_thumbnail")
+        {
+            return true;
+        }
 
         if (segment == "downloadMediaFile")
         {
@@ -298,6 +328,30 @@ public:
         try
         {
             std::string segment = request_uri.segment(1);
+
+            if (segment == "tone3000_thumbnail") 
+            {
+                std::string id = request_uri.query("id");
+                if (id == "")
+                {
+                    throw PiPedalException("Invalid request.");
+                }
+                fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
+                if (!fs::exists(path)) 
+                {
+                    throw PiPedalException("File not found.");
+                }
+                auto mimeType = GetMimeType(path);
+                if (mimeType.empty())
+                {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                res.set(HttpField::content_type, mimeType);
+                size_t contentLength = std::filesystem::file_size(path);
+                res.setContentLength(contentLength);
+                return;
+            }
+
             if (segment == "downloadMediaFile")
             {
                 fs::path path = request_uri.query("path");
@@ -432,7 +486,26 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "downloadMediaFile")
+            if (segment == "tone3000_thumbnail") 
+            {
+                std::string id = request_uri.query("id");
+                fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
+                if (!fs::exists(path)) 
+                {
+                    throw PiPedalException("File not found.");
+                }
+                auto mimeType = GetMimeType(path);
+                if (mimeType.empty())
+                {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                res.set(HttpField::content_type, mimeType);
+                size_t contentLength = std::filesystem::file_size(path);
+                res.setContentLength(contentLength);
+                res.setBodyFile(path, false);
+                return;
+                
+            } else if (segment == "downloadMediaFile")
             {
                 fs::path path = request_uri.query("path");
 

@@ -124,7 +124,9 @@ namespace pipedal
 
     std::string ToLower(const std::string&value);
 
-    std::string safeFilenameToString(const std::string &filename);
-    std::string stringToSafeFilename(const std::string &name);
+    std::string SafeFilenameToString(const std::string &filename);
+    std::string StringToSafeFilename(const std::string &name);
+
+    std::string ShellEscape(const std::string &input);
 
 }

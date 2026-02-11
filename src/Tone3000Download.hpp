@@ -31,9 +31,11 @@
 #include <chrono>
 #include <functional>
 #include "Tone3000DownloadProgress.hpp"
+#include <memory>
 
 namespace pipedal
 {
+
     namespace tone3000
     {
         using tone3000_time_point = std::string; // Date in ISO 8601 format. (C++ doesn't handle timezones)
@@ -44,7 +46,7 @@ namespace pipedal
             std::string name_;
             std::string model_url_;
             tone3000_time_point created_at_;
-            std::string size_;
+            std::optional<std::string> size_;
             std::string user_id_;
 
         public:
@@ -85,13 +87,13 @@ namespace pipedal
             tone3000_time_point created_at_;
             tone3000_time_point updated_at_;
             std::string gear_;
-            std::vector<std::string> images_;
+            std::optional<std::vector<std::string>> images_;
             bool is_public_ = true;
             std::vector<std::string> links_;
             int64_t model_count_ = 0;
             int64_t favorites_count_ = 0;
             std::string license_;
-            std::vector<std::string> sizes_;
+            std::optional<std::vector<std::string>> sizes_;
             Tone3000User user_;
             std::vector<Tone3000Model> models_;
 

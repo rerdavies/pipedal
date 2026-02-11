@@ -67,11 +67,17 @@ import OkCancelDialog from './OkCancelDialog';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
 import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
-import { Tone3000DownloadDialog } from './Tone3000Dialog';
+import Tone3000DownloadType from './Tone3000DownloadType';
 
 
 const ToobNamModelFileUrl = "http://two-play.com/plugins/toob-nam#modelFile";
 const ToobMlModelFileUrl = "http://two-play.com/plugins/toob-ml#modelFile";
+const ToobCabIrFileUrls = [
+    "http://two-play.com/plugins/toob-cab-ir#impulseFile",
+    "http://two-play.com/plugins/toob-cab-ir#impulseFile2",
+    "http://two-play.com/plugins/toob-cab-ir#impulseFile3",
+];
+
 
 const AUTOSCROLL_TICK_DELAY = 30;
 const AUTOSCROLL_THRESHOLD = 48;
@@ -171,7 +177,6 @@ export interface FilePropertyDialogState {
     previousSelection: string;
     multiSelect: boolean,
     selectedFiles: string[],
-    openTone3000Dialog: boolean,
     openTone3000Help: boolean,
     openGuitarMlHelp: boolean,
 
@@ -249,7 +254,6 @@ export default withStyles(
                 previousSelection: this.props.selectedFile,
                 multiSelect: false,
                 selectedFiles: [],
-                openTone3000Dialog: false,
                 openTone3000Help: false,
                 openGuitarMlHelp: false
             };
@@ -1086,7 +1090,21 @@ export default withStyles(
         handleTone3000Dialog(e: React.MouseEvent<HTMLButtonElement>) {
             e.stopPropagation();
             e.preventDefault();
-            this.setState({ openTone3000Dialog: true });
+            // Popup launch MUST be done from javascript, not react to avoid default popup blockers in browers. 
+            // The dialog just provides a blocker dialog to cancel the popup if the TONE3000 Select APIs escape.
+
+            let downloadType: Tone3000DownloadType = Tone3000DownloadType.Nam;
+            if (this.props.fileProperty.patchProperty === ToobNamModelFileUrl) {
+                downloadType = Tone3000DownloadType.Nam;
+            } else if (ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty))
+            {
+                downloadType = Tone3000DownloadType.CabIr;
+            } else {
+                throw new Error("Unsupported file property for Tone3000 dialog");
+            }
+            this.model.showTone3000DownloadPopup(
+                downloadType, 
+                this.state.currentDirectory);
         }
 
 
@@ -1110,6 +1128,7 @@ export default withStyles(
         render() {
             const isTracksDirectory = this.isTracksDirectory();
             const isToobNamModelFile = this.props.fileProperty.patchProperty === ToobNamModelFileUrl;
+            const isToobCabIrFile =  ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty);
             const isToobMLModelFile = this.props.fileProperty.patchProperty === ToobMlModelFileUrl;
 
             const classes = withStyles.getClasses(this.props);
@@ -1532,7 +1551,7 @@ export default withStyles(
                             <>
                                 <DialogActions style={{ justifyContent: "stretch", width: "100%" }}>
                                     <div style={{ display: "flex", flexFlow: "column nowrap", width: "100%", alignItems: "stretch", }}>
-                                        {isToobNamModelFile && (
+                                        {(isToobNamModelFile || isToobCabIrFile) && (
                                             <div style={{
                                                 display: "flex", flexFlow: "row nowrap", justifyContent: "center",
                                                 alignItems: "center", width: "100%"
@@ -1540,7 +1559,12 @@ export default withStyles(
                                                 <Button
                                                     onClick={(e) => { this.handleTone3000Dialog(e); }}
                                                 >
-                                                    Download model files from Tone3000
+                                                    {
+                                                        isToobNamModelFile
+                                                            ? "Download model files from TONE3000"
+                                                            : "Download I/R files from TONE3000"
+                                                    }
+
                                                 </Button>
                                                 <IconButtonEx tooltip="Help"
                                                     onClick={(e) => { this.handleTone3000Help(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
@@ -1711,6 +1735,7 @@ export default withStyles(
                                     onClose={() => { this.setState({ newFolderDialogOpen: false }); }}
                                     title="New folder"
                                     acceptActionName="OK"
+                                    useSafeFilenames={true}
                                 />
                             )
                         }
@@ -1721,6 +1746,7 @@ export default withStyles(
                                     onOk={(newName) => { this.setState({ renameDialogOpen: false }); this.onExecuteRename(newName) }}
                                     onClose={() => { this.setState({ renameDialogOpen: false }); }}
                                     acceptActionName="OK"
+                                    useSafeFilenames={true}
                                 />
 
                             )
@@ -1733,6 +1759,7 @@ export default withStyles(
                                         open={this.state.moveDialogOpen || this.state.copyDialogOpen}
                                         dialogTitle={this.state.moveDialogOpen ? "Move to" : "Copy Link to"}
                                         uiFileProperty={this.props.fileProperty}
+                                        useSafeFilenames={true}
                                         defaultPath={this.getDefaultPath()}
                                         selectedFile={this.state.selectedFile}
                                         excludeDirectory={
@@ -1755,20 +1782,11 @@ export default withStyles(
                                 )
                             )
                         }
-                        {this.state.openTone3000Dialog && (
-                            <Tone3000DownloadDialog
-                                onClose={() => this.setState({ openTone3000Dialog: false })}
-                                downloadPath={this.state.currentDirectory}
-                                onDownloadComplete={() => {
-                                    this.setState({ openTone3000Dialog: false });
-                                    this.requestFiles(this.state.navDirectory);
-                                }}
-                            />
-                        )}
                         {this.state.openTone3000Help && (
                             <Tone3000HelpDialog
                                 open={this.state.openTone3000Help}
                                 onClose={() => this.setState({ openTone3000Help: false })}
+                                downloadType={isToobNamModelFile ? Tone3000DownloadType.Nam : Tone3000DownloadType.CabIr}
                             />
                         )}
                         {this.state.openGuitarMlHelp && (

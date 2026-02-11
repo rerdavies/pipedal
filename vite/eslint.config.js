@@ -24,5 +24,10 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
+    server: {
+        proxy: {
+            '/var': 'http://localhost:8080'
+        }
+    }
   },
 )

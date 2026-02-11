@@ -1,34 +1,27 @@
 import { JSX } from "@emotion/react/jsx-dev-runtime";
 import { PiPedalModel, State, getErrorMessage } from "./PiPedalModel";
-import DialogEx from "./DialogEx";
 import { Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import LinearProgress from "@mui/material/LinearProgress";
 import Tone3000DownloadProgress from "./Tone3000DownloadProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import DialogActions from "@mui/material/DialogActions";
+import Tone3000DownloadType from "./Tone3000DownloadType";
+
 
 
 
 export type OnTone3000DownloadHandler = (tone3000DownloadUrl: string) => void;
-
 
 // used to check for online status.
 let TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
 
 export class Tone3000DownloadHandler {
 
-    private async handleTone3000Download(tone3000DownloadUrl: string): Promise<void> {
+    private async handleTone3000Download(tone3000DownloadUrl: string, downloadType: Tone3000DownloadType): Promise<void> {
         try {
-            // Dialog can close. We'll use the following await to manage
-            // lifecycle from here onward.
-            this.stopTone3000DialogMonitor();
-
-            this.handleTone3000DownloadComplete();
-
-            await this.model.downloadModelsFromTone3000(tone3000DownloadUrl, this.downloadPath);
+            await this.model.downloadModelsFromTone3000(tone3000DownloadUrl, this.downloadPath, downloadType);
             return;
         } catch (e) {
             this.handleTone3000DownloadError(getErrorMessage(e));
@@ -39,6 +32,7 @@ export class Tone3000DownloadHandler {
     private messageEventListener: ((event: MessageEvent) => void) | null = null;
 
     private model: PiPedalModel;
+    private downloadType: Tone3000DownloadType = Tone3000DownloadType.Nam;
 
     public constructor(model: PiPedalModel) {
         this.model = model;
@@ -46,7 +40,7 @@ export class Tone3000DownloadHandler {
             if (event.data.type !== "tone3000Download") {
                 return;
             }
-            this.handleTone3000Download(event.data.toneUrl as string);
+            this.handleTone3000Download(event.data.toneUrl as string, this.downloadType);
         };
 
         window.addEventListener("message", this.messageEventListener);
@@ -61,7 +55,7 @@ export class Tone3000DownloadHandler {
 
     private popupWindow: Window | null = null;
 
-    private appId: string = "pipedal_app3";
+    private appId: string = "pipedal_app4";
     private redirectUrl(): string {
         let hostname = window.location.hostname;
         let port = window.location.port;
@@ -77,217 +71,136 @@ export class Tone3000DownloadHandler {
         return `${serverUrl}/public/handleTone3000download.html`;
     }
 
-    private tone3000SelectUrl(): string {
-        return `https://www.tone3000.com/api/v1/select?app_id=${this.appId}&redirect_url=${this.redirectUrl()}`;
+    private tone3000SelectUrl(downloadType: Tone3000DownloadType): string {
+        let redirectUrl_ = this.redirectUrl();
+        let result = `https://www.tone3000.com/api/v1/select?app_id=${this.appId}&redirect_url=${redirectUrl_}`;
+        if (downloadType === Tone3000DownloadType.CabIr) {
+            result += "&gear=ir";
+        }
+        return result;
     }
 
 
-    private handleTone3000DialogClosed() {
-        let t = this.onClosedCallback;
-        this.onClosedCallback = undefined;
-        this.onErrorCallback = undefined;
-        this.onDownloadCompleteCallback = undefined;
-        if (t) {
-            t();
-        }
-        this.stopTone3000DialogMonitor();
-    }
-    private handleTone3000Downloadstarted() {
-        if (this.onDownloadStartedCallback) {
-            this.onDownloadStartedCallback();
-        }
-    }
     private handleTone3000DownloadComplete() {
-        let t = this.onDownloadCompleteCallback;
-        this.onClosedCallback = undefined;
-        this.onErrorCallback = undefined;
-        this.onDownloadCompleteCallback = undefined;
-        if (t) {
-            t();
+        if (this.popupWindow) {
+            if (!this.popupWindow.closed) {
+                this.popupWindow.close();
+            }
+            this.popupWindow = null;
         }
-        this.stopTone3000DialogMonitor();
+        this.model.hideTone3000DownloadStatus();
+
+    }
+    closeTone3000Popup() {
+        this.handleTone3000DownloadComplete();
     }
     private handleTone3000DownloadError(errorMessage: string) {
-        let t = this.onErrorCallback;
-        this.onClosedCallback = undefined;
-        this.onErrorCallback = undefined;
-        this.onDownloadCompleteCallback = undefined;
-        if (t) {
-            t(errorMessage);
-        }
-        this.stopTone3000DialogMonitor();
-    }
-
-    private tone3000DialogTimeout: number | undefined = undefined;
-
-    private stopTone3000DialogMonitor() {
-        if (this.tone3000DialogTimeout !== undefined) {
-            clearTimeout(this.tone3000DialogTimeout);
-            this.tone3000DialogTimeout = undefined;
+        if (this.open) 
+        {
+            this.handleTone3000DownloadComplete();
+            this.model.showAlert(errorMessage);
         }
     }
-    private startTone3000DialogMonitor(delay: number = 2000) {
-        this.stopTone3000DialogMonitor();
-        this.tone3000DialogTimeout = window.setTimeout(() => {
-            if (this.popupWindow == null || this.popupWindow.closed) {
-                this.stopTone3000DialogMonitor();
-                this.popupWindow = null;
-                this.handleTone3000DialogClosed();
-                this.tone3000DialogTimeout = undefined;
-            } else {
-                this.startTone3000DialogMonitor(500);
-            }
-        }, delay);
-    }
+
     private downloadPath: string = "";
-    private onClosedCallback: (() => void) | undefined = undefined;
-    private onErrorCallback: ((errorMessage: string) => void) | undefined = undefined;
-    private onDownloadStartedCallback: (() => void) | undefined = undefined;
-    private onDownloadCompleteCallback: (() => void) | undefined = undefined;
+    private open = false;
 
-    public launchTone3000Dialog(
+    private launchInstance = 0;
+    public async launchTone3000Popup(
+        downloadType: Tone3000DownloadType,
         downloadPath: string,
-        onClosed: () => void,
-        onError: (errorMessage: string) => void,
-        onDownloadStarted: () => void,
-        onDownloadComplete: () => void
-    ) {
+
+    ): Promise<void> {
         this.closeTone3000Dialog();
+        // online
+
         this.downloadPath = downloadPath;
-        this.onClosedCallback = onClosed;
-        this.onDownloadCompleteCallback = onDownloadComplete;
-        this.onDownloadStartedCallback = onDownloadStarted;
-        this.onErrorCallback = onError;
+        this.downloadType = downloadType;
+
+        let popupWidth = Math.floor(window.innerWidth * 0.8);
+        let popupHeight = Math.floor(window.innerHeight * 0.8);
+        if (window.innerWidth < 410) {
+            popupWidth = 400;
+        }
+
+        this.open = true;
+
+        this.model.showTone3000DownloadStatus();
+
+        let launchInstance = ++this.launchInstance;
+        let cancelled = () => {
+            return (launchInstance !== this.launchInstance) || this.popupWindow == null || this.popupWindow.closed;
+        }
 
         try {
-                // online
-                let popupWidth = Math.floor(window.innerWidth * 0.8);
-                let popupHeight = Math.floor(window.innerHeight * 0.8);
-                if (window.innerWidth < 410) {
-                    popupWidth = 400;
-                }
 
-                this.popupWindow =
-                    window.open(
-                        this.tone3000SelectUrl(),
-                        "popup",
-                        `innerWidth=${popupWidth},innerHeight=${popupHeight},scrollbars=yes`
-                    );
+            this.popupWindow =
+                window.open(
+                    this.tone3000SelectUrl(downloadType),
+                    "popup",
+                    `innerWidth=${popupWidth},innerHeight=${popupHeight},scrollbars=yes`
+                );
 
-                if (!this.popupWindow) {
-                    console.error("Failed to open Tone3000 dialog popup window.");
-                    this.handleTone3000DownloadError("Cannot open popup window.");
-                    return;
-                }
-                this.startTone3000DialogMonitor();
-                fetch(TONE3000_PING_URL, { method: "HEAD", cache: "no-cache" }).then(response => {
-                    if (!response.ok) {
-                        // offline
-                        this.handleTone3000DownloadError("Unable to connect to Tone3000 servers. An internet connection is required.");
-                    }
-                }).catch(error => {
-                    // offline
-                    this.handleTone3000DownloadError("Not online. Unable to connect to Tone3000 servers.");
-                });
+            if (!this.popupWindow) {
+                console.error("Failed to open TONE3000 dialog popup window.");
+                throw new Error("Cannot open popup window.");
             }
-            catch (error) {
-                // offline
-                this.handleTone3000DownloadError("Not online. Unable to connect to Tone3000 servers.");
-                return;
+            // No procedure for detecting 404, so let's ping the server to see if it's reachable, and cancel if it's not.
+            try {
+                let response = await fetch(TONE3000_PING_URL, { method: "HEAD", cache: "no-cache" });
+                if (cancelled()) return;
+                if (!response.ok) {
+                    // offline
+                    throw new Error("Unable to connect to the TONE3000 server.");
+                }
+            } catch (error) {
+                throw new Error("Not online. Unable to connect to the TONE3000 server. Your client device must have access to the internet to use this feature..");
             };
 
-    }
-    public closeTone3000Dialog(): void {
-        this.handleTone3000DialogClosed();
-        this.stopTone3000DialogMonitor();
-        if (this.popupWindow) {
+            let pipedalServerCanReachTone3000 = false;
+
+            // check to see that the PiPedal server can reach TONE3000.
             try {
-
-                let t = this.popupWindow;
-                this.popupWindow = null;
-                t.close();
-            } catch (e) {
-                console.error("Error closing Tone3000 dialog popup:", e);
+                pipedalServerCanReachTone3000 = await this.model.pingTone3000Server();
+                if (cancelled()) return;
+            } catch (error) {
             }
+            if (!pipedalServerCanReachTone3000) {
+                throw new Error("The PiPedal server cannot reach a TONE3000 server. The PiPedal server must have access to the internet to use this feature.");
+            }
+            while (true) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (launchInstance != this.launchInstance) {
+                    // A new dialog launch has been initiated. Stop monitoring this one.
+                    return;
+                }
+                if (this.popupWindow == null || this.popupWindow.closed) {
+                    this.closeTone3000Dialog();
+                    return;
+                }
+            }
+        } catch (error) {
+            this.handleTone3000DownloadError(getErrorMessage(error));
         }
+    }
+
+    public closeTone3000Dialog(): void {
+        this.handleTone3000DownloadComplete();
     }
 }
 
-export interface Tone3000DownloadDialogProps {
-
-    onClose: () => void,
-    onDownloadComplete: () => void,
-    downloadPath: string
-}
-export function Tone3000DownloadDialog(props: Tone3000DownloadDialogProps): JSX.Element {
-    const model = PiPedalModel.getInstance();
-    let { onClose, onDownloadComplete, downloadPath } = props;
-    let [downloading, setDownloading] = useState(false);
-
-    useEffect(() => {
-        model.showTone3000DownloadDialog(
-            downloadPath,
-            () => {
-                onClose();
-            },
-            () => {
-                setDownloading(true);
-            },
-            () => {
-                onDownloadComplete();
-            }
-        );
-        let onStateChanged = (state: State) => {
-            if (state !== State.Ready) {
-                onClose();
-            }
-        }
-        model.state.addOnChangedHandler(onStateChanged);
-        return () => {
-            model.closeTone3000DownloadDialog();
-            model.state.removeOnChangedHandler(onStateChanged);
-        };
-    });
-    return (
-        <DialogEx tag="tone3000-download"
-            open={true}
-            onClose={() => {
-                onClose();
-            }}
-            onEnterKey={() => { }}
-        >
-            <DialogContent>
-                <Typography style={{minWidth: 300, maxWidth: 300}} variant="body2">Downloading from Tone3000...</Typography>
-                {downloading &&
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                        <LinearProgress style={{ marginTop: 16, flexGrow: 1 }} />
-                    </div>
-                }
-            </DialogContent>
-            <DialogActions  >
-                {!downloading && (
-                    <Button variant="dialogSecondary"
-                        onClick={() => {
-                            onClose();
-                        }}>
-                        Cancel
-                    </Button>
-                )}
-            </DialogActions>
-        </DialogEx>
-    );
-}
 
 export function Tone3000DownloadStaus(
     props: {
         zindex: number;
     }): JSX.Element {
     const model = PiPedalModel.getInstance();
-    const [downloading, setDownloading] = useState<boolean>(false);
-    const [progress, setProgress] = useState<Tone3000DownloadProgress | null>(null);
+    const [downloading, setDownloading] = useState<boolean>(model.tone3000Downloading.get());
+    const [progress, setProgress] = useState<Tone3000DownloadProgress | null>(model.tone3000DownloadProgress.get());
 
     useEffect(() => {
         let onDownloadingChanged = (value: boolean) => {
+
             setDownloading(value);
         }
         model.tone3000Downloading.addOnChangedHandler(onDownloadingChanged);
@@ -302,30 +215,39 @@ export function Tone3000DownloadStaus(
             model.tone3000DownloadProgress.removeOnChangedHandler(onProgressChanged);
         }
     })
-    let open = downloading && progress !== null && progress.title.length > 0;
+    let open = downloading;
     if (model.state.get() !== State.Ready) {
         open = false;
+    }
+    let filename = progress?.title ?? "\u00A0";
+    if (filename === "") {
+        filename = "\u00A0";
     }
     return (
         <Dialog
             open={open}
             onClose={() => { /* Do nothing */ }}
         >
-            <DialogTitle>Downloading from Tone3000</DialogTitle>
-            <DialogContent>
-                <Typography noWrap variant="body2">{progress?.title ?? "\u00A0"}</Typography>
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <DialogContent style={{ marginBottom: 0, paddingBottom: 0 }}>
+                <div style={{ display: "flex", flexFlow: "column nowrap", alignItems: "stretch" }}>
+                    <Typography noWrap variant="body2">Downloading from TONE3000...</Typography>
                     <LinearProgress
-                        style={{ marginTop: 16, flexGrow: 1 }}
-                        variant={(progress?.total ?? 0) === 0 ? "indeterminate" : "determinate"}
+                        style={{ visibility: progress !== null ? "visible" : "hidden", marginTop: 16 }}
+                        variant="determinate"
                         value={(progress && progress.total !== 0) ? progress.progress / progress.total * 100 : 0}
                     />
+                    <Typography noWrap variant="caption"
+                        style={{
+                            width: 300, maxWidth: 300, paddingTop: 8, paddingLeft: 16, paddingRight: 16,
+                            paddingBottom: 0, marginBottom: 0
+                        }}
+                    >{filename}</Typography>
                 </div>
             </DialogContent>
             <DialogActions>
                 <Button variant="dialogSecondary"
                     onClick={() => {
-                        model.cancelTone3000Download();
+                        model.closeTone3000DownloadPopup();
                     }}
                 >Cancel</Button>
             </DialogActions>

@@ -28,10 +28,12 @@ import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import {PiPedalModel,PiPedalModelFactory} from './PiPedalModel';
 //import TextFieldEx from './TextFieldEx';
 import TextField from '@mui/material/TextField';
+import {safeFilenameEncode, safeFilenameDecode} from "./SafeFilename";
 
 
 export interface RenameDialogProps {
     open: boolean,
+    useSafeFilenames: boolean,
     defaultName: string,
     acceptActionName: string,
     title: string,
@@ -95,6 +97,12 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
         let props = this.props;
         let { open, defaultName, acceptActionName, onClose, onOk } = props;
 
+        let name=defaultName;
+        if (props.useSafeFilenames)
+        {
+            name = safeFilenameDecode(name);
+        }
+
         const handleClose = () => {
             onClose();
         };
@@ -102,13 +110,19 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
         const handleOk = () => {
             let text = nullCast(this.refText.current).value;
             text = text.trim();
-            try {
-                this.checkForIllegalCharacters(text);
-            } catch (e:any)
+            if (props.useSafeFilenames)
             {
-                let model:PiPedalModel = PiPedalModelFactory.getInstance();
-                model.showAlert(e.toString());
-                return;
+                text = safeFilenameEncode(text);
+            }
+            else {
+                try {
+                    this.checkForIllegalCharacters(text);
+                } catch (e:any)
+                {
+                    let model:PiPedalModel = PiPedalModelFactory.getInstance();
+                    model.showAlert(e.toString());
+                    return;
+                }
             }
             if (text.length === 0 && props.allowEmpty !== true) return;
             onOk(text);
@@ -154,7 +168,7 @@ export default class RenameDialog extends ResizeResponsiveComponent<RenameDialog
                         type="text"
                         label={props.label ?? "Name"}
                         fullWidth
-                        defaultValue={defaultName}
+                        defaultValue={name}
                         inputRef={this.refText}
                     />
                 </DialogContent>

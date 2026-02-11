@@ -19,6 +19,7 @@
 
 #include "pch.h"
 
+#include "Curl.hpp"
 #include "PiPedalSocket.hpp"
 #include "Updater.hpp"
 #include "json.hpp"
@@ -51,11 +52,13 @@ class DownloadModelsFromTone3000Body {
 public:
     std::string downloadPath_;
     std::string tone3000Url_;
+    std::string downloadType_;
     DECLARE_JSON_MAP(DownloadModelsFromTone3000Body);
 };
 JSON_MAP_BEGIN(DownloadModelsFromTone3000Body)
 JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadPath)
 JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, tone3000Url)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadType)
 JSON_MAP_END()
 
 
@@ -693,6 +696,8 @@ private:
         int64_t subscriptionHandle;
         int64_t instanceId;
     };
+
+    bool PingTone3000Server();
     std::vector<VuSubscription> activeVuSubscriptions;
 
     struct PortMonitorSubscription
@@ -1904,6 +1909,7 @@ public:
             pReader->read(&args);
             auto result = this->model.DownloadModelsFromTone3000(
                 this->clientId,
+                StringToTone3000DownloadType(args.downloadType_),
                 args.downloadPath_,
                 args.tone3000Url_
             );
@@ -1913,6 +1919,13 @@ public:
             int64_t handle = -1;
             pReader->read(&handle);
             model.CancelTone3000Download(clientId,handle);
+        } else if (message == "pingTone3000Server") 
+        {
+            std::shared_ptr<PiPedalSocketHandler> this_ = shared_from_this();
+            model.Post([this_, replyTo] () {
+                bool result = this_->PingTone3000Server();
+                this_->Reply(replyTo,"pingTone3000Server",result);
+            });
         }
         else
         {
@@ -2450,4 +2463,20 @@ public:
 std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &model)
 {
     return std::make_shared<PiPedalSocketFactory>(model);
+}
+
+
+bool PiPedalSocketHandler::PingTone3000Server()
+{
+    constexpr const char* TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
+    std::vector<std::string> output;
+    std::vector<std::string> headers;
+    try {
+        int result = CurlGet(TONE3000_PING_URL, output, &headers);
+        return result == 200;
+    } catch(const std::exception&e)
+    {
+        Lv2Log::error("PingTone3000Server: %s",e.what());
+        return false;
+    }
 }

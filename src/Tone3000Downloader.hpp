@@ -26,6 +26,7 @@
 #include <memory>
 #include <cstdint>
 #include "Tone3000DownloadProgress.hpp"
+#include "Tone3000DownloadType.hpp"
 
 namespace pipedal {
 
@@ -57,6 +58,8 @@ namespace pipedal {
                 const std::string &errorMessage
             ) = 0;
 
+            virtual std::string Tone3000ThumbnailDirectory()  = 0;
+
         };
 
 
@@ -66,6 +69,7 @@ namespace pipedal {
         virtual void SetListener(Listener*listener) = 0;
 
         virtual handle_t RequestDownload(
+            Tone3000DownloadType downloadType,
             const std::string &path,
             const std::string &url
         ) = 0;

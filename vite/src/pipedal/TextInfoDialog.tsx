@@ -27,7 +27,7 @@ import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform, UrlTransform } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, {defaultSchema} from 'rehype-sanitize';
 import rehypeExternalLinks from 'rehype-external-links'
@@ -37,10 +37,28 @@ import { PiPedalError } from './PiPedalError';
 // Extend the default schema to allow target and rel attributes on anchor tags
 const extendedSchema = {
     ...defaultSchema,
-    attributes: {
-        ...defaultSchema.attributes,
-        a: [...(defaultSchema.attributes?.a || []), 'target', 'rel']
+    tagNames: Array.from(new Set([...(defaultSchema.tagNames ?? []), 'img'])),
+    protocols: {
+        ...defaultSchema.protocols,
+        src: [...(defaultSchema.protocols?.src ?? []), ''],
+    },    
+
+};
+
+const urlTransform: UrlTransform = (url, key, node) => {
+    if (key === 'src' && node.tagName === 'img' && url.startsWith('data:')) {
+        const allowedPrefixes = ['data:image/jpeg', 'data:image/png'];
+        for (const prefix of allowedPrefixes) {
+            if (url.startsWith(prefix)) {
+                const nextChar = url.charAt(prefix.length);
+                if (nextChar === ';' || nextChar === ',') {
+                    return url;
+                }
+            }
+        }
+        return '';
     }
+    return defaultUrlTransform(url);
 };
 import DialogEx from './DialogEx';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
@@ -181,10 +199,10 @@ const TextInfoDialog = class extends ResizeResponsiveComponent<TextInfoDialogPro
                         }}>
                             <div style={{ flex: "1 1 0px" }} />
                             <div className="text-info-dialog-content" style={{ flex: "1 1 auto",maxWidth: 650 }} >
-                                <ReactMarkdown   rehypePlugins={
+                                <ReactMarkdown   urlTransform={urlTransform} rehypePlugins={
                                     [
                                         [remarkGfm],
-                                        rehypeRaw,
+                                        [rehypeRaw],
                                         [rehypeSanitize, extendedSchema],
                                         [rehypeExternalLinks, {target: '_blank'}]
                                     ]}>

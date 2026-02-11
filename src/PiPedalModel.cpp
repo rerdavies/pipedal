@@ -234,6 +234,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
 
 int64_t PiPedalModel::DownloadModelsFromTone3000(
     int64_t clientId,
+    Tone3000DownloadType downloadType,
     const std::string &downloadPath,
     const std::string &tone3000Url)
 {
@@ -261,6 +262,7 @@ int64_t PiPedalModel::DownloadModelsFromTone3000(
         tone3000Downloader->SetListener(this);
     }
     return tone3000Downloader->RequestDownload(
+        downloadType,
         downloadPath,
         tone3000Url
     );
@@ -508,11 +510,10 @@ void PiPedalModel::OnNotifyLv2StateChanged(uint64_t instanceId)
 {
     // a sent PATCH_Set, or an explicit state changed notification.
     OnNotifyMaybeLv2StateChanged(instanceId);
-    this->SetPresetChanged(-1, true, false);
 }
 
 // The plugin notified us that a  path path property changed. The state *purrobably changed.
-void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
+bool PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
 {
     // one or more received PATCH_Sets, which MAY change the state.
     std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -521,7 +522,7 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
     {
         if (!audioHost)
         {
-            return;
+            return false;
         }
         bool changed = this->audioHost->UpdatePluginState(*item);
         if (changed)
@@ -532,8 +533,11 @@ void PiPedalModel::OnNotifyMaybeLv2StateChanged(uint64_t instanceId)
             Lv2PluginState newState = item->lv2State();
 
             FireLv2StateChanged(instanceId, newState);
+            this->SetPresetChanged(-1, true, false);
+            return true;
         }
     }
+    return false;
 }
 
 void PiPedalModel::SetInputVolume(float value)
@@ -3402,4 +3406,9 @@ int64_t PiPedalModel::CopyPresetsToBank(int64_t bankInstanceId, const std::vecto
     uint64_t lastAdded =  storage.CopyPresetsToBank(bankInstanceId, presets);
     return lastAdded;
 
+}
+
+std::string PiPedalModel::Tone3000ThumbnailDirectory() 
+{
+    return "/var/pipedal/tone3000_thumbnails";
 }
