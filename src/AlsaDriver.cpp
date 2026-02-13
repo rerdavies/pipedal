@@ -1895,8 +1895,14 @@ namespace pipedal
             std::vector<float*> &channelBuffers
         ) {
             size_t nChannels = channelSelection.size();
-            channelBuffers.resize(nChannels);
+            if (nChannels == 0)
+            {
+                channelBuffers.resize(1);
+                channelBuffers[0] = zeroInputBuffer;
+                return;
+            }
 
+            channelBuffers.resize(nChannels);
             for (size_t i = 0; i < nChannels; ++i) 
             {
                 int64_t deviceChannel = channelSelection[i];
@@ -1932,6 +1938,16 @@ namespace pipedal
         ) {
             size_t nChannels = channelSelection.size();
 
+            if (nChannels == 0)
+            {
+                channelBuffers.resize(1);
+                if (discardOutputBuffer != nullptr)
+                {
+                    discardOutputBuffer = AllocateAudioBuffer();
+                }
+                channelBuffers[0] = discardOutputBuffer;
+                return;
+            }
             channelBuffers.resize(nChannels);
             for (size_t i = 0; i < nChannels; ++i) 
             {

@@ -152,7 +152,7 @@ namespace pipedal
         std::unique_ptr<AvahiService> avahiService;
         uint16_t webPort;
 
-        PiPedalAlsaDevices alsaDevices;
+        PiPedalAlsaDevices &alsaDevices = PiPedalAlsaDevices::instance();
         std::recursive_mutex mutex;
 
         AdminClient adminClient;

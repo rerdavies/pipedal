@@ -103,8 +103,7 @@ void PrintHelp()
 
 void ListDevices()
 {
-    PiPedalAlsaDevices alsaDevices;
-    auto devices = alsaDevices.GetAlsaDevices();
+    auto devices = PiPedalAlsaDevices::instance().GetAlsaDevices();
 
     PrettyPrinter pp;
     if (devices.size() == 0)
@@ -199,7 +198,7 @@ public:
         TestResult result;
         try
         {
-            JackServerSettings serverSettings(inputDeviceId, outputDeviceId, sampleRate, bufferSize, buffers);
+            JackServerSettings serverSettings(inputDeviceId,outputDeviceId, sampleRate, bufferSize, buffers);
 
             JackConfiguration jackConfiguration;
             jackConfiguration.AlsaInitialize(serverSettings);

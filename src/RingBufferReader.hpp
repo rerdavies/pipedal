@@ -45,11 +45,19 @@ namespace pipedal
         uint8_t cc2_; 
     };
 
+    struct Lv2RoutingInserts {
+
+        Lv2Pedalboard*mainInserts = nullptr;
+        Lv2Pedalboard*auxInserts = nullptr;; 
+    };
+
     enum class RingBufferCommand : int64_t
     {
         Invalid = 0,
         ReplaceEffect,
         EffectReplaced,
+        ReplaceRoutingInserts,
+        RoutingInsertsReplaced,
         SetValue,
         SetBypass,
         // AudioStopped,
@@ -539,16 +547,28 @@ namespace pipedal
             write(RingBufferCommand::ReplaceEffect, pedalboard);
         }
 
+        void EffectReplaced(Lv2Pedalboard *pedalboard)
+        {
+            write(RingBufferCommand::EffectReplaced, pedalboard);
+        }
+
+        void ReplaceRoutingInserts(Lv2RoutingInserts routingInserts)
+        {
+            write(RingBufferCommand::ReplaceRoutingInserts, routingInserts);
+        }
+
+        void RoutingInsertsReplaced(Lv2RoutingInserts routingInserts)
+        {
+            write(RingBufferCommand::ReplaceRoutingInserts, routingInserts);
+        }
+
+
         void AudioTerminatedAbnormally()
         {
             AudioStoppedBody body;
             write(RingBufferCommand::AudioTerminatedAbnormally, body);
         }
 
-        void EffectReplaced(Lv2Pedalboard *pedalboard)
-        {
-            write(RingBufferCommand::EffectReplaced, pedalboard);
-        }
 
         void FreeSnapshot(IndexedSnapshot *snapshot)
         {

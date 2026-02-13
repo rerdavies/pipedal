@@ -533,6 +533,7 @@ private:
 
     std::vector<std::shared_ptr<Lv2Pedalboard>> activePedalboards; // pedalboards that have been sent to the audio queue.
     Lv2Pedalboard *realtimeActivePedalboard = nullptr;
+    Lv2RoutingInserts realtimeRoutingInserts;
 
     uint32_t sampleRate = 0;
     uint64_t currentSample = 0;
@@ -889,6 +890,47 @@ private:
                         }
                     }
                     realtimeActivePedalboard->UpdateAudioPorts();
+                }
+                reEntered = false;
+
+                return false; // signal to caller that the effect has been replaced, and processing needs to start again.
+            }
+            case RingBufferCommand::ReplaceRoutingInserts:
+            {
+                Lv2RoutingInserts body;
+                realtimeReader.readComplete(&body);
+
+                auto oldValue = this->realtimeRoutingInserts;
+                this->realtimeRoutingInserts = body;
+
+                realtimeWriter.RoutingInsertsReplaced(oldValue);
+
+                // invalidate the possibly no-good subscriptions. Model will update them shortly.
+                freeRealtimeVuConfiguration();
+                freeRealtimeMonitorPortSubscriptions();
+                cancelParameterRequests();
+
+                Lv2Pedalboard *mainInserts = body.mainInserts;
+                if (mainInserts)
+                {
+                    mainInserts->ResetAtomBuffers();
+                    // issue patch gets for all writable path properties.
+                    for (auto pEffect : mainInserts->GetEffects())
+                    {
+                        pEffect->RequestAllPathPatchProperties();
+                    }
+                    mainInserts->UpdateAudioPorts();
+                }
+                Lv2Pedalboard *auxInserts = body.auxInserts;
+                if (auxInserts)
+                {
+                    auxInserts->ResetAtomBuffers();
+                    // issue patch gets for all writable path properties.
+                    for (auto pEffect : auxInserts->GetEffects())
+                    {
+                        pEffect->RequestAllPathPatchProperties();
+                    }
+                    auxInserts->UpdateAudioPorts();
                 }
                 reEntered = false;
 
@@ -1549,6 +1591,20 @@ public:
                                 hostReader.read(&body);
                                 OnActivePedalboardReleased(body.oldEffect);
                             }
+                            else if (command == RingBufferCommand::RoutingInsertsReplaced)
+                            {
+                                Lv2RoutingInserts body;
+                                hostReader.read(&body);
+                                if (body.mainInserts)
+                                {
+                                    OnActivePedalboardReleased(body.mainInserts);
+                                }
+                                if (body.auxInserts)
+                                {
+                                    OnActivePedalboardReleased(body.auxInserts);
+                                }
+                                
+                            }
                             else if (command == RingBufferCommand::FreeSnapshot)
                             {
                                 IndexedSnapshot *snapshot;
@@ -1781,6 +1837,25 @@ public:
             hostWriter.ReplaceEffect(pedalboard.get());
         }
     }
+
+    virtual void SetChannelRoutingInserts(
+            const std::shared_ptr<Lv2Pedalboard> &mainInserts,
+            const std::shared_ptr<Lv2Pedalboard> &auxInserts
+    ) override {
+        if (active && mainInserts) 
+        {
+            mainInserts->Activate();
+            this->activePedalboards.push_back(mainInserts);
+        }        
+        if (active && auxInserts) 
+        {
+            auxInserts->Activate();
+            this->activePedalboards.push_back(auxInserts);
+        }
+        Lv2RoutingInserts routingInserts { mainInserts: mainInserts.get(), auxInserts: auxInserts.get()};
+        hostWriter.ReplaceRoutingInserts(routingInserts);
+    }
+
 
     virtual void SetBypass(uint64_t instanceId, bool enabled)
     {

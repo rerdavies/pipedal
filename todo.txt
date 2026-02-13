@@ -1,20 +1,23 @@
-A way to force input to mono?
-Cab I/Rs: gear="ir"
+summaries for Mono audio adapaters.
+Check PWA on windows, edge and chrome.
+Make sure Pi 4 default audio device is still hidden when selecting devices!
 
- // yyy: only if the property changed!.
+A final solution for rate-limiting on Tone3000.
+
+A way to force input to mono?
+
+
 Tooltip on File Property Select: add to release notes.
 sAFEfILEnAMES: RENAME, &C. Safe bank names? 
 NEW BANK
 WINDOW SIZE CALCUALTIONS ARE WRONG ON LINUX HIDEF DISPLAYS.
 
-ls 
 Carla Project icons.
 check reload after change of LV2 plugins.
 
 Exactly one underrun per seek in Toob Player
 
 
-json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).
 json nan/inf is fatal.
 
 - pipewire aux in?

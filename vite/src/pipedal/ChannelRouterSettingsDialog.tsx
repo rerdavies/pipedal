@@ -31,20 +31,22 @@ import MenuItem from '@mui/material/MenuItem';
 import ChannelRouterSettingsHelpDialog from './ChannelRouterSettingsHelpDialog';
 import SpeakerIcon from '@mui/icons-material/Speaker';
 import MicIcon from '@mui/icons-material/Mic';
+import SaveIconOutline from '@mui/icons-material/Save';
 
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import Typography from '@mui/material/Typography';
-import ChannelRouterSettings from './ChannelRouterSettings';
-import { Pedalboard, ControlValue } from './Pedalboard';
+import ChannelRouterSettings, { MAIN_OUT_LEFT_CHANNEL, MAIN_OUT_RIGHT_CHANNEL } from './ChannelRouterSettings';
+import { Pedalboard  } from './Pedalboard';
 
 import DialogEx from './DialogEx';
 
-import { PiPedalModelFactory } from './PiPedalModel';
+import  { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
+import { JackConfiguration } from './Jack';
 
 
-let debugInputChannels: number | null = 2;
-let debugOutputChannels: number | null = 4;
+let debugInputChannels: number | null = 1;
+let debugOutputChannels: number | null = 1;
 
 
 export interface ChannelRouterSettingsDialogProps {
@@ -65,129 +67,168 @@ interface ChannelRouterSettingsPreset {
 }
 
 
-let channelRouterPresets: ChannelRouterSettingsPreset[] = [
-    {
-        id: -2, name: "Left -> Left", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -2,
-            mainInputChannels: [0, 0],
-            mainOutputChannels: [0, 0],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [-1, -1],
-            auxOutputChannels: [-1, -1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [-1, -1],
-            sendOutputChannels: [-1, -1],
-            controlValues: [],
-        })
-    },
-    {
-        id: -3, name: "Left -> Stereo", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -3,
-            mainInputChannels: [0, 0],
-            mainOutputChannels: [0, 1],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [-1, -1],
-            auxOutputChannels: [-1, -1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [-1, -1],
-            sendOutputChannels: [-1, -1],
-            controlValues: [],
-        })
-    },
-    {
-        id: -4, name: "Right -> Stereo", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -4,
-            mainInputChannels: [1, 1],
-            mainOutputChannels: [0, 1],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [-1, -1],
-            auxOutputChannels: [-1, -1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [-1, -1],
-            sendOutputChannels: [-1, -1],
-            controlValues: [],
-        })
-    },
-    {
-        id: -5, name: "Right -> Left + re-amp", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -5,
-            mainInputChannels: [1, 1],
-            mainOutputChannels: [0, 0],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [1, 1],
-            auxOutputChannels: [1, 1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [-1, - 1],
-            sendOutputChannels: [-1, -1],
-            controlValues: [],
-        })
-    },
-    {
-        id: -6, name: "Left -> Left + send", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -6,
-            mainInputChannels: [0, 0],
-            mainOutputChannels: [0, 0],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [-1, -1],
-            auxOutputChannels: [-1, - 1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [1, 1],
-            sendOutputChannels: [1, 1],
-            controlValues: [],
-        })
-    },
-    {
-        id: -7, name: "Right -> Right + send", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -7,
-            mainInputChannels: [1, 1],
-            mainOutputChannels: [1, 1],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [-1, -1],
-            auxOutputChannels: [-1, - 1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [0, 0],
-            sendOutputChannels: [0, 0],
-            controlValues: [],
-        })
-    },
-    {
-        id: -8, name: "Left -> Stereo + re-amp", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -8,
-            mainInputChannels: [0, 0],
-            mainOutputChannels: [0, 1],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [0, 0],
-            auxOutputChannels: [2, 2],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [-1, -1],
-            sendOutputChannels: [-1, -1],
-            controlValues: [],
+let DEFAULT_MONO_TO_MONO_ROUTING_PRESET = -2; // corresponds to Input->Output.
+let DEFAULT_LEFT_TO_STEREO_ROUTING_PRESET = -3; // corresponds to Input->Stereo out.
+let DEFAULT_RIGHT_TO_STEREO_ROUTING_PRESET = -4; // corresponds to Right->Stereo out.
 
-        })
-    },
-    {
-        id: -9, name: "Left -> Stereo + stereo send", settings: new ChannelRouterSettings().deserialize({
-            configured: true,
-            channelRouterPresetId: -9,
-            mainInputChannels: [0, 0],
-            mainOutputChannels: [0, 1],
-            mainInserts: new Pedalboard(),
-            auxInputChannels: [-1, -1],
-            auxOutputChannels: [-1, - 1],
-            auxInserts: new Pedalboard(),
-            sendInputChannels: [2, 3],
-            sendOutputChannels: [2, 3],
-            controlValues: [],
-
-        })
-    },
+let factoryRouterPresets: ChannelRouterSettings[] = [
+    // Input->Output
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -2,
+        mainInputChannels: [0, -1],
+        mainOutputChannels: [0, -1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: []
+    })
+    ,
+    // Input->Stereo out.
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -3,
+        mainInputChannels: [0, -1],
+        mainOutputChannels: [0, 1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: []
+    })
+    ,
+    // Right->Stereo out.
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -4,
+        mainInputChannels: [1,-1],
+        mainOutputChannels: [0, 1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: [],
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -5,
+        mainInputChannels: [1,-1],
+        mainOutputChannels: [0, -1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [1,-1],
+        auxOutputChannels: [1,-1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: [],
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -6,
+        mainInputChannels: [1,-1],
+        mainOutputChannels: [1,-1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [0, -1],
+        auxOutputChannels: [0, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: [],
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -7,
+        mainInputChannels: [1,-1],
+        mainOutputChannels: [0, -1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [0, -1],
+        auxOutputChannels: [1,-1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: []
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -8,
+        mainInputChannels: [0, -1],
+        mainOutputChannels: [0, -1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [1,-1],
+        auxOutputChannels: [1,-1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: []
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -9,
+        mainInputChannels: [0, -1],
+        mainOutputChannels: [0, -1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [1,-1],
+        sendOutputChannels: [1,-1],
+        controlValues: []
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -10,
+        mainInputChannels: [1,-1],
+        mainOutputChannels: [1,-1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [0, -1],
+        sendOutputChannels: [0, -1],
+        controlValues: []
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -11,
+        mainInputChannels: [0, -1],
+        mainOutputChannels: [0, 1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [0, -1],
+        auxOutputChannels: [2, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [-1, -1],
+        sendOutputChannels: [-1, -1],
+        controlValues: []
+    })
+    ,
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -12,
+        mainInputChannels: [0, -1],
+        mainOutputChannels: [0, 1],
+        mainInserts: new Pedalboard(),
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
+        auxInserts: new Pedalboard(),
+        sendInputChannels: [2, 3],
+        sendOutputChannels: [2, 3],
+        controlValues: []
+    })
+    ,
 ];
 
 let cellPortraitInOutDiv: React.CSSProperties = {
@@ -248,40 +289,131 @@ let cellPortraitInOut: React.CSSProperties = {
     verticalAlign: "middle"
 };
 
-function MakeChannelMenu(channelCount: number): React.ReactElement[] {
+
+function normalizeChannelSelection(channelSelection: number[]) {
+    if (channelSelection.length === 2) {
+        if (channelSelection[0] === -1) {
+            channelSelection[0] = channelSelection[1];
+            channelSelection[1] = -1;
+        } else {
+            if (channelSelection[0] === channelSelection[1]) {
+                channelSelection[1] = -1;
+            }
+        }
+    }
+}
+function makeRoutingPresets(audioConfig: JackConfiguration): ChannelRouterSettingsPreset[] {
+    let result: ChannelRouterSettingsPreset[] = [];
+
+    for (let preset of factoryRouterPresets) {
+        if (preset.isValid(audioConfig)) {
+            normalizeChannelSelection(preset.mainInputChannels);
+            normalizeChannelSelection(preset.mainOutputChannels);
+            normalizeChannelSelection(preset.auxInputChannels);
+            normalizeChannelSelection(preset.auxOutputChannels);
+            normalizeChannelSelection(preset.sendInputChannels);
+            normalizeChannelSelection(preset.sendOutputChannels);
+            let newPreset = {
+                id: preset.channelRouterPresetId,
+                name: preset.getDescription(audioConfig),
+                settings: preset
+            };
+            result.push(newPreset);
+        }
+    }
+
+
+    return result;
+}
+
+function MakeChannelMenu(channelCount: number, routeType: RouteType, input: boolean, disallowedSelections: number[]): React.ReactElement[] {
     let items: React.ReactElement[] = [(<MenuItem key={-1} value={-1}>None</MenuItem>)]
     if (channelCount === 0) {
         return items;
     }
-    if (channelCount === 2) {
-        items.push((<MenuItem key={0} value={0}>Left</MenuItem>));
-        items.push((<MenuItem key={1} value={1}>Right</MenuItem>));
+    if (channelCount === 1) {
+        if (input) {
+            items.push((<MenuItem key={0} value={0} disabled={disallowedSelections.includes(0)}>Input</MenuItem>));
+        } else {
+            items.push((<MenuItem key={0} value={0} disabled={disallowedSelections.includes(0)}>Output</MenuItem>));
+        }
+    } else if (channelCount === 2) {
+        items.push((<MenuItem key={0} value={0} disabled={disallowedSelections.includes(0)}>Left</MenuItem>));
+        items.push((<MenuItem key={1} value={1} disabled={disallowedSelections.includes(1)}>Right</MenuItem>));
         return items;
+    } else {
+        for (let i = 0; i < channelCount; ++i) {
+            items.push((<MenuItem key={i} value={i} disabled={disallowedSelections.includes(i)}>Ch {i + 1}</MenuItem>));
+        }
     }
-    for (let i = 0; i < channelCount; ++i) {
-        items.push((<MenuItem key={i} value={i}>Ch {i + 1}</MenuItem>));
+    if (routeType === RouteType.Aux && input) {
+        items.push((<MenuItem key={MAIN_OUT_LEFT_CHANNEL} value={MAIN_OUT_LEFT_CHANNEL} >Main Out L</MenuItem>));
+        items.push((<MenuItem key={MAIN_OUT_RIGHT_CHANNEL} value={MAIN_OUT_RIGHT_CHANNEL} >Main Out R</MenuItem>));
+
     }
     return items;
 }
 
 
+function makeDebugConfig(baseConfig: JackConfiguration): JackConfiguration {
+    let config = new JackConfiguration().deserialize(baseConfig); // clone.
+    for (let i = config.inputAudioPorts.length; i < (debugInputChannels ?? 0); ++i) {
+        config.inputAudioPorts.push("ch" + (i + 1));
+    }
+    if (config.inputAudioPorts.length > (debugInputChannels ?? 0)) {
+        config.inputAudioPorts = config.inputAudioPorts.slice(0, debugInputChannels ?? 0);
+    }
+    for (let i = config.outputAudioPorts.length; i < (debugOutputChannels ?? 0); ++i) {
+        config.outputAudioPorts.push("ch" + (i + 1));
+    }
+    if (config.outputAudioPorts.length > (debugOutputChannels ?? 0)) {
+        config.outputAudioPorts = config.outputAudioPorts.slice(0, debugOutputChannels ?? 0);
+    }
+    return config;
+}
+
+function getChannelRouterSettingsPresetById(presetId: number): ChannelRouterSettings {
+    for (let preset of factoryRouterPresets) {
+        if (preset.channelRouterPresetId === presetId) {
+         return preset.clone();
+        }
+    }
+    throw new Error("Error setting defaults. Preset not found: " + presetId);   
+}
+
+function GetDefaultChannelRouterSettings(model: PiPedalModel) : ChannelRouterSettings {
+    let currentSettings = model.channelRouterSettings.get();
+    if (currentSettings.configured) {
+        return currentSettings;
+    }
+    // we're onboarding the user, so set an appropriate default channel routing preset based on the number of ports on the audio interface.
+
+    let jackSettings = model.jackConfiguration.get();
+    let numInputs = jackSettings.inputAudioPorts.length;
+    let numOutputs = jackSettings.outputAudioPorts.length;
+    if (numInputs < 2 || numOutputs < 2) {
+        currentSettings = getChannelRouterSettingsPresetById(DEFAULT_MONO_TO_MONO_ROUTING_PRESET);
+    } else if (numInputs === 2 && numOutputs === 2) {
+        currentSettings =  getChannelRouterSettingsPresetById(DEFAULT_RIGHT_TO_STEREO_ROUTING_PRESET);
+    } else {
+        currentSettings = getChannelRouterSettingsPresetById(DEFAULT_LEFT_TO_STEREO_ROUTING_PRESET);
+    }
+    model.setChannelRouterSettings(currentSettings);
+    return model.channelRouterSettings.get();
+}
 
 function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
     //const classes = useStyles();
     const { open, onClose } = props;
     let model = PiPedalModelFactory.getInstance();
     let config = model.jackConfiguration.get();
+    if (debugInputChannels != null || debugOutputChannels != null) {
+        config = makeDebugConfig(config);
+    }
+    let channelRouterPresets = makeRoutingPresets(config);
 
-
-    const [settings, setSettings] = useState<ChannelRouterSettings>(model.channelRouterSettings.get());
-    const [controlValues, setControlValues] = useState<ControlValue[]>(model.channelRouterControlValues.get());
+    const [settings, setSettings] = useState<ChannelRouterSettings>(GetDefaultChannelRouterSettings(model));
     const [showHelp, setShowHelp] = useState<boolean>(false);
-
-    if (settings) {
-    }
-    if (controlValues) {
-
-    }
 
 
     React.useEffect(() => {
@@ -290,13 +422,8 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                 setSettings(model.channelRouterSettings.get());
             };
             model.channelRouterSettings.addOnChangedHandler(handleSettingsChanged);
-            let handleControlsChanged = () => {
-                setControlValues(model.channelRouterControlValues.get());
-            };
-            model.channelRouterControlValues.addOnChangedHandler(handleControlsChanged);
             return () => {
                 model.channelRouterSettings.removeOnChangedHandler(handleSettingsChanged);
-                model.channelRouterControlValues.removeOnChangedHandler(handleControlsChanged);
             }
         } else {
             return () => { };
@@ -321,61 +448,94 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
 
         let value: number;
 
+        let disallowedSelections: number[] = [];
+
+        let channelSelection: number[] = [];
         switch (routeType) {
             case RouteType.Main:
-                value = input ? settings.mainInputChannels[channelIndex] : settings.mainOutputChannels[channelIndex];
+                channelSelection = input ? settings.mainInputChannels : settings.mainOutputChannels;
                 break;
             case RouteType.Aux:
-                value = input ? settings.auxInputChannels[channelIndex] : settings.auxOutputChannels[channelIndex];
+                channelSelection = input ? settings.auxInputChannels : settings.auxOutputChannels;
                 break;
             case RouteType.Send:
-                value = input ? settings.sendInputChannels[channelIndex] : settings.sendOutputChannels[channelIndex];
+                channelSelection = input ? settings.sendInputChannels : settings.sendOutputChannels;
                 break;
         }
+        value = channelSelection[channelIndex];
+
         if (value >= channelCount) {
             value = -1;
         }
+        if (routeType === RouteType.Send) {
+            if (input) {
+                disallowedSelections = settings.mainInputChannels.concat(settings.auxInputChannels);
+            } else {
+                disallowedSelections = settings.mainOutputChannels.concat(settings.auxOutputChannels);
+            }
+        }
+        if (channelIndex === 1) {
+            if (channelSelection[0] !== -1) {
+                disallowedSelections.push(channelSelection[0]);
+            }
+        }
+        let error = false;
+        if (routeType === RouteType.Main && channelSelection[0] === -1 && channelSelection[1] === -1) {
+            error = true;
+        }
         return (
-            <Select variant="standard" style={{ width: 90 }} value={value}
+            <Select variant="standard" style={{ width: icon ? 130 : 110 }} value={value}
                 startAdornment={
                     icon ? (
                         input ? (<MicIcon style={{ opacity: 0.6, width: 16, height: 16, marginRight: 4 }} />) :
                             (<SpeakerIcon style={{ opacity: 0.6, width: 16, height: 16, marginRight: 4 }} />)
                     ) : undefined
                 }
+                error={error}
                 onChange={(event) => {
                     let newValue = event.target.value as number;
-                    let newSettings =  new ChannelRouterSettings().deserialize(settings);
+                    let newSettings = new ChannelRouterSettings().deserialize(settings);
                     switch (routeType) {
                         case RouteType.Main:
                             if (input) {
                                 newSettings.mainInputChannels[channelIndex] = newValue;
+                                normalizeChannelSelection(newSettings.mainInputChannels);
                             } else {
                                 newSettings.mainOutputChannels[channelIndex] = newValue;
+                                normalizeChannelSelection(newSettings.mainOutputChannels);
                             }
                             break;
                         case RouteType.Aux:
                             if (input) {
                                 newSettings.auxInputChannels[channelIndex] = newValue;
+                                normalizeChannelSelection(newSettings.auxInputChannels);
                             } else {
                                 newSettings.auxOutputChannels[channelIndex] = newValue;
+                                normalizeChannelSelection(newSettings.auxOutputChannels);
                             }
                             break;
                         case RouteType.Send:
                             if (input) {
                                 newSettings.sendInputChannels[channelIndex] = newValue;
+                                normalizeChannelSelection(newSettings.sendInputChannels);
 
                             } else {
                                 newSettings.sendOutputChannels[channelIndex] = newValue;
+                                normalizeChannelSelection(newSettings.sendOutputChannels);
                             }
                             break;
                     }
-                    newSettings.channelRouterPresetId = -1; // custom.
+                    if  (newSettings.channelRouterPresetId >= 0) {
+                        newSettings.modified = true; // custom.
+                    } else {
+                        newSettings.modified = true;
+                        newSettings.channelRouterPresetId = -1; // custom.
+                    }
                     newSettings.configured = true;
                     model.setChannelRouterSettings(newSettings);
                 }}
             >
-                {MakeChannelMenu(channelCount)}
+                {MakeChannelMenu(channelCount, routeType, input, disallowedSelections)}
             </Select>
         )
     }
@@ -437,18 +597,32 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
 
         return items;
     }
+    let handleSave = () => {
+
+    };
 
     let PresetSelect = (width: number | string | undefined) => {
         return (
             <div style={{ display: "flex", flexDirection: "row", marginTop: 2, alignItems: "center" }}>
-                <Select variant="standard" style={{ width: width }} value={settings.channelRouterPresetId}
-                    onChange={(event) => {
-                        ApplyPresetId(event.target.value);
-                    }}
-                >
-                    {GeneratePresetMenuItems()}
-                </Select>
-                <IconButtonEx tooltip="Presets" aria-label="more-presets">
+                <div style={{ flex: "0 0 auto" }}>
+                    <IconButtonEx tooltip="Save current preset"
+                        style={{ flex: "0 0 auto", color: "#FFFFFF" }}
+                        onClick={(e) => { handleSave(); }}
+                        size="large">
+                        <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
+                    </IconButtonEx>
+                </div>
+
+                <div style={{ flex: "1 1", display: "relative" }}>
+                    <Select variant="standard" style={{ width: "100%" }} value={settings.channelRouterPresetId}
+                        onChange={(event) => {
+                            ApplyPresetId(event.target.value);
+                        }}
+                    >
+                        {GeneratePresetMenuItems()}
+                    </Select>
+                </div>
+                <IconButtonEx tooltip="Presets" aria-label="more-presets" style={{ marginRight: 24 }}>
                     <MoreVertIcon style={{ opacity: 0.6 }} onClick={() => { }} />
                 </IconButtonEx>
             </div>
@@ -457,6 +631,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
 
 
     let LandscapeView = () => {
+        let auxInsertDisabled = !settings.isAuxActive();
         return (
             <div style={{
                 display: "flex", flexFlow: "row", alignItems: "center", justifyContent: "center",
@@ -518,7 +693,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             </td>
                             <td rowSpan={2} style={cellLeft}>{Vu()}</td>
                             <td rowSpan={2} style={cellLeft}>
-                                <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
+                                <Button variant="outlined" style={{
+                                    textTransform: "none", borderRadius: 24,
+
+                                }}
+                                    disabled={auxInsertDisabled}>
                                     Inserts
                                 </Button>
                             </td>
@@ -574,6 +753,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
         );
     };
     let PortraitView = () => {
+        let auxInsertDisabled = !settings.isAuxActive();
         return (
             <div style={{
                 display: "flex", flexFlow: "row", alignItems: "center", justifyContent: "center",
@@ -685,7 +865,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                             <td style={cellPortraitControlStrip}>{Vu()}</td>
                                             <td style={cellPortraitControlStrip}>
                                                 <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                                    <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
+                                                    <Button variant="outlined" style={{
+                                                        textTransform: "none", borderRadius: 24,
+
+                                                    }}
+                                                        disabled={auxInsertDisabled}>
                                                         Inserts
                                                     </Button>
                                                 </div>

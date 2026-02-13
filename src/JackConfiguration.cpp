@@ -149,6 +149,8 @@ void JackConfiguration::AlsaInitialize(
         }
         } catch (const std::exception& /*ignore*/)
         {
+            this->isValid_ = false;
+            this->errorStatus_ = "Not configured.";
             throw;
         }
 

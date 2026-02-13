@@ -1931,14 +1931,13 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
             result.GetAlsaInputDevice().empty() &&
             result.GetAlsaOutputDevice().empty())
         {
-            result.SetAlsaInputDevice(result.GetLegacyAlsaDevice());
-            result.SetAlsaOutputDevice(result.GetLegacyAlsaDevice());
+            std::string legacyDeviceId = result.GetLegacyAlsaDevice();
+            result.SetAlsaInputDevice(legacyDeviceId, "");
+            result.SetAlsaOutputDevice(legacyDeviceId, "");
             result.SetLegacyAlsaDevice("");
         }
+        result.FixUpDeviceNames();
     }
-#if JACK_HOST
-    result.Initialize();
-#endif
 
     return result;
 }
@@ -1952,9 +1951,6 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
         json_writer writer(f, false);
         writer.write(jackConfiguration);
     }
-#if JACK_HOST
-    jackConfiguration.Write();
-#endif
 }
 
 void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)

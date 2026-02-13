@@ -27,6 +27,8 @@ export default class JackServerSettings {
         this.rebootRequired = input.rebootRequired;
         this.alsaInputDevice = input.alsaInputDevice ?? "";
         this.alsaOutputDevice = input.alsaOutputDevice ?? "";
+        this.alsaInputDeviceName = input.alsaInputDeviceName ?? this.alsaInputDevice;
+        this.alsaOutputDeviceName = input.alsaOutputDeviceName ?? this.alsaOutputDevice;
         this.sampleRate = input.sampleRate;
         this.bufferSize = input.bufferSize;
         this.numberOfBuffers = input.numberOfBuffers;
@@ -50,6 +52,8 @@ export default class JackServerSettings {
     isJackAudio = false;
     alsaInputDevice: string = "";
     alsaOutputDevice: string = "";
+    alsaInputDeviceName: string = "";
+    alsaOutputDeviceName: string = "";
     sampleRate = 48000;
     bufferSize = 64;
     numberOfBuffers = 3;
@@ -74,19 +78,12 @@ export default class JackServerSettings {
             return "Not selected";
         }
 
-        let inDev = this.alsaInputDevice.startsWith("hw:")
-            ? this.alsaInputDevice.substring(3)
-            : this.alsaInputDevice;
-        let outDev = this.alsaOutputDevice.startsWith("hw:")
-            ? this.alsaOutputDevice.substring(3)
-            : this.alsaOutputDevice;
-
         let device: string;
-        if (inDev === outDev) {
-            device =  inDev;
-
-        } else {
-            device = inDev + "-> " + outDev;
+        if (this.alsaInputDevice === this.alsaOutputDevice) {
+            device = this.alsaInputDeviceName;;
+        }
+        else {
+            device = this.alsaInputDeviceName + " -> " + this.alsaOutputDeviceName;
         }
         return `${device} ${this.sampleRate} ${this.bufferSize}x${this.numberOfBuffers}`;
     }

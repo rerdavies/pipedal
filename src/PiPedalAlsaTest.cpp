@@ -34,7 +34,7 @@ using namespace std;
 static void DiscoveryTest()
 {
     cout << "--- Discovery" << endl;
-    PiPedalAlsaDevices devices;
+    PiPedalAlsaDevices &devices = PiPedalAlsaDevices::instance();
     auto result = devices.GetAlsaDevices();
     std::cout << result.size() << " ALSA devices found." << std::endl;
 

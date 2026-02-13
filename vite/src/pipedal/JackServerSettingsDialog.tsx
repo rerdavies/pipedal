@@ -580,10 +580,20 @@ const JackServerSettingsDialog = withStyles(
             this.setState({ suppressDeviceWarning: checked });
             localStorage.setItem("suppressSeparateDeviceWarning", checked ? "1" : "0");
         }
+        getDeviceName(deviceId: string): string {
+            if (!this.state.alsaDevices) return deviceId;
+            for (let i = 0; i < this.state.alsaDevices.length; ++i) {
+                if (this.state.alsaDevices[i].id === deviceId) {
+                    return this.state.alsaDevices[i].name;
+                }
+            }
+            return deviceId;
+        }
         handleInputDeviceChanged(e: any) {
             const d = e.target.value as string;
             let s = this.state.jackServerSettings.clone();
             s.alsaInputDevice = d;
+            s.alsaInputDeviceName = this.getDeviceName(d);
             s.valid = false;
             let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
             this.setState({
@@ -597,6 +607,7 @@ const JackServerSettingsDialog = withStyles(
             const d = e.target.value as string;
             let s = this.state.jackServerSettings.clone();
             s.alsaOutputDevice = d;
+            s.alsaOutputDeviceName = this.getDeviceName(d);
             s.valid = false;
             let settings = this.applyAlsaDevices(s, this.state.alsaDevices);
             this.setState({

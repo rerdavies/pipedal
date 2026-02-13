@@ -135,9 +135,20 @@ ChannelRouterSettings::ChannelRouterSettings()
     
 }
 
+std::vector<ChannelRouterPresetIndexEntry> ChannelRouterPresetBank::getIndexEntries()
+{
+    std::vector<ChannelRouterPresetIndexEntry> result;
+    for (auto &entry: entries_)
+    {
+        result.push_back(ChannelRouterPresetIndexEntry{entry->id(), entry->name()});
+    }
+    return result;
+}
+
 
 JSON_MAP_BEGIN(ChannelRouterSettings)
 JSON_MAP_REFERENCE(ChannelRouterSettings, configured)
+JSON_MAP_REFERENCE(ChannelRouterSettings, changed)
 JSON_MAP_REFERENCE(ChannelRouterSettings, channelRouterPresetId)
 JSON_MAP_REFERENCE(ChannelRouterSettings, mainInputChannels)
 JSON_MAP_REFERENCE(ChannelRouterSettings, mainOutputChannels)
@@ -149,3 +160,22 @@ JSON_MAP_REFERENCE(ChannelRouterSettings, sendInputChannels)
 JSON_MAP_REFERENCE(ChannelRouterSettings, sendOutputChannels)   
 JSON_MAP_REFERENCE(ChannelRouterSettings, controlValues)
 JSON_MAP_END()
+
+JSON_MAP_BEGIN(ChannelRouterPresetIndexEntry)
+JSON_MAP_REFERENCE(ChannelRouterPresetIndexEntry, id)
+JSON_MAP_REFERENCE(ChannelRouterPresetIndexEntry, name)
+JSON_MAP_END()
+
+
+JSON_MAP_BEGIN(ChannelRouterPresetBankEntry)
+JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, id)
+JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, name)
+JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, channelRouterSettings)
+JSON_MAP_END()
+
+JSON_MAP_BEGIN(ChannelRouterPresetBank)
+JSON_MAP_REFERENCE(ChannelRouterPresetBank, nextId)
+JSON_MAP_REFERENCE(ChannelRouterPresetBank, version)
+JSON_MAP_REFERENCE(ChannelRouterPresetBank, entries)
+JSON_MAP_END()
+

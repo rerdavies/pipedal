@@ -28,6 +28,7 @@
 #include <filesystem>
 #include "Lv2Log.hpp"
 #include "SysExec.hpp"
+#include "PiPedalAlsa.hpp"
 
 #define DRC_FILENAME "/etc/jackdrc"
 
@@ -60,33 +61,41 @@ static std::vector<std::string> SplitArgs(const char *szBuff)
     return result;
 }
 
-static std::string GetJackStringArg(const std::vector<std::string> &args, const std::string&shortOption, const std::string&longOption)
+static std::string GetJackStringArg(const std::vector<std::string> &args, const std::string &shortOption, const std::string &longOption)
 {
     std::string strVal;
     for (size_t i = 1; i < args.size(); ++i)
     {
-        auto pos = args[i].rfind(longOption,0);
-        if (pos != std::string::npos) {
+        auto pos = args[i].rfind(longOption, 0);
+        if (pos != std::string::npos)
+        {
             if (args[i].length() == longOption.length())
             {
-                if (i == args.size()-1) {
-                    throw PiPedalException("Can't read Jack configuration.");                    
+                if (i == args.size() - 1)
+                {
+                    throw PiPedalException("Can't read Jack configuration.");
                 }
-                strVal = args[i+1];
-            } else {
+                strVal = args[i + 1];
+            }
+            else
+            {
                 strVal = args[i].substr(longOption.length());
             }
             break;
         }
-        pos = args[i].rfind(shortOption,0);
-        if (pos != std::string::npos) {
+        pos = args[i].rfind(shortOption, 0);
+        if (pos != std::string::npos)
+        {
             if (args[i].length() == shortOption.length())
             {
-                if (i == args.size()-1) {
-                    throw PiPedalException("Can't read Jack configuration.");                    
+                if (i == args.size() - 1)
+                {
+                    throw PiPedalException("Can't read Jack configuration.");
                 }
-                strVal = args[i+1];
-            } else {
+                strVal = args[i + 1];
+            }
+            else
+            {
                 strVal = args[i].substr(shortOption.length());
             }
             break;
@@ -94,9 +103,9 @@ static std::string GetJackStringArg(const std::vector<std::string> &args, const 
     }
     return strVal;
 }
-static std::int32_t GetJackArg(const std::vector<std::string> &args, const std::string&shortOption, const std::string&longOption)
+static std::int32_t GetJackArg(const std::vector<std::string> &args, const std::string &shortOption, const std::string &longOption)
 {
-    std::string strVal = GetJackStringArg(args,shortOption,longOption);
+    std::string strVal = GetJackStringArg(args, shortOption, longOption);
     try
     {
         unsigned long value = std::stoul(strVal);
@@ -108,144 +117,42 @@ static std::int32_t GetJackArg(const std::vector<std::string> &args, const std::
     }
 }
 
-
-void JackServerSettings::ReadJackDaemonConfiguration()
+static std::string GetAlsaDeviceName(const std::vector<AlsaDeviceInfo> &availableDevices, const std::string &id)
 {
-    #if !JACK_HOST
-        return;
-    #endif
-    this->valid_ = false;
-
-    std::string lastLine;
+    if (id.empty())
+        return "";
+    std::string name;
+    for (const auto &availableDevice : availableDevices)
     {
-        ifstream input(DRC_FILENAME);
-
-        if (!input.is_open())
+        if (availableDevice.id_ == id)
         {
-            return;
-        }
-
-        while (true)
-        {
-            std::string line;
-            std::getline(input,line);
-            if (line.length() != 0) {
-                lastLine = line;
-            }
-            if (input.eof()) {
-                break;
-            }
-        }
-        try
-        {
-            std::vector<std::string> argv = SplitArgs(lastLine.c_str());
-            for (auto i = argv.begin(); i != argv.end(); ++i)
-            {
-                if ((*i) == "-dalsa") {
-                    argv.erase(i);
-                    break;
-                }
-            }
-            this->bufferSize_ = GetJackArg(argv, "-p", "--period");
-            this->numberOfBuffers_ = (uint32_t)GetJackArg(argv, "-n", "--nperiods");
-            this->sampleRate_ = (uint32_t)GetJackArg(argv, "-r", "--rate");
-            // read new dual device flags, fallback on old -d/--device
-            std::string capDev  = GetJackStringArg(argv, "-C", "--capture");
-            std::string playDev = GetJackStringArg(argv, "-P", "--playback");
-            std::string dev     = "";
-            try { dev = GetJackStringArg(argv, "-d", "--device"); } catch(...) {}
-            this->alsaInputDevice_  = capDev.empty()  ? dev : capDev;
-            this->alsaOutputDevice_ = playDev.empty() ? dev : playDev;
-            this->valid_ = true;
-        }
-        catch (std::exception &)
-        {
-            //Lv2Log::error("Can't parse " DRC_FILENAME);
+            name = availableDevice.name_;
+            break;
         }
     }
+    if (name.empty())
+    {
+        auto pos = id.find(":");
+        if (pos != std::string::npos)
+        {
+            name = id.substr(pos + 1);
+        }
+    }
+    return name;
 }
-
-void JackServerSettings::WriteDaemonConfig()
+void JackServerSettings::FixUpDeviceNames()
 {
-    #if JACK_HOST
-    this->valid_ = false;
-
-    std::vector<std::string> precedingLines;
-    std::vector<std::string> argv;
-    std::string lastLine;
-
-    if (std::filesystem::exists(DRC_FILENAME)) {
-        ifstream input(DRC_FILENAME);
-
-        if (!input.is_open())
-        {
-            return;
-        }
-
-        while (true)
-        {
-            if (input.eof())
-            {
-                break;
-            }
-            std::getline(input,lastLine);
-            precedingLines.push_back(lastLine);
-            if (input.eof())
-            {
-                break;
-            }
-        }
-        // erase blank lines at the end.
-        while (precedingLines.size() != 0 && precedingLines[precedingLines.size()-1] == "")
-        {
-            precedingLines.erase(precedingLines.begin()+precedingLines.size()-1);
-        }
-        // erase the last line, which should contain the command invocation.
-        if (precedingLines.size() != 0)
-        {
-            precedingLines.erase(precedingLines.begin()+precedingLines.size()-1);
-        }
-     }
-    // write to the output.
-    try
+    if (
+        ((!this->alsaInputDevice_.empty()) && this->alsaInputDeviceName_.empty()) ||
+        (!this->alsaOutputDevice_.empty()) && this->alsaOutputDeviceName_.empty())
     {
-        ofstream output(DRC_FILENAME);
-        if (!output.is_open())
-        {
-            throw PiPedalException("Can't write " DRC_FILENAME);
-        }
-        if (precedingLines.size() == 0)
-        {
-            // jack1 incantation for promiscuous servers.
-            output << "#!/bin/sh" <<endl;
-            output << "export JACK_PROMISCUOUS_SERVER=audio" << endl;
-            output << "export JACK_NO_AUDIO_RESERVATION=1" << endl;
-            output << "umask 0" << endl;
-        }
-        for (auto line : precedingLines)
-        {
-            output << line << endl;
-        }
-        // the style used by qjackctl. :-/
-        // Lower to -P70 in order to allow the USB soft-irq to run at higher priority than JACK (it runs at 80).
-        output << "/usr/bin/jackd "
-            << "-R -P70 --silent"
-            << " -dalsa -d" << this->alsaDevice_ 
-            << " -r" << this->sampleRate_ 
-            << " -p" << this->bufferSize_ 
-            << " -n" << this->numberOfBuffers_ << " -Xseq" 
-            << endl;
-        if (silentSysExec("/usr/bin/chmod 755 " DRC_FILENAME) != 0)
-        {
-            Lv2Log::error("Failed to set permissions on /etc/jackdrc");
-        }
+
+        PiPedalAlsaDevices& alsaDevices = PiPedalAlsaDevices::instance();
+        std::vector<AlsaDeviceInfo> availableDevices = alsaDevices.GetAlsaDevices();
+
+        this->alsaInputDeviceName_ = GetAlsaDeviceName(availableDevices, this->alsaInputDevice_);
+        this->alsaOutputDeviceName_ = GetAlsaDeviceName(availableDevices, this->alsaOutputDevice_);
     }
-    catch (const std::exception &e)
-    {
-    }
-    #else 
-        throw PiPedalStateException("JACK_HOST not enabled at compile time.");
-    #endif
 }
 
 JSON_MAP_BEGIN(JackServerSettings)
@@ -256,6 +163,8 @@ JSON_MAP_REFERENCE(JackServerSettings, isJackAudio)
 JSON_MAP_REFERENCE(JackServerSettings, alsaDevice) // legacy field
 JSON_MAP_REFERENCE(JackServerSettings, alsaInputDevice)
 JSON_MAP_REFERENCE(JackServerSettings, alsaOutputDevice)
+JSON_MAP_REFERENCE(JackServerSettings, alsaInputDeviceName)
+JSON_MAP_REFERENCE(JackServerSettings, alsaOutputDeviceName)
 JSON_MAP_REFERENCE(JackServerSettings, sampleRate)
 JSON_MAP_REFERENCE(JackServerSettings, bufferSize)
 JSON_MAP_REFERENCE(JackServerSettings, numberOfBuffers)

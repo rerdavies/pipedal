@@ -83,12 +83,9 @@ PiPedalModel::PiPedalModel()
     this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
-#if JACK_HOST
-    this->jackServerSettings = this->storage.GetJackServerSettings(); // to get onboarding flag.
-    this->jackServerSettings.ReadJackDaemonConfiguration();
-#else
+
     this->jackServerSettings = this->storage.GetJackServerSettings();
-#endif
+
     updater->SetUpdateListener(
         [this](const UpdateStatus &updateStatus)
         {
@@ -224,20 +221,21 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
 
-#if JACK_HOST
-    this->jackConfiguration = this->jackConfiguration.JackInitialize();
-#else
     this->jackServerSettings = storage.GetJackServerSettings();
-    this->jackConfiguration.AlsaInitialize(jackServerSettings);
-#endif
+    try
+    {
+        this->jackConfiguration.AlsaInitialize(jackServerSettings);
+    }
+    catch (const std::exception &)
+    {
+        //
+    }
 
     this->channelRouterSettings = storage.GetChannelRouterSettings();
     pluginHost.OnConfigurationChanged(
         jackConfiguration,
         storage.GetChannelSelection());
-
 }
-
 
 int64_t PiPedalModel::DownloadModelsFromTone3000(
     int64_t clientId,
@@ -253,7 +251,7 @@ int64_t PiPedalModel::DownloadModelsFromTone3000(
     {
         throw PiPedalException("Invalid path: not in uploads directory.");
     }
-    
+
     // Check for ".." in path components (security check)
     for (const auto &component : path)
     {
@@ -271,14 +269,12 @@ int64_t PiPedalModel::DownloadModelsFromTone3000(
     return tone3000Downloader->RequestDownload(
         downloadType,
         downloadPath,
-        tone3000Url
-    );
+        tone3000Url);
 }
 
 void PiPedalModel::CancelTone3000Download(
     int64_t clientId,
-    int64_t downloadHandle
-)
+    int64_t downloadHandle)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
@@ -307,12 +303,12 @@ void PiPedalModel::OnTone3000Progress(const Tone3000DownloadProgress &progress)
     }
 }
 
-void PiPedalModel::OnTone3000DownloadComplete(int64_t handle, const std::string&resultPath)
+void PiPedalModel::OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     for (auto subscriber : this->subscribers)
     {
-        subscriber->OnTone3000DownloadComplete(handle,resultPath);
+        subscriber->OnTone3000DownloadComplete(handle, resultPath);
     }
 }
 
@@ -358,20 +354,21 @@ void PiPedalModel::LoadLv2PluginInfo()
             {
                 PluginPresets pluginPresets = pluginHost.GetFactoryPluginPresets(plugin->uri());
                 storage.SavePluginPresets(plugin->uri(), pluginPresets);
-            } else {
+            }
+            else
+            {
                 if (pluginPresetIndexVersion == 0)
                 {
                     if (plugin->uri() == "http://two-play.com/plugins/toob-convolution-reverb" || plugin->uri() == "http://two-play.com/plugins/toob-convolution-reverb-stereo")
                     {
                         // overwrite previous factory presets!
                         PluginPresets pluginPresets = pluginHost.GetFactoryPluginPresets(plugin->uri());
-                        for (auto & pluginPreset: pluginPresets.presets_) 
+                        for (auto &pluginPreset : pluginPresets.presets_)
                         {
                             storage.SavePluginPreset(
                                 plugin->uri(),
                                 pluginPreset);
                         }
-
                     }
                 }
             }
@@ -772,16 +769,20 @@ void PiPedalModel::SetPedalboardItemEnable(int64_t clientId, int64_t pedalItemId
     std::lock_guard<std::recursive_mutex> guard{mutex};
     {
         this->pedalboard.SetItemEnabled(pedalItemId, enabled);
-        PedalboardItem * pPedalboardItem = this->pedalboard.GetItem(pedalItemId);
-        if (pPedalboardItem) {
+        PedalboardItem *pPedalboardItem = this->pedalboard.GetItem(pedalItemId);
+        if (pPedalboardItem)
+        {
             Lv2PluginInfo::ptr pluginInfo = GetPluginInfo(pPedalboardItem->uri());
-            if (pluginInfo) {
-                for (auto &port: pluginInfo->ports()) {
-                    if (port->is_bypass()) {
-                        pPedalboardItem->SetControlValue(port->symbol(), enabled? 1.0: 0.0f);
+            if (pluginInfo)
+            {
+                for (auto &port : pluginInfo->ports())
+                {
+                    if (port->is_bypass())
+                    {
+                        pPedalboardItem->SetControlValue(port->symbol(), enabled ? 1.0 : 0.0f);
                     }
                 }
-            } 
+            }
         }
 
         // Notify clients.
@@ -999,7 +1000,7 @@ int64_t PiPedalModel::SavePluginPresetAs(int64_t instanceId, const std::string &
     return presetId;
 }
 
-int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId,const std::string &name, int64_t saveAfterInstanceId)
+int64_t PiPedalModel::SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};
 
@@ -1523,7 +1524,7 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
             throw std::runtime_error("Audio configuration not valid.");
         }
 
-        const auto & channelSelection = this->storage.GetChannelSelection();
+        const auto &channelSelection = this->storage.GetChannelSelection();
 
         this->audioHost->Open(jackServerSettings, channelSelection);
 
@@ -1624,7 +1625,6 @@ std::vector<AlsaSequencerPortSelection> PiPedalModel::GetAlsaSequencerPorts()
     }
     return result;
 }
-
 
 void PiPedalModel::FireChannelRouterSettingsChanged(int64_t clientId)
 {
@@ -1838,7 +1838,7 @@ void PiPedalModel::SendSetPatchProperty(
     {
         std::shared_ptr<Lv2PluginInfo> pluginInfo = GetPluginInfo(pedalboardItem->uri_);
         auto pipedalUi = pluginInfo->piPedalUI();
-        if (pipedalUi) 
+        if (pipedalUi)
         {
             auto fileProperty = pipedalUi->GetFileProperty(propertyUri);
             if (fileProperty)
@@ -2129,8 +2129,7 @@ std::shared_ptr<Lv2PluginInfo> PiPedalModel::GetPluginInfo(const std::string &ur
     return pluginHost.GetPluginInfo(uri);
 }
 
-
-void PiPedalModel::UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardItem*pedalboardItem_)
+void PiPedalModel::UpdateDefaults(SnapshotValue &snapshotValue, const PedalboardItem *pedalboardItem_)
 {
     std::shared_ptr<Lv2PluginInfo> pPlugin = pluginHost.GetPluginInfo(pedalboardItem_->uri());
     if (!pPlugin)
@@ -2145,11 +2144,11 @@ void PiPedalModel::UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardI
         // Fix incorrect bypass settings presint in Pipedal < 1.5.96
         for (size_t i = 0; i < pPlugin->ports().size(); ++i)
         {
-            auto& port = pPlugin->ports()[i];
+            auto &port = pPlugin->ports()[i];
             if (port->is_bypass() && port->is_control_port() && port->is_input())
             {
-                ControlValue* pValue = snapshotValue.GetControlValue(port->symbol());
-                float value = snapshotValue.isEnabled_  ? 1.0f : 0.0f;
+                ControlValue *pValue = snapshotValue.GetControlValue(port->symbol());
+                float value = snapshotValue.isEnabled_ ? 1.0f : 0.0f;
 
                 if (pValue == nullptr)
                 {
@@ -2166,7 +2165,8 @@ void PiPedalModel::UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardI
         if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
         {
             ControlValue *pVersion = snapshotValue.GetControlValue("version");
-            if (pVersion == nullptr) {
+            if (pVersion == nullptr)
+            {
                 ControlValue *pValue = snapshotValue.GetControlValue("inputCalibrationMode");
                 if (pValue == nullptr)
                 {
@@ -2175,13 +2175,16 @@ void PiPedalModel::UpdateDefaults(SnapshotValue&snapshotValue, const PedalboardI
                 }
                 // convert old gate threshold to new gate threshold.
                 ControlValue *pGateValue = snapshotValue.GetControlValue("gate");
-                if (pGateValue) {
+                if (pGateValue)
+                {
                     float value = pGateValue->value();
                     // Is the gate disabled?
                     if (value <= -100.0f)
                     {
                         value = -120.0f; // "disabled in new range."
-                    } else {
+                    }
+                    else
+                    {
                         value = value * 0.5; // correct the bug in original implementation.
                     }
                     snapshotValue.SetControlValue("gate", value);
@@ -2245,7 +2248,8 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
         if (pPlugin->uri() == "http://two-play.com/plugins/toob-nam")
         {
             ControlValue *pVersion = pedalboardItem->GetControlValue("version");
-            if (pVersion == nullptr) {
+            if (pVersion == nullptr)
+            {
                 ControlValue *pValue = pedalboardItem->GetControlValue("inputCalibrationMode");
                 if (pValue == nullptr)
                 {
@@ -2254,13 +2258,16 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
                 }
                 // convert old gate threshold to new gate threshold.
                 ControlValue *pGateValue = pedalboardItem->GetControlValue("gate");
-                if (pGateValue) {
+                if (pGateValue)
+                {
                     float value = pGateValue->value();
                     // Is the gate disabled?
                     if (value <= -100.0f)
                     {
                         value = -120.0f; // "disabled in new range."
-                    } else {
+                    }
+                    else
+                    {
                         value = value * 0.5; // correct the bug in original implementation.
                     }
                     pedalboardItem->SetControlValue("gate", value);
@@ -2278,18 +2285,20 @@ void PiPedalModel::UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered
                 {
                     // retroactively correct bug in version of PiPedal prior to 1.5.96.
                     ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
-                    float value = pedalboardItem->isEnabled() ? 1.0f:  0.0f;
+                    float value = pedalboardItem->isEnabled() ? 1.0f : 0.0f;
 
                     if (pValue == nullptr)
                     {
                         pedalboardItem->controlValues().push_back(
                             pipedal::ControlValue(port->symbol().c_str(), value));
-                    } else {
+                    }
+                    else
+                    {
                         pValue->value(value);
                     }
-
-
-                } else {
+                }
+                else
+                {
                     ControlValue *pValue = pedalboardItem->GetControlValue(port->symbol());
                     if (pValue == nullptr)
                     {
@@ -2357,7 +2366,9 @@ void PiPedalModel::UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t
             // plugin is no longer present. Remove from the snapshot.
             snapshot->values_.erase(snapshot->values_.begin() + i);
             --i;
-        } else {
+        }
+        else
+        {
             UpdateDefaults(value, f->second);
         }
     }
@@ -2387,7 +2398,7 @@ void PiPedalModel::UpdateDefaults(Pedalboard *pedalboard)
 
 PluginPresets PiPedalModel::GetPluginPresets(const std::string &pluginUri)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex); 
+    std::lock_guard<std::recursive_mutex> lock(mutex);
 
     return storage.GetPluginPresets(pluginUri);
 }
@@ -3376,26 +3387,22 @@ std::vector<PresetIndexEntry> PiPedalModel::RequestBankPresets(int64_t bankInsta
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
     return storage.RequestBankPresets(bankInstanceId);
-
 }
 
 int64_t PiPedalModel::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    uint64_t lastAdded =  storage.ImportPresetsFromBank(bankInstanceId, presets);
+    uint64_t lastAdded = storage.ImportPresetsFromBank(bankInstanceId, presets);
 
     FirePresetsChanged(-1);
     return lastAdded;
-
 }
 int64_t PiPedalModel::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    uint64_t lastAdded =  storage.CopyPresetsToBank(bankInstanceId, presets);
+    uint64_t lastAdded = storage.CopyPresetsToBank(bankInstanceId, presets);
     return lastAdded;
-
 }
-
 
 ChannelRouterSettings::ptr PiPedalModel::GetChannelRouterSettings()
 {
@@ -3403,7 +3410,7 @@ ChannelRouterSettings::ptr PiPedalModel::GetChannelRouterSettings()
     return this->channelRouterSettings;
 }
 
-void PiPedalModel::SetChannelRouterSettings(int64_t clientId,ChannelRouterSettings::ptr &settings)
+void PiPedalModel::SetChannelRouterSettings(int64_t clientId, ChannelRouterSettings::ptr &settings)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -3415,12 +3422,9 @@ void PiPedalModel::SetChannelRouterSettings(int64_t clientId,ChannelRouterSettin
     RestartAudio(); // no lock to avoid mutex deadlock when reader thread is sending notifications..
 
     this->FireChannelRouterSettingsChanged(clientId);
-
 }
 
-
-
-std::string PiPedalModel::Tone3000ThumbnailDirectory() 
+std::string PiPedalModel::Tone3000ThumbnailDirectory()
 {
     return "/var/pipedal/tone3000_thumbnails";
 }

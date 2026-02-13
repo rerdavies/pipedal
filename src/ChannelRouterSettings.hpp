@@ -35,6 +35,7 @@ namespace pipedal
 
         bool configured_ = false;
         int64_t channelRouterPresetId_ = -1;
+        bool changed_ = false;
 
         std::vector<int64_t> mainInputChannels_ = {1, 1};
         std::vector<int64_t> mainOutputChannels_ = {0, 1};
@@ -60,6 +61,7 @@ namespace pipedal
 
         JSON_GETTER_SETTER(configured)
         JSON_GETTER_SETTER(channelRouterPresetId)
+        JSON_GETTER_SETTER(changed)
         JSON_GETTER_SETTER_REF(mainInputChannels)
         JSON_GETTER_SETTER_REF(mainOutputChannels)
         JSON_GETTER_SETTER_REF(mainInserts)
@@ -108,6 +110,58 @@ namespace pipedal
         std::vector<int64_t> auxOutputChannels_;
         std::vector<int64_t> sendInputChannels_;
         std::vector<int64_t> sendOutputChannels_;
+    };
+
+    class ChannelRouterPresetIndexEntry {
+    private:
+        int64_t id_ = -1;
+        std::string name_;
+    public: 
+        ChannelRouterPresetIndexEntry() = default;
+        ChannelRouterPresetIndexEntry(const ChannelRouterPresetIndexEntry&other) = default;
+        ChannelRouterPresetIndexEntry(ChannelRouterPresetIndexEntry&&other) = default;
+        ChannelRouterPresetIndexEntry&operator=(const ChannelRouterPresetIndexEntry&other) = default;
+        ChannelRouterPresetIndexEntry&operator=(ChannelRouterPresetIndexEntry&&other) = default;
+
+        ChannelRouterPresetIndexEntry(int64_t id, const std::string&name)
+        : id_(id),name_(name) { }
+
+
+        JSON_GETTER_SETTER(id)
+        JSON_GETTER_SETTER_REF(name)
+
+        DECLARE_JSON_MAP(ChannelRouterPresetIndexEntry);
+    };
+
+
+    class ChannelRouterPresetBankEntry {
+    private:
+        int64_t id_;
+        std::string name_;
+        ChannelRouterSettings channelRouterSettings_;
+    public: 
+        JSON_GETTER_SETTER(id)
+        JSON_GETTER_SETTER_REF(name)
+        JSON_GETTER_SETTER_REF(channelRouterSettings)
+
+        DECLARE_JSON_MAP(ChannelRouterPresetBankEntry);
+
+    };
+
+    class ChannelRouterPresetBank {
+    private:
+        int64_t nextId_ = 1;
+        int64_t version_ = 1;
+        std::vector<std::shared_ptr<ChannelRouterPresetBankEntry>> entries_; 
+    public:
+        
+        JSON_GETTER_SETTER(nextId)
+        JSON_GETTER_SETTER(version)
+        JSON_GETTER_SETTER_REF(entries)
+
+        std::vector<ChannelRouterPresetIndexEntry> getIndexEntries();
+
+        DECLARE_JSON_MAP(ChannelRouterPresetBank);
     };
 
 }

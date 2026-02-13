@@ -740,6 +740,7 @@ add_executable(pipedalconfig
     ModFileTypes.cpp ModFileTypes.hpp
     MimeTypes.cpp MimeTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
+    PiPedalAlsa.hpp PiPedalAlsa.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
@@ -817,6 +818,7 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
 
     SetWifiConfig.cpp SetWifiConfig.hpp
     JackServerSettings.hpp JackServerSettings.cpp
+    PiPedalAlsa.hpp PiPedalAlsa.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
     SystemConfigFile.hpp SystemConfigFile.cpp
@@ -824,7 +826,7 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     asan_options.cpp
 
     )
-target_link_libraries(pipedaladmind PRIVATE PiPedalCommon pthread atomic stdc++fs systemd )
+target_link_libraries(pipedaladmind PRIVATE PiPedalCommon pthread atomic stdc++fs systemd asound)
 
 add_executable(processcopyrights copyrightMain.cpp
     CommandLineParser.hpp
