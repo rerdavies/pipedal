@@ -82,7 +82,7 @@ PiPedalModel::PiPedalModel()
     this->updater = Updater::Create();
     this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
-    this->pedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
+    this->pedalboard = Pedalboard::MakeDefault(PedalboardType::MainPedalboard);
 
     this->jackServerSettings = this->storage.GetJackServerSettings();
 
@@ -394,7 +394,7 @@ void PiPedalModel::Load()
     if (CrashGuard::HasCrashed())
     {
         // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
-        this->pedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
+        this->pedalboard = Pedalboard::MakeDefault(PedalboardType::MainPedalboard);
     }
     else
     {
@@ -1732,7 +1732,7 @@ void PiPedalModel::OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, f
     }
 }
 
-void PiPedalModel::OnNotifyVusSubscription(const std::vector<VuUpdate> &updates)
+void PiPedalModel::OnNotifyVusSubscription(const std::vector<VuUpdateX> &updates)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     for (size_t i = 0; i < updates.size(); ++i)
@@ -1746,6 +1746,22 @@ void PiPedalModel::OnNotifyVusSubscription(const std::vector<VuUpdate> &updates)
     }
 }
 
+static bool isStartOrEndControl(int64_t controlId)
+{
+    switch (controlId)
+    {
+    case Pedalboard::START_CONTROL_ID:
+    case Pedalboard::END_CONTROL_ID:
+    case Pedalboard::MAIN_INSERT_START_CONTROL_ID:
+    case Pedalboard::MAIN_INSERT_END_CONTROL_ID:
+    case Pedalboard::AUX_INSERT_START_CONTROL_ID:
+    case Pedalboard::AUX_INSERT_END_CONTROL_ID:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void PiPedalModel::UpdateRealtimeVuSubscriptions()
 {
     std::set<int64_t> addedInstances;
@@ -1753,7 +1769,7 @@ void PiPedalModel::UpdateRealtimeVuSubscriptions()
     for (int i = 0; i < activeVuSubscriptions.size(); ++i)
     {
         auto instanceId = activeVuSubscriptions[i].instanceid;
-        if (pedalboard.HasItem(instanceId) || instanceId == Pedalboard::START_CONTROL_ID || instanceId == Pedalboard::END_CONTROL_ID)
+        if (pedalboard.HasItem(instanceId) || isStartOrEndControl(instanceId))
         {
             addedInstances.insert(activeVuSubscriptions[i].instanceid);
         }
@@ -1778,8 +1794,15 @@ int64_t PiPedalModel::MonitorPort(int64_t instanceId, const std::string &key, fl
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     int64_t subscriptionId = ++nextSubscriptionId;
+    PedalboardType pedalboardType = Pedalboard::GetPedalboardTypeFromInstanceId(instanceId);
     activeMonitorPortSubscriptions.push_back(
-        MonitorPortSubscription{subscriptionId, instanceId, key, updateInterval, onUpdate});
+        MonitorPortSubscription{
+            subscriptionId, 
+            pedalboardType,
+            instanceId, 
+            key, 
+            updateInterval, 
+            onUpdate});
 
     UpdateRealtimeMonitorPortSubscriptions();
 

@@ -38,10 +38,17 @@ namespace pipedal {
 
     AudioDriver* CreateAlsaDriver(AudioDriverHost*driverHost);
 
-    // test only.
-    void AlsaFormatEncodeDecodeTest(AudioDriverHost*driverHost);
-    void MidiDecoderTest();
+    namespace test {
+        // Private use, test only. 
+        void AlsaFormatEncodeDecodeTest(AudioDriverHost*driverHost);
+        void MidiDecoderTest();
+    }
 
     void FreeAlsaGlobals(); // for valgrind. Free the Alsa configuration cache.
+
+    // AlsaDeviceInfo MakeDummyDeviceInfo(uint32_t channels);
+    uint32_t GetDummyAudioChannels(const std::string &deviceName);
+    // std::shared_ptr<AudioDriver> CreateDummyAudioDriver(AudioDriverHost*driverHost,const std::string&deviceId);
+
 }
 

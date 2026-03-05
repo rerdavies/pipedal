@@ -63,6 +63,8 @@ public:
         delete[] outputBuffers;
     }
 
+    bool OnRealtimeUpdateDeviceVus(size_t nFrames) override { return false; }
+
     void initializeChannelSelection(JackConfiguration &jackConfiguration, ChannelSelection &channelSelection)
     {
         size_t nInputs = std::max(jackConfiguration.inputAudioPorts().size(),size_t(2));
@@ -85,7 +87,7 @@ public:
     void Test()
     {
 
-        AlsaFormatEncodeDecodeTest(this);
+        test::AlsaFormatEncodeDecodeTest(this);
 
         JackServerSettings serverSettings("hw:M2","hw:M2", 48000, 32, 3);
 
@@ -295,5 +297,5 @@ TEST_CASE("alsa_midi_test", "[alsa_midi_test]")
 {
     AlsaTester alsaDriver(AlsaTester::TestType::Oscillator);
 
-    MidiDecoderTest();
+    test::MidiDecoderTest();
 }

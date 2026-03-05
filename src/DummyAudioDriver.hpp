@@ -24,6 +24,7 @@
 
 #pragma once
 
+#ifdef JUNK
 #include <lilv/lilv.h>
 #include "AudioDriver.hpp"
 #include "JackServerSettings.hpp"
@@ -36,4 +37,5 @@ namespace pipedal {
     AudioDriver* CreateDummyAudioDriver(AudioDriverHost*driverHost,const std::string&deviceId);
 
 }
+#endif
 

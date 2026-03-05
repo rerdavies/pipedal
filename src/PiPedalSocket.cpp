@@ -2371,15 +2371,15 @@ private:
     int updateRequestOutstanding = 0;
     bool vuUpdateDropped = false;
 
-    virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates)
+    virtual void OnVuMeterUpdate(const std::vector<VuUpdateX> &updates)
     {
         std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-        if (updateRequestOutstanding < 5) // throttle to accomodate a web page that can't keep up.
+        if (updateRequestOutstanding < 1) // throttle to accomodate a web page that can't keep up.
         {
             vuUpdateDropped = false;
             for (int i = 0; i < updates.size(); ++i)
             {
-                const VuUpdate &vuUpdate = updates[i];
+                const VuUpdateX &vuUpdate = updates[i];
                 bool interested = false;
                 for (int i = 0; i < this->activeVuSubscriptions.size(); ++i)
                 {
@@ -2392,7 +2392,7 @@ private:
                 if (interested)
                 {
                     updateRequestOutstanding++;
-                    this->Request<bool, VuUpdate>(
+                    this->Request<bool, VuUpdateX>(
                         "onVuUpdate",
                         vuUpdate,
                         [this](const bool &result)

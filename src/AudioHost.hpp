@@ -148,6 +148,7 @@ namespace pipedal
     {
     public:
         int64_t subscriptionHandle;
+        PedalboardType pedalboardType;
         int64_t instanceid;
         std::string key;
         float updateInterval;
@@ -159,7 +160,7 @@ namespace pipedal
     public:
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) = 0;
         virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
-        virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) = 0;
+        virtual void OnNotifyVusSubscription(const std::vector<VuUpdateX> &updates) = 0;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
         virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;

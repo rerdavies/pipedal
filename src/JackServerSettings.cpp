@@ -155,6 +155,8 @@ void JackServerSettings::FixUpDeviceNames()
     }
 }
 
+
+
 JSON_MAP_BEGIN(JackServerSettings)
 JSON_MAP_REFERENCE(JackServerSettings, valid)
 JSON_MAP_REFERENCE(JackServerSettings, isOnboarding)

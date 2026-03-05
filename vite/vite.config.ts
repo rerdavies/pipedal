@@ -14,7 +14,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: false,
       },
-      '/var': {
+      '^/var/(?!config\\.json$).*': {
         target: 'http://localhost:8080',
         changeOrigin: false,
       },

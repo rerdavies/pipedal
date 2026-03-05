@@ -25,13 +25,14 @@
 #include "StateInterface.hpp"
 #include "atom_object.hpp"
 
-namespace pipedal {
+namespace pipedal
+{
     class SnapshotValue;
     class Snapshot;
     class PluginHost;
-    
-#define SPLIT_PEDALBOARD_ITEM_URI  "uri://two-play/pipedal/pedalboard#Split"
-#define EMPTY_PEDALBOARD_ITEM_URI  "uri://two-play/pipedal/pedalboard#Empty"
+
+#define SPLIT_PEDALBOARD_ITEM_URI "uri://two-play/pipedal/pedalboard#Split"
+#define EMPTY_PEDALBOARD_ITEM_URI "uri://two-play/pipedal/pedalboard#Empty"
 
 #define SPLIT_SPLITTYPE_KEY "splitType"
 #define SPLIT_SELECT_KEY "select"
@@ -41,280 +42,284 @@ namespace pipedal {
 #define SPLIT_PANR_KEY "panR"
 #define SPLIT_VOLR_KEY "volR"
 
-
-#define GETTER_SETTER_REF(name) \
-    const decltype(name##_)& name() const { return name##_;} \
+#define GETTER_SETTER_REF(name)                               \
+    const decltype(name##_) &name() const { return name##_; } \
     void name(const decltype(name##_) &value) { name##_ = value; }
 
-#define GETTER_SETTER_VEC(name) \
-    decltype(name##_)& name()  { return name##_;}  \
-    const decltype(name##_)& name() const  { return name##_;} \
-    void name(decltype(name##_)&&value) { this->name##_ = std::move(value); }\
-    void name(const decltype(name##_)&value) { this->name##_ = value; }
+#define GETTER_SETTER_VEC(name)                                                \
+    decltype(name##_) &name() { return name##_; }                              \
+    const decltype(name##_) &name() const { return name##_; }                  \
+    void name(decltype(name##_) &&value) { this->name##_ = std::move(value); } \
+    void name(const decltype(name##_) &value) { this->name##_ = value; }
 
-
-
-#define GETTER_SETTER(name) \
-    decltype(name##_) name() const { return name##_;} \
+#define GETTER_SETTER(name)                            \
+    decltype(name##_) name() const { return name##_; } \
     void name(decltype(name##_) value) { name##_ = value; }
 
-class ControlValue {
-private:
-    std::string key_;
-    float value_;
-public:
-    ControlValue()
+    class ControlValue
     {
+    private:
+        std::string key_;
+        float value_;
 
-    }
-    ControlValue(const char*key, float value)
-    :key_(key)
-    , value_(value)
-    {
-
-    }
-    ControlValue(const std::string&key, float value)
-    :key_(key)
-    , value_(value)
-    {
-
-    }
-    GETTER_SETTER_REF(key)
-    GETTER_SETTER_REF(value)
-
-    DECLARE_JSON_MAP(ControlValue);
-
-
-};
-
-class PedalboardItem {
-public:
-    using PropertyMap = std::map<std::string,atom_object>;
-    int64_t instanceId_ = 0;
-    std::string uri_;
-    std::string pluginName_;
-    bool isEnabled_ = true;
-    std::vector<ControlValue> controlValues_;
-    std::vector<PedalboardItem> topChain_;
-    std::vector<PedalboardItem> bottomChain_;
-    std::vector<MidiBinding> midiBindings_;
-    std::optional<MidiChannelBinding> midiChannelBinding_;
-    std::string vstState_;
-    uint32_t stateUpdateCount_ = 0;
-    Lv2PluginState lv2State_;
-    std::string lilvPresetUri_;
-    std::map<std::string,std::string> pathProperties_;
-    std::string title_;
-    bool useModUi_ = false;
-    std::string iconColor_;
-    int64_t sideChainInputId_ = -1;
-
-    // non persistent state.
-    PropertyMap patchProperties;
-public:
-    ControlValue*GetControlValue(const std::string&symbol);
-    const ControlValue*GetControlValue(const std::string&symbol) const;
-    bool SetControlValue(const std::string&key, float value);
-
-    bool IsStructurallyIdentical(const PedalboardItem&other) const;
-
-    void ApplySnapshotValue(SnapshotValue*snapshotValue);
-    void ApplyDefaultValues(PluginHost&pluginHost);
-    bool hasLv2State() const {
-        return lv2State_.isValid_ != 0;
-    }
-    GETTER_SETTER(instanceId)
-    GETTER_SETTER_REF(uri)
-    GETTER_SETTER_REF(vstState);
-    GETTER_SETTER_REF(pluginName)
-    GETTER_SETTER(isEnabled)
-    GETTER_SETTER_VEC(controlValues)
-    GETTER_SETTER_VEC(topChain)
-    GETTER_SETTER_VEC(bottomChain)
-    GETTER_SETTER_VEC(midiBindings)
-    GETTER_SETTER_REF(midiChannelBinding)
-    GETTER_SETTER_REF(pathProperties)
-    GETTER_SETTER(stateUpdateCount)
-    GETTER_SETTER_REF(lv2State)
-    GETTER_SETTER_REF(title)
-    GETTER_SETTER_REF(iconColor)
-    GETTER_SETTER(useModUi)
-    GETTER_SETTER(sideChainInputId)
-    
-    Lv2PluginState&lv2State() { return lv2State_; } // non-const version.
-    GETTER_SETTER_REF(lilvPresetUri)
-
-    PropertyMap&PatchProperties() { return patchProperties; }
-    const PropertyMap&PatchProperties() const { return patchProperties; }
-
-
-    bool isSplit() const
-    {
-        return uri_ == SPLIT_PEDALBOARD_ITEM_URI;
-    }
-    bool isEmpty() const {
-        return uri_ == EMPTY_PEDALBOARD_ITEM_URI;
-    }
-
-    void AddToSnapshotFromCurrentSettings(Snapshot&snapshot) const;
-    void AddResetsForMissingProperties(Snapshot&snapshot, size_t*index) const;
-
-
-    // virtual void write_members(json_writer&writer) const {
-    //     writer.write_member("instanceId",instanceId_);
-    //     writer.write_member("uri",uri_);
-    //     writer.write_member("pluginName",pluginName_);
-    //     writer.write_member("isEnabled",isEnabled_);
-    //     if (isSplit())
-    //     {
-    //         writer.write_member("topChain",topChain_);
-    //         writer.write_member("bottomChain",bottomChain_);
-    //     }
-    // }
-
-    DECLARE_JSON_MAP(PedalboardItem);
-
-};
-
-class SnapshotValue {
-public:
-    uint64_t instanceId_;
-    bool isEnabled_ = true;
-    std::vector<ControlValue> controlValues_;
-    Lv2PluginState lv2State_;
-    std::map<std::string,std::string> pathProperties_;
-    DECLARE_JSON_MAP(SnapshotValue);
-
-    ControlValue*GetControlValue(const std::string& key) {
-        for (ControlValue&controlValue: controlValues_) {
-            if (controlValue.key() == key) {
-                return &controlValue;
-            }
+    public:
+        ControlValue()
+        {
         }
-        return nullptr;
-    }
-    void SetControlValue(const std::string& key,float value) {
-        for (ControlValue&controlValue: controlValues_) {
-            if (controlValue.key() == key) {
-                controlValue.value(value);
-                return;
-            }
+        ControlValue(const char *key, float value)
+            : key_(key), value_(value)
+        {
         }
-        controlValues_.push_back(ControlValue{key,value});
-    }
-    
-};
+        ControlValue(const std::string &key, float value)
+            : key_(key), value_(value)
+        {
+        }
+        GETTER_SETTER_REF(key)
+        GETTER_SETTER_REF(value)
 
-class Snapshot {
-public:
-    std::string name_;
-    std::string color_;
-    bool isModified_ = false;
-    std::vector<SnapshotValue> values_;
-
-    DECLARE_JSON_MAP(Snapshot);
-
-};
-
-class Pedalboard {
-    std::string name_;
-    float input_volume_db_ = 0;
-    float output_volume_db_ = 0;
-
-    std::vector<PedalboardItem> items_;
-    uint64_t nextInstanceId_ = 0;
-    uint64_t NextInstanceId() { return ++nextInstanceId_; }
-
-    std::vector<std::shared_ptr<Snapshot>> snapshots_;
-    int64_t selectedSnapshot_ = -1;
-
-    int64_t selectedPlugin_ = -1;
-
-                                            
-    static constexpr int64_t TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
-    static constexpr int64_t TWO_POWER_48 = 281474976710656; // Number of possible instance IDs for Main Pedalboards.
-    static constexpr int64_t MAX_INSTANCE_ID = TWO_POWER_48;
-
-public:
-
-    enum class PedalboardType {
-        MainPedalboard,
-        MainInsert,
-        AuxInsert
+        DECLARE_JSON_MAP(ControlValue);
     };
-    static constexpr int64_t MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52-2*MAX_INSTANCE_ID;
-    static constexpr int64_t  AUX_INSERT_INSTANCE_BASE = TWO_POWER_52-1*MAX_INSTANCE_ID;
 
-    static constexpr int64_t  CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Controls.
+    class PedalboardItem
+    {
+    public:
+        using PropertyMap = std::map<std::string, atom_object>;
+        int64_t instanceId_ = 0;
+        std::string uri_;
+        std::string pluginName_;
+        bool isEnabled_ = true;
+        std::vector<ControlValue> controlValues_;
+        std::vector<PedalboardItem> topChain_;
+        std::vector<PedalboardItem> bottomChain_;
+        std::vector<MidiBinding> midiBindings_;
+        std::optional<MidiChannelBinding> midiChannelBinding_;
+        std::string vstState_;
+        uint32_t stateUpdateCount_ = 0;
+        Lv2PluginState lv2State_;
+        std::string lilvPresetUri_;
+        std::map<std::string, std::string> pathProperties_;
+        std::string title_;
+        bool useModUi_ = false;
+        std::string iconColor_;
+        int64_t sideChainInputId_ = -1;
 
-    static constexpr int64_t START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
-    static constexpr int64_t END_CONTROL_ID = -3; // synthetic PedalboardItem for output volume.
-    static constexpr int64_t MAIN_INSERT_START_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
-    static constexpr int64_t MAIN_INSERT_END_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
-    static constexpr int64_t AUX_INSERT_START_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
-    static constexpr int64_t AUX_INSERT_END_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
+        // non persistent state.
+        PropertyMap patchProperties;
 
-    static PedalboardType GetInstanceTypeFromInstanceId(int64_t instanceId) { 
-        if (instanceId == START_CONTROL_ID) return PedalboardType::MainPedalboard;
-        if (instanceId == END_CONTROL_ID) return PedalboardType::MainPedalboard;
+    public:
+        ControlValue *GetControlValue(const std::string &symbol);
+        const ControlValue *GetControlValue(const std::string &symbol) const;
+        bool SetControlValue(const std::string &key, float value);
 
-        if (instanceId >= MAIN_INSERT_INSTANCE_BASE) {
-            return PedalboardType::MainInsert;
-        } else if (instanceId >= AUX_INSERT_INSTANCE_BASE) {
-            return PedalboardType::AuxInsert;
-        } else {
-            return PedalboardType::MainPedalboard;
+        bool IsStructurallyIdentical(const PedalboardItem &other) const;
+
+        void ApplySnapshotValue(SnapshotValue *snapshotValue);
+        void ApplyDefaultValues(PluginHost &pluginHost);
+        bool hasLv2State() const
+        {
+            return lv2State_.isValid_ != 0;
         }
-    }
-    PedalboardType GetInstanceType() const {
-        return GetInstanceTypeFromInstanceId(this->nextInstanceId_); // instanceId is irrelevant here.
-    }   
+        GETTER_SETTER(instanceId)
+        GETTER_SETTER_REF(uri)
+        GETTER_SETTER_REF(vstState);
+        GETTER_SETTER_REF(pluginName)
+        GETTER_SETTER(isEnabled)
+        GETTER_SETTER_VEC(controlValues)
+        GETTER_SETTER_VEC(topChain)
+        GETTER_SETTER_VEC(bottomChain)
+        GETTER_SETTER_VEC(midiBindings)
+        GETTER_SETTER_REF(midiChannelBinding)
+        GETTER_SETTER_REF(pathProperties)
+        GETTER_SETTER(stateUpdateCount)
+        GETTER_SETTER_REF(lv2State)
+        GETTER_SETTER_REF(title)
+        GETTER_SETTER_REF(iconColor)
+        GETTER_SETTER(useModUi)
+        GETTER_SETTER(sideChainInputId)
 
+        Lv2PluginState &lv2State() { return lv2State_; } // non-const version.
+        GETTER_SETTER_REF(lilvPresetUri)
 
+        PropertyMap &PatchProperties() { return patchProperties; }
+        const PropertyMap &PatchProperties() const { return patchProperties; }
 
-    Pedalboard(PedalboardType instanceType = PedalboardType::MainPedalboard);
+        bool isSplit() const
+        {
+            return uri_ == SPLIT_PEDALBOARD_ITEM_URI;
+        }
+        bool isEmpty() const
+        {
+            return uri_ == EMPTY_PEDALBOARD_ITEM_URI;
+        }
 
-    // deep copy, breaking shared pointers.
-    Pedalboard DeepCopy(); 
-    
-    bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
-    bool SetItemTitle(int64_t pedalItemId, const std::string &title, const std::string&iconColor);
-    bool SetItemEnabled(int64_t pedalItemId, bool enabled);
-    bool SetItemUseModUi(int64_t pedalItemId, bool enabled);
-    void  SetCurrentSnapshotModified(bool modified);
+        void AddToSnapshotFromCurrentSettings(Snapshot &snapshot) const;
+        void AddResetsForMissingProperties(Snapshot &snapshot, size_t *index) const;
 
-    bool IsStructureIdentical(const Pedalboard &other) const; // caan we just send a snapshot-style uddate instead of reloading plugins? All settings are ignored.
-    Snapshot MakeSnapshotFromCurrentSettings(const Pedalboard &previousPedalboard);
+        // virtual void write_members(json_writer&writer) const {
+        //     writer.write_member("instanceId",instanceId_);
+        //     writer.write_member("uri",uri_);
+        //     writer.write_member("pluginName",pluginName_);
+        //     writer.write_member("isEnabled",isEnabled_);
+        //     if (isSplit())
+        //     {
+        //         writer.write_member("topChain",topChain_);
+        //         writer.write_member("bottomChain",bottomChain_);
+        //     }
+        // }
 
-    PedalboardItem*GetItem(int64_t pedalItemId);
-    const PedalboardItem*GetItem(int64_t pedalItemId) const;
-    std::vector<PedalboardItem*>GetAllPlugins();
+        DECLARE_JSON_MAP(PedalboardItem);
+    };
 
-    bool HasItem(int64_t pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
-    bool ApplySnapshot(int64_t snapshotIndex, PluginHost &pluginHost);
+    class SnapshotValue
+    {
+    public:
+        uint64_t instanceId_;
+        bool isEnabled_ = true;
+        std::vector<ControlValue> controlValues_;
+        Lv2PluginState lv2State_;
+        std::map<std::string, std::string> pathProperties_;
+        DECLARE_JSON_MAP(SnapshotValue);
 
-    GETTER_SETTER_REF(name)
-    GETTER_SETTER_VEC(items)
-    GETTER_SETTER(input_volume_db)
-    GETTER_SETTER(output_volume_db)
-    GETTER_SETTER_VEC(snapshots)
-    GETTER_SETTER(selectedSnapshot)
-    GETTER_SETTER(selectedPlugin)
+        ControlValue *GetControlValue(const std::string &key)
+        {
+            for (ControlValue &controlValue : controlValues_)
+            {
+                if (controlValue.key() == key)
+                {
+                    return &controlValue;
+                }
+            }
+            return nullptr;
+        }
+        void SetControlValue(const std::string &key, float value)
+        {
+            for (ControlValue &controlValue : controlValues_)
+            {
+                if (controlValue.key() == key)
+                {
+                    controlValue.value(value);
+                    return;
+                }
+            }
+            controlValues_.push_back(ControlValue{key, value});
+        }
+    };
 
+    class Snapshot
+    {
+    public:
+        std::string name_;
+        std::string color_;
+        bool isModified_ = false;
+        std::vector<SnapshotValue> values_;
 
-    DECLARE_JSON_MAP(Pedalboard);
+        DECLARE_JSON_MAP(Snapshot);
+    };
 
-    PedalboardItem MakeEmptyItem();
-    PedalboardItem MakeSplit();
+    enum class PedalboardType
+    {
+        Invalid = 0,
+        MainPedalboard = 1,
+        MainInserts = 2,
+        AuxInserts = 3
+    };
 
+    class Pedalboard
+    {
+        std::string name_;
+        float input_volume_db_ = 0;
+        float output_volume_db_ = 0;
 
-    static Pedalboard MakeDefault(Pedalboard::PedalboardType instanceType = Pedalboard::PedalboardType::MainPedalboard);
-};
+        std::vector<PedalboardItem> items_;
+        uint64_t nextInstanceId_ = 0;
+        uint64_t NextInstanceId() { return ++nextInstanceId_; }
+
+        std::vector<std::shared_ptr<Snapshot>> snapshots_;
+        int64_t selectedSnapshot_ = -1;
+
+        int64_t selectedPlugin_ = -1;
+
+        static constexpr int64_t TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
+        static constexpr int64_t TWO_POWER_48 = 281474976710656;  // Number of possible instance IDs for Main Pedalboards.
+        static constexpr int64_t MAX_INSTANCE_ID = TWO_POWER_48;
+
+    public:
+        static constexpr int64_t MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52 - 2 * MAX_INSTANCE_ID;
+        static constexpr int64_t AUX_INSERT_INSTANCE_BASE = TWO_POWER_52 - 1 * MAX_INSTANCE_ID;
+
+        static constexpr int64_t CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Controls.
+
+        static constexpr int64_t START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
+        static constexpr int64_t END_CONTROL_ID = -3;   // synthetic PedalboardItem for output volume.
+        static constexpr int64_t MAIN_INSERT_START_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 2;
+        static constexpr int64_t MAIN_INSERT_END_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 3;
+        static constexpr int64_t AUX_INSERT_START_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 2;
+        static constexpr int64_t AUX_INSERT_END_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 3;
+
+        static PedalboardType GetPedalboardTypeFromInstanceId(int64_t instanceId)
+        {
+            if (instanceId == START_CONTROL_ID)
+                return PedalboardType::MainPedalboard;
+            if (instanceId == END_CONTROL_ID)
+                return PedalboardType::MainPedalboard;
+
+            if (instanceId >= MAIN_INSERT_INSTANCE_BASE)
+            {
+                return PedalboardType::MainInserts;
+            }
+            else if (instanceId >= AUX_INSERT_INSTANCE_BASE)
+            {
+                return PedalboardType::AuxInserts;
+            }
+            else
+            {
+                return PedalboardType::MainPedalboard;
+            }
+        }
+        PedalboardType GetInstanceType() const
+        {
+            return GetPedalboardTypeFromInstanceId(this->nextInstanceId_); // instanceId is irrelevant here.
+        }
+
+        Pedalboard(PedalboardType instanceType = PedalboardType::MainPedalboard);
+
+        // deep copy, breaking shared pointers.
+        Pedalboard DeepCopy();
+
+        bool SetControlValue(int64_t pedalItemId, const std::string &symbol, float value);
+        bool SetItemTitle(int64_t pedalItemId, const std::string &title, const std::string &iconColor);
+        bool SetItemEnabled(int64_t pedalItemId, bool enabled);
+        bool SetItemUseModUi(int64_t pedalItemId, bool enabled);
+        void SetCurrentSnapshotModified(bool modified);
+
+        bool IsStructureIdentical(const Pedalboard &other) const; // caan we just send a snapshot-style uddate instead of reloading plugins? All settings are ignored.
+        Snapshot MakeSnapshotFromCurrentSettings(const Pedalboard &previousPedalboard);
+
+        PedalboardItem *GetItem(int64_t pedalItemId);
+        const PedalboardItem *GetItem(int64_t pedalItemId) const;
+        std::vector<PedalboardItem *> GetAllPlugins();
+
+        bool HasItem(int64_t pedalItemid) const { return GetItem(pedalItemid) != nullptr; }
+        bool ApplySnapshot(int64_t snapshotIndex, PluginHost &pluginHost);
+
+        GETTER_SETTER_REF(name)
+        GETTER_SETTER_VEC(items)
+        GETTER_SETTER(input_volume_db)
+        GETTER_SETTER(output_volume_db)
+        GETTER_SETTER_VEC(snapshots)
+        GETTER_SETTER(selectedSnapshot)
+        GETTER_SETTER(selectedPlugin)
+
+        DECLARE_JSON_MAP(Pedalboard);
+
+        PedalboardItem MakeEmptyItem();
+        PedalboardItem MakeSplit();
+
+        static Pedalboard MakeDefault(PedalboardType instanceType = PedalboardType::MainPedalboard);
+    };
 
 #undef GETTER_SETTER_REF
 #undef GETTER_SETTER_VEC
 #undef GETTER_SETTER
-
-
 
 } // namespace pipedal

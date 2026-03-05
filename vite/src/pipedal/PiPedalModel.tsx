@@ -2517,6 +2517,7 @@ export class PiPedalModel //implements PiPedalModel
         } else {
             let newTarget = new VuSubscriptionTarget();
             newTarget.subscribers.push(result);
+            this.vuSubscriptions[instanceId] = newTarget;
 
             this.webSocket.request<number>("addVuSubscription", instanceId)
                 .then((subscriptionHandle) => {
@@ -2526,6 +2527,9 @@ export class PiPedalModel //implements PiPedalModel
                     } else {
                         newTarget.serverSubscriptionHandle = subscriptionHandle;
                     }
+                }).catch((error) => {
+                    // failed to subscribe.
+                    this.vuSubscriptions[instanceId] = undefined; 
                 });
 
             this.vuSubscriptions[instanceId] = newTarget;

@@ -75,7 +75,7 @@ namespace pipedal
         virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
         virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings) = 0;
-        virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates) = 0;
+        virtual void OnVuMeterUpdate(const std::vector<VuUpdateX> &updates) = 0;
         virtual void OnBankIndexChanged(const BankIndex &bankIndex) = 0;
         virtual void OnJackServerSettingsChanged(const JackServerSettings &jackServerSettings) = 0;
         virtual void OnJackConfigurationChanged(const JackConfiguration &jackServerConfiguration) = 0;
@@ -251,7 +251,7 @@ namespace pipedal
     private: // IAudioHostCallbacks
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
         virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
-        virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) override;
+        virtual void OnNotifyVusSubscription(const std::vector<VuUpdateX> &updates) override;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
         virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) override;

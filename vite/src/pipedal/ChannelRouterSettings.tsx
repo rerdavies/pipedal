@@ -15,9 +15,23 @@ function isActiveChannel(channels: number[]): boolean {
     return channels[1] !== -1 || channels[0] !== -1;
 }
 
-function chName(ch: number): string {
+function chName(ch: number, maxChannels: number): string {
     if (ch === -1) {
         return "None";
+    }
+    if (ch === MAIN_OUT_LEFT_CHANNEL) {
+        return "Main Out L";
+    }
+    if (ch === MAIN_OUT_RIGHT_CHANNEL) {
+        return "Main Out R";
+    }
+    if (maxChannels <= 2) {
+        if (ch === 0) {
+            return "Left";
+        }
+        if (ch === 1) {
+            return "Right";
+        }
     }
     return "Ch" + (ch + 1);
 }
@@ -39,17 +53,14 @@ function channelPairName(channels: number[], maxChannels: number, input: boolean
         if (channels[0] === 0 && (channels[0] === channels[1] || channels[1] === -1)) {
             return "Left";
         }
-        if (channels[1] === 1 && (channels[0] === channels[1])) {
+        if (channels[1] === 1 && (channels[0] === channels[1] || channels[0] === -1)) {
             return "Right";
         }
-        if (channels[0] === 1 && channels[1] === 0) {
-            return "Right,Left";
-        }
     }
-    if (channels[0] === channels[1]) {
-        return chName(channels[0]);
+    if (channels[0] === channels[1] || channels[1] === -1) {
+        return chName(channels[0],maxChannels);
     }
-    return '[' + chName(channels[0]) + " " + chName(channels[1]) + "]";
+    return '[' + chName(channels[0],maxChannels) + " " + chName(channels[1],maxChannels) + "]";
 }
 
 

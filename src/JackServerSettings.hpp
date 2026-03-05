@@ -60,7 +60,7 @@ namespace pipedal
         {
             FixUpDeviceNames();
         }
-
+        
         uint64_t GetSampleRate() const { return sampleRate_; }
 
         uint32_t GetBufferSize() const { return bufferSize_; }
@@ -78,17 +78,17 @@ namespace pipedal
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
-            this->alsaDevice_  = "dummy:channels_2";
-            this->alsaInputDevice_  = "dummy:channels_2";
-            this->alsaInputDeviceName_ = "Stopped";
-            this->alsaOutputDevice_  = "dummy:channels_2";
-            this->alsaOutputDeviceName_ = "Stopped";
+            bufferSize_ = 256;
+            numberOfBuffers_  = 6;
+
+            this->alsaDevice_  = "";
+            this->alsaInputDevice_  = "null";
+            this->alsaInputDeviceName_ = "null";
+            this->alsaOutputDevice_  = "null";
+            this->alsaOutputDeviceName_ = "null";
         }
         bool IsDummyAudioDevice() const {
-            return 
-                this->alsaDevice_.starts_with("__DUMMY_AUDIO__")
-                || this->alsaDevice_.starts_with("dummy:")
-                || this->alsaInputDevice_.starts_with("dummy:");
+            return alsaInputDevice_ == "null" && alsaOutputDevice_ == "null";
         }
 
         bool IsValid() const { return valid_; }

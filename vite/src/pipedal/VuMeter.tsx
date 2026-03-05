@@ -200,6 +200,7 @@ interface VuMeterProps extends WithStyles<typeof styles> {
     instanceId: number;
     display: "input" | "output";
     theme: Theme;
+    height: number | undefined;
     displayText?: boolean;
 }
 
@@ -462,6 +463,20 @@ export const VuMeter =
             render() {
                 let displayText = this.props.displayText??false;
                 const classes = withStyles.getClasses(this.props);
+                if (this.props.height !== undefined) 
+                {
+                    let height = this.props.height;
+                    let scale = height / DISPLAY_HEIGHT;
+                    return (
+                        <div style={{ height: height, transform: `scale(1.0, ${scale})`, transformOrigin: "top left" }}>
+                            <div className={this.state.isStereo? classes.stereoTextFrame: classes.monoTextFrame}>
+                                {
+                                    this.renderVus()
+                                }
+                            </div>
+                        </div>
+                    );
+                }
                 if (displayText)
                 {
                     return (
@@ -526,7 +541,7 @@ export const VuMeter =
             componentDidMount() {
                 this.model.state.addOnChangedHandler(this.onStateChanged);
 
-                this.addVuSubscription();
+                //this.addVuSubscription();
             }
             componentWillUnmount() {
                 this.removeVuSubscription();

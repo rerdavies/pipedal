@@ -106,11 +106,11 @@ namespace pipedal
 
     struct RealtimePedalboardItemIndex {
         RealtimePedalboardItemIndex()
-            : instanceType(Pedalboard::PedalboardType::MainPedalboard), index(-1)
+            : instanceType(PedalboardType::MainPedalboard), index(-1)
         {
         }
         RealtimePedalboardItemIndex(
-            Pedalboard::PedalboardType instanceType,
+            PedalboardType instanceType,
             int64_t index)
             : instanceType(instanceType), index(index)
         {
@@ -118,7 +118,7 @@ namespace pipedal
         RealtimePedalboardItemIndex(const RealtimePedalboardItemIndex& other) = default;
         RealtimePedalboardItemIndex& operator=(const RealtimePedalboardItemIndex& other) = default;
 
-        Pedalboard::PedalboardType instanceType = Pedalboard::PedalboardType::MainPedalboard;
+        PedalboardType instanceType = PedalboardType::MainPedalboard;
         int64_t index = -1;
     };
 
@@ -150,6 +150,7 @@ namespace pipedal
     {
     public:
         RealtimeMonitorPortSubscription() { delete callbackPtr; }
+        PedalboardType pedalboardType = PedalboardType::MainPedalboard;
         int64_t subscriptionHandle;
         int instanceIndex = 0;
         int portIndex = 0;
@@ -174,7 +175,7 @@ namespace pipedal
         }
         bool waitingForAcknowledge = false;
 
-        const std::vector<VuUpdate> *GetResult(size_t currentSample)
+        const std::vector<VuUpdateX> *GetResult(size_t currentSample)
         {
             for (size_t i = 0; i < vuUpdateWorkingData.size(); ++i)
             {
@@ -186,8 +187,8 @@ namespace pipedal
         }
 
         std::vector<RealtimePedalboardItemIndex> enabledIndexes;
-        std::vector<VuUpdate> vuUpdateWorkingData;
-        std::vector<VuUpdate> vuUpdateResponseData;
+        std::vector<VuUpdateX> vuUpdateWorkingData;
+        std::vector<VuUpdateX> vuUpdateResponseData;
 
         void Reset()
         {
@@ -494,7 +495,7 @@ namespace pipedal
             write(RingBufferCommand::SendMonitorPortUpdate, body);
         }
 
-        void SendVuUpdate(const std::vector<VuUpdate> *pUpdates)
+        void SendVuUpdate(const std::vector<VuUpdateX> *pUpdates)
         {
             write(RingBufferCommand::SendVuUpdate, pUpdates);
         }

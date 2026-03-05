@@ -19,6 +19,7 @@
 
 import React from 'react';
 import { useState } from 'react';
+import VuMeter from './VuMeter';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import Divider from '@mui/material/Divider';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -45,8 +46,8 @@ import  { PiPedalModel, PiPedalModelFactory } from './PiPedalModel';
 import { JackConfiguration } from './Jack';
 
 
-let debugInputChannels: number | null = 1;
-let debugOutputChannels: number | null = 1;
+let debugInputChannels: number | null = null;
+let debugOutputChannels: number | null = null;
 
 
 export interface ChannelRouterSettingsDialogProps {
@@ -539,11 +540,25 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
             </Select>
         )
     }
-    let Vu = () => {
+    let Vu = (routeType: RouteType, input: boolean) => {
+        let instanceId: number;
+        switch (routeType) {
+            case RouteType.Main:
+                instanceId = input ? Pedalboard.START_CONTROL : Pedalboard.MAIN_INSERT_END_CONTROL_ID;
+                break;
+            case RouteType.Aux:
+                instanceId = input ? Pedalboard.AUX_INSERT_START_CONTROL_ID : Pedalboard.AUX_INSERT_END_CONTROL_ID;
+                break;
+            case RouteType.Send:
+                instanceId = input ? Pedalboard.SEND_RETURN_CONTROL : Pedalboard.SEND_OUTPUT_CONTROL;
+
+        }
         return (
             <div style={{}} >
-                <div style={{ width: 8, height: 48, background: "black" }}></div>
-                {/* <VuMeter instanceId={Pedalboard.CHANNEL_ROUTER_MAIN_INSERT_ID} display={"input"} /> */}
+                
+                <VuMeter instanceId={instanceId} 
+                    display={input? "input": "output"} 
+                    height={48} /> 
             </div>
         );
     }
@@ -603,7 +618,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
 
     let PresetSelect = (width: number | string | undefined) => {
         return (
-            <div style={{ display: "flex", flexDirection: "row", marginTop: 2, alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: width }}>
                 <div style={{ flex: "0 0 auto" }}>
                     <IconButtonEx tooltip="Save current preset"
                         style={{ flex: "0 0 auto", color: "#FFFFFF" }}
@@ -622,7 +637,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                         {GeneratePresetMenuItems()}
                     </Select>
                 </div>
-                <IconButtonEx tooltip="Presets" aria-label="more-presets" style={{ marginRight: 24 }}>
+                <IconButtonEx tooltip="Presets" aria-label="more-presets" style={{ marginRight: 8 }}>
                     <MoreVertIcon style={{ opacity: 0.6 }} onClick={() => { }} />
                 </IconButtonEx>
             </div>
@@ -658,14 +673,14 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Main, 0, true)}
                             </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu()}</td>
+                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Main, true)}</td>
                             <td rowSpan={2} style={cellLeft}>
                                 <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
                                     Inserts
                                 </Button>
                             </td>
 
-                            <td rowSpan={2} style={cellLeft}>{Vu()}</td>
+                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Main, false)}</td>
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Main, 0, false)}
                             </td>
@@ -691,18 +706,17 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Aux, 0, true))}
                             </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu()}</td>
+                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Aux, true)}</td>
                             <td rowSpan={2} style={cellLeft}>
                                 <Button variant="outlined" style={{
                                     textTransform: "none", borderRadius: 24,
-
                                 }}
                                     disabled={auxInsertDisabled}>
                                     Inserts
                                 </Button>
                             </td>
 
-                            <td rowSpan={2} style={cellLeft}>{Vu()}</td>
+                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Aux, false)}</td>
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Aux, 0, false))}
                             </td>
@@ -728,11 +742,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Send, 0, false))}
                             </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu()}</td>
+                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Send,false)}</td>
                             <td rowSpan={2} style={cellLeft}>
                                 {/* No button */}
                             </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu()}</td>
+                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Send,true)}</td>
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Send, 0, true))}
                             </td>
@@ -798,7 +812,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                 <table>
                                     <tbody>
                                         <tr>
-                                            <td style={cellPortraitControlStrip}>{Vu()}</td>
+                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Main,true)}</td>
                                             <td style={cellPortraitControlStrip}>
                                                 <div style={{ marginLeft: 8, marginRight: 8 }}>
                                                     <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
@@ -807,7 +821,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                                 </div>
                                             </td>
 
-                                            <td style={cellPortraitControlStrip}>{Vu()}</td>
+                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Main,false)}</td>
                                         </tr>
 
                                     </tbody>
@@ -862,7 +876,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                 <table>
                                     <tbody>
                                         <tr>
-                                            <td style={cellPortraitControlStrip}>{Vu()}</td>
+                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Aux, true)}</td>
                                             <td style={cellPortraitControlStrip}>
                                                 <div style={{ marginLeft: 8, marginRight: 8 }}>
                                                     <Button variant="outlined" style={{
@@ -875,7 +889,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                                 </div>
                                             </td>
 
-                                            <td style={cellPortraitControlStrip}>{Vu()}</td>
+                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Aux, false)}</td>
                                         </tr>
 
                                     </tbody>
@@ -929,7 +943,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                 <table>
                                     <tbody>
                                         <tr>
-                                            <td style={cellPortraitControlStrip}>{Vu()}</td>
+                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Send, false)}</td>
                                             <td style={cellPortraitControlStrip}>
                                                 <div style={{ marginLeft: 8, marginRight: 8, visibility: "hidden" }}>
                                                     <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
@@ -938,7 +952,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                                 </div>
                                             </td>
 
-                                            <td style={cellPortraitControlStrip}>{Vu()}</td>
+                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Send, true)}</td>
                                         </tr>
 
                                     </tbody>
@@ -1000,11 +1014,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                     {
                         landscape ? (
                             <>
-                                <div style={{ flexGrow: 1 }}>&nbsp;</div>
-                                <div style={{ flexShrink: 1, maxWidth: 440, display: "relative", marginLeft: 16, marginRight: 16 }}>
-                                    {PresetSelect(200)}
+                                <div style={{ flexGrow: 1 }}></div>
+                                <div style={{ flexShrink: 0, display: "relative", marginLeft: 8, marginRight: 8  }}>
+                                    {PresetSelect("325px")}
                                 </div>
-                                <div style={{ flexGrow: 1 }}>&nbsp;</div>
+                                <div style={{ flexGrow: 1 }}></div>
                             </>
 
                         ) : (

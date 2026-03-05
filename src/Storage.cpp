@@ -472,7 +472,7 @@ void Storage::LoadBankIndex()
         if (bankIndex.entries().size() == 0)
         {
             currentBank.clear();
-            Pedalboard defaultPedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
+            Pedalboard defaultPedalboard = Pedalboard::MakeDefault(PedalboardType::MainPedalboard);
             int64_t instanceId = currentBank.addPreset(defaultPedalboard);
             currentBank.selectedPreset(instanceId);
 

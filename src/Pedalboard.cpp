@@ -517,10 +517,10 @@ Pedalboard::Pedalboard(PedalboardType instanceType)
         case PedalboardType::MainPedalboard:
             nextInstanceId_ = 0;
             break;
-        case PedalboardType::MainInsert:
+        case PedalboardType::MainInserts:
             nextInstanceId_ = MAIN_INSERT_INSTANCE_BASE;;
             break;
-        case PedalboardType::AuxInsert:
+        case PedalboardType::AuxInserts:
             nextInstanceId_ = AUX_INSERT_INSTANCE_BASE;;
             break;
     }

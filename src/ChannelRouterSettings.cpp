@@ -129,8 +129,8 @@ void ChannelSelection::normalizeChannelSelection() {
 
 
 ChannelRouterSettings::ChannelRouterSettings()
-: mainInserts_(Pedalboard::PedalboardType::MainInsert)
-, auxInserts_(Pedalboard::PedalboardType::AuxInsert)
+: mainInserts_(PedalboardType::MainInserts)
+, auxInserts_(PedalboardType::AuxInserts)
 {
     
 }

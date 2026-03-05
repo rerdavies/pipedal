@@ -58,6 +58,8 @@
 
 using namespace pipedal;
 
+#ifdef JUNK
+
 namespace pipedal
 {
 
@@ -524,3 +526,4 @@ uint32_t pipedal::GetDummyAudioChannels(const std::string &deviceName)
 
 }
 
+#endif

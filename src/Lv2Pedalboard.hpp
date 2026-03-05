@@ -31,6 +31,7 @@
 namespace pipedal
 {
 
+    class AudioDriver;
     class IPatchWriterCallback;
     class RealtimeVuBuffers;
     class RealtimePatchPropertyRequest;
@@ -51,7 +52,7 @@ namespace pipedal
     class Lv2Pedalboard
     {
     private:
-        Pedalboard::PedalboardType pedalboardType;
+        PedalboardType pedalboardType;
         IHost *pHost = nullptr;
         size_t currentFrameOffset = 0;
         DbDezipper inputVolume;
@@ -173,7 +174,7 @@ namespace pipedal
         void SetOutputVolume(float value) { this->outputVolume.SetTarget(value); }
         void SetBypass(int effectIndex, bool enabled);
 
-        void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float **inputBuffers, float **outputBuffers);
+        void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float**masterInputBuffers, float **masterOutputBuffers);
 
         float GetControlOutputValue(int effectIndex, int portIndex);
 

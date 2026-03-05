@@ -23,14 +23,15 @@
 using namespace pipedal;
 
 
-JSON_MAP_BEGIN(VuUpdate)
-    JSON_MAP_REFERENCE(VuUpdate,instanceId)
-    JSON_MAP_REFERENCE(VuUpdate,sampleTime)
-    JSON_MAP_REFERENCE(VuUpdate,isStereoInput)
-    JSON_MAP_REFERENCE(VuUpdate,isStereoOutput)
-    JSON_MAP_REFERENCE(VuUpdate,inputMaxValueL)
-    JSON_MAP_REFERENCE(VuUpdate,inputMaxValueR)
-    JSON_MAP_REFERENCE(VuUpdate,outputMaxValueL)
-    JSON_MAP_REFERENCE(VuUpdate,outputMaxValueR)
+JSON_MAP_BEGIN(VuUpdateX)
+    JSON_MAP_REFERENCE(VuUpdateX,pedalboardType)
+    JSON_MAP_REFERENCE(VuUpdateX,instanceId)
+    JSON_MAP_REFERENCE(VuUpdateX,sampleTime)
+    JSON_MAP_REFERENCE(VuUpdateX,isStereoInput)
+    JSON_MAP_REFERENCE(VuUpdateX,isStereoOutput)
+    JSON_MAP_REFERENCE(VuUpdateX,inputMaxValueL)
+    JSON_MAP_REFERENCE(VuUpdateX,inputMaxValueR)
+    JSON_MAP_REFERENCE(VuUpdateX,outputMaxValueL)
+    JSON_MAP_REFERENCE(VuUpdateX,outputMaxValueR)
 JSON_MAP_END()
 

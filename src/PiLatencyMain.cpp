@@ -169,6 +169,10 @@ public:
         delete[] inputBuffers;
         delete[] outputBuffers;
     }
+    virtual bool OnRealtimeUpdateDeviceVus(size_t nFrames) {
+        return true;
+    }
+
     std::vector<int64_t> SelectChannels(const std::vector<std::string> &available, const std::vector<int> &selection)
     {
         std::vector<int64_t> result;

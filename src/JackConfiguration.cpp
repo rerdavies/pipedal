@@ -130,12 +130,8 @@ void JackConfiguration::AlsaInitialize(
     this->isValid_ = false;
     this->errorStatus_ = "";
 
-    if (jackServerSettings.IsDummyAudioDevice())
-    {
-        this->inputMidiDevices_.clear();
-    } else {
-        this->inputMidiDevices_ = GetAlsaSequencers(); // NB: Sequencers, not rawmidi devices, anymore.
-    }
+    this->inputMidiDevices_ = GetAlsaSequencers(); // NB: Sequencers, not rawmidi devices, anymore.
+    
     if (jackServerSettings.IsValid())
     {
         this->blockLength_ = jackServerSettings.GetBufferSize();

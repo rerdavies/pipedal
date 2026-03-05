@@ -30,3 +30,13 @@
 #define PIPEDAL_NON_INLINE
 #endif
 #endif
+
+#ifndef PIPEDAL_RESTRICT
+#if defined(__GNUC__) || defined(__clang__)
+#define PIPEDAL_RESTRICT __restrict__
+#elif defined(_MSC_VER)
+#define PIPEDAL_RESTRICT __restrict
+#else
+#define PIPEDAL_RESTRICT
+#endif
+#endif

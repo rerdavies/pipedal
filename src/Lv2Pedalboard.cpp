@@ -29,6 +29,7 @@
 #include "Lv2Log.hpp"
 #include "CrashGuard.hpp"
 #include "restrict.hpp"
+#include "AudioDriver.hpp"
 
 using namespace pipedal;
 
@@ -571,42 +572,46 @@ void Lv2Pedalboard::SetBypass(int effectIndex, bool enabled)
     effect->SetBypass(enabled);
 }
 
-void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float **inputBuffers, float **outputBuffers)
+
+void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *realtimeVuBuffers, uint32_t samples, float**masterInputBuffers, float**masterOutputBuffers)
 {
-    for (size_t i = 0; i < vuConfiguration->enabledIndexes.size(); ++i)
+    if (realtimeVuBuffers == nullptr) 
     {
-        auto& rtIndex = vuConfiguration->enabledIndexes[i];
+        return;
+    }
+    for (size_t i = 0; i < realtimeVuBuffers->enabledIndexes.size(); ++i)
+    {
+        auto& rtIndex = realtimeVuBuffers->enabledIndexes[i];
         if (rtIndex.instanceType != this->pedalboardType)
         {
             continue;
         }
         int index = rtIndex.index;
-        VuUpdate *pUpdate = &vuConfiguration->vuUpdateWorkingData[i];
+        VuUpdateX *pUpdate = &realtimeVuBuffers->vuUpdateWorkingData[i];
         if (index == Pedalboard::START_CONTROL_ID)
         {
-            if (this->pedalboardInputBuffers.size() > 1)
+            if (this->pedalboardInputBuffers.size() == 2)
             {
-                GetInputBuffers();
-                pUpdate->AccumulateInputs(inputBuffers[0], inputBuffers[1], samples);
+                pUpdate->AccumulateInputs(masterInputBuffers[0], masterInputBuffers[1], samples);
                 pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), &(this->pedalboardInputBuffers[1][0]), samples); // after outputVolume applied.
             }
-            else
+            else if (this->pedalboardInputBuffers.size() == 1)
             {
-                pUpdate->AccumulateInputs(inputBuffers[0], samples);
+                pUpdate->AccumulateInputs(masterInputBuffers[0], samples);
                 pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), samples); // after input volume applied.
             }
         }
         else if (index == Pedalboard::END_CONTROL_ID)
         {
-            if (this->pedalboardOutputBuffers.size() > 1)
+            if (this->pedalboardOutputBuffers.size() == 2)
             {
                 pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]), &(this->pedalboardOutputBuffers[1][0]), samples);
-                pUpdate->AccumulateOutputs(outputBuffers[0], outputBuffers[1], samples);
+                pUpdate->AccumulateOutputs(masterOutputBuffers[0], masterOutputBuffers[1], samples);
             }
-            else
+            else if (this->pedalboardOutputBuffers.size() == 1)
             {
                 pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]), samples);
-                pUpdate->AccumulateOutputs(outputBuffers[0], samples);
+                pUpdate->AccumulateOutputs(masterOutputBuffers[0], samples);
             }
         }
         else
@@ -1029,11 +1034,11 @@ void Lv2Pedalboard::handleTapTempo(uint8_t value, const MidiTimestamp& timestamp
 size_t Lv2Pedalboard::GetNumberOfAudioInputChannels() const {
     switch (pedalboardType)
     {
-    case Pedalboard::PedalboardType::MainPedalboard:
+    case PedalboardType::MainPedalboard:
         return pHost->GetChannelSelection().mainInputChannels().size();
-    case Pedalboard::PedalboardType::MainInsert:
+    case PedalboardType::MainInserts:
         return pHost->GetChannelSelection().mainOutputChannels().size();
-    case Pedalboard::PedalboardType::AuxInsert:
+    case PedalboardType::AuxInserts:
         return pHost->GetChannelSelection().auxInputChannels().size();
     default:
         throw std::runtime_error("Invalid argument");
@@ -1043,11 +1048,11 @@ size_t Lv2Pedalboard::GetNumberOfAudioInputChannels() const {
 size_t Lv2Pedalboard::GetNumberOfAudioOutputChannels() const {
     switch (pedalboardType)
     {
-    case Pedalboard::PedalboardType::MainPedalboard:
+    case PedalboardType::MainPedalboard:
         return pHost->GetChannelSelection().mainOutputChannels().size();
-    case Pedalboard::PedalboardType::MainInsert:
+    case PedalboardType::MainInserts:
         return pHost->GetChannelSelection().mainOutputChannels().size();
-    case Pedalboard::PedalboardType::AuxInsert:
+    case PedalboardType::AuxInserts:
         return pHost->GetChannelSelection().auxOutputChannels().size();
     default:
         throw std::runtime_error("Invalid argument");

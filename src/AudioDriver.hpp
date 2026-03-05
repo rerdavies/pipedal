@@ -27,6 +27,7 @@
 #include <functional>
 #include "AlsaSequencer.hpp"
 #include "MidiEvent.hpp"
+#include "DeviceVus.hpp"
 
 
 
@@ -37,15 +38,14 @@ namespace pipedal {
 
     class ChannelSelection;
 
-
     class AudioDriverHost {
     public:
         virtual void OnProcess(size_t nFrames) = 0;
+        virtual bool OnRealtimeUpdateDeviceVus(size_t nFrames) = 0;
+
         virtual void OnUnderrun() = 0;
         virtual void OnAlsaDriverStopped() = 0;
         virtual void OnAudioTerminated() = 0;
-
-
     };
     class AudioDriver {
     public:
@@ -60,12 +60,33 @@ namespace pipedal {
         virtual size_t GetMidiInputEventCount() = 0;
         virtual MidiEvent*GetMidiEvents() = 0;
 
+        virtual const ChannelSelection &GetChannelSelection() const = 0;
+
+
+        virtual std::vector<float*> &DeviceInputBuffers() = 0;
+        virtual std::vector<float*> &DeviceOutputBuffers() = 0;
+
+        virtual std::vector<float*> &MainInputBuffers() = 0;
+        virtual std::vector<float*> &MainOutputBuffers() = 0;
+        virtual std::vector<float*>&MainInsertOutputBuffers() = 0;
+        virtual std::vector<float*>&MainVuOutputBuffers() = 0;
+
+        virtual std::vector<float*>&AuxInputBuffers() = 0;
+        virtual std::vector<float*>&AuxOutputBuffers() = 0;
+        virtual std::vector<float*>&AuxVuOutputBuffers() = 0;
+
         virtual size_t DeviceInputBufferCount() const = 0;
         virtual size_t DeviceOutputBufferCount() const = 0;
+        virtual float* GetDeviceInputBuffer(size_t channel) const = 0;
+        virtual float* GetDeviceOutputBuffer(size_t channel) const = 0;
+
         virtual size_t MainInputBufferCount() const = 0;
         virtual float*GetMainInputBuffer(size_t channel) = 0;
         virtual size_t MainOutputBufferCount() const = 0;
-        virtual float*GetMainOutputBuffer(size_t channe) = 0;
+        virtual float*GetMainOutputBuffer(size_t channel) = 0;
+
+        virtual size_t MainInsertOutputBufferCount() const = 0;
+        virtual float*GetMainInsertOutputBuffer(size_t channe) const  = 0;
 
 
         virtual size_t AuxInputBufferCount() const = 0;
@@ -75,9 +96,13 @@ namespace pipedal {
 
         virtual size_t SendInputBufferCount() const = 0;
         virtual float*GetSendInputBuffer(size_t channel) = 0;
+        virtual const std::vector<float*>&SendInputBuffers() const = 0;
         virtual size_t SendOutputBufferCount() const = 0;
         virtual float*GetSendOutputBuffer(size_t channel) = 0;
+        virtual const std::vector<float*>&SendOutputBuffers() const = 0;
 
+        virtual float*GetZeroInputBuffer() = 0;
+        virtual float*GetDiscardOutputBuffer() = 0;
 
         virtual void Open(const JackServerSettings & jackServerSettings,const ChannelSelection &channelSelection) = 0;
         virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) = 0;

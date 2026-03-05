@@ -33,6 +33,7 @@ namespace pipedal
         static constexpr int64_t CHANNEL_ROUTER_MAIN_INSERT_ID = -4; // Reserved Instance ID for Router Main Inserts.
         static constexpr int64_t CHANNEL_ROUTER_AUX_INSERT_ID = -5;  // Reserved Instance ID for Router Aux inserts.
 
+
         bool configured_ = false;
         int64_t channelRouterPresetId_ = -1;
         bool changed_ = false;
@@ -51,6 +52,10 @@ namespace pipedal
         std::vector<ControlValue> controlValues_;
 
     public:
+
+        static constexpr int64_t MAIN_OUT_LEFT_CHANNEL = -2;
+        static constexpr int64_t MAIN_OUT_RIGHT_CHANNEL = -3;
+
         using self = ChannelRouterSettings;
         using ptr = std::shared_ptr<self>;
 
