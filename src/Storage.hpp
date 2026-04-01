@@ -20,6 +20,7 @@
 #pragma once
 #include <filesystem>
 #include <iostream>
+#include <set>
 #include "Pedalboard.hpp"
 #include "Presets.hpp"
 #include "PluginPreset.hpp"
@@ -75,8 +76,9 @@ private:
 
     std::filesystem::path configRoot;
     BankIndex bankIndex;
-    BankFile currentBank;
+    std::array<std::shared_ptr<BankFile>,sizeof(PedalboardType::MaxValue)> currentBankFiles;
     PluginPresetIndex pluginPresetIndex;
+
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
@@ -95,8 +97,8 @@ private:
     void LoadBankIndex();
     void SaveBankIndex();
     void ReIndex();
-    void LoadCurrentBank();
-    void SaveCurrentBank();
+    void LoadCurrentBanks();
+    void SaveCurrentBank(PedalboardType pedalboardType);
 
     void LoadJackChannelSelection();
     void SaveChannelSelection();
@@ -105,9 +107,14 @@ private:
     void SaveAlsaSequencerConfiguration();
 
 
+    std::shared_ptr<BankFile> GetCurrentBankFile(PedalboardType pedalboardType);
+    std::shared_ptr<BankFile> GetCurrentBankFile(PedalboardType pedalboardType) const {
+        return const_cast<Storage*>(this)->GetCurrentBankFile(pedalboardType);
+    }
+
     void SaveBankFile(const std::string& name,const BankFile&bankFile);
     void LoadBankFile(const std::string &name,BankFile *pBank);
-    std::string GetPresetCopyName(const std::string &name);
+    std::string GetPresetCopyName(PedalboardType pedalboardType,const std::string &name);
     bool isJackChannelSelectionValid = false;
     JackChannelSelection jackChannelSelection;
 
@@ -155,27 +162,27 @@ public:
     void LoadUserSettings();
     void SaveUserSettings();
 
-    void LoadBank(int64_t instanceId);
+    void LoadBank(PedalboardType pedalboardType, int64_t instanceId);
     int64_t GetBankByMidiBankNumber(uint8_t bankNumber);
-    const Pedalboard& GetCurrentPreset();
-    void SaveCurrentPreset(const Pedalboard&pedalboard);
-    int64_t SaveCurrentPresetAs(const Pedalboard&pedalboard, int64_t bankInstanceId,const std::string&namne,int64_t saveAfterInstanceId = -1);
-    int64_t GetCurrentPresetId() const;
+    Pedalboard GetCurrentPreset(PedalboardType pedalboardType);
+    void SaveCurrentPreset(PedalboardType pedalboardType,const Pedalboard&pedalboard);
+    int64_t SaveCurrentPresetAs(PedalboardType pedalboardType,const Pedalboard&pedalboard, int64_t bankInstanceId,const std::string&namne,int64_t saveAfterInstanceId = -1);
+    int64_t GetCurrentPresetId(PedalboardType pedalboardType) const;
     
-    void GetPresetIndex(PresetIndex*pResult);
-    void SetPresetIndex(const PresetIndex &presetIndex);
-    Pedalboard GetPreset(int64_t instanceId) const;
-    int64_t GetPresetByProgramNumber(uint8_t program) const;
+    void GetPresetIndex(PedalboardType pedalboardType, PresetIndex*pResult);
+    void SetPresetIndex(PedalboardType pedalboardType,const PresetIndex &presetIndex);
+    Pedalboard GetPreset(PedalboardType pedalboardType,int64_t instanceId) const;
+    int64_t GetPresetByProgramNumber(PedalboardType pedalboardType,uint8_t program) const;
     void GetBankFile(int64_t instanceId,BankFile*pResult) const;
-    int64_t UploadPreset(const BankFile&bankFile, int64_t uploadAfter);
-    int64_t UploadBank(BankFile&bankFile, int64_t uploadAfter);
+    int64_t UploadPreset(PedalboardType pedalboardType, const BankFile&bankFile, int64_t uploadAfter);
+    int64_t UploadBank(PedalboardType pedalboardType,BankFile&bankFile, int64_t uploadAfter);
 
     
-    bool LoadPreset(int64_t presetId);
-    int64_t DeletePresets(const std::vector<int64_t>& presetInstanceIds);
-    bool RenamePreset(int64_t presetId, const std::string&name);
-    int64_t CopyPreset(int64_t fromId, int64_t toId = -1);
-    int64_t CreateNewPreset();
+    bool LoadPreset(PedalboardType pedalboardType,int64_t presetId);
+    void DeletePresets(PedalboardType pedalboardType,const std::vector<int64_t>& presetInstanceIds, std::set<PedalboardType> *changedPedalboards);
+    bool RenamePreset(PedalboardType pedalboardType,int64_t presetId, const std::string&name);
+    int64_t CopyPreset(PedalboardType pedalboardType,int64_t fromId, int64_t toId = -1);
+    int64_t CreateNewPreset(PedalboardType pedalboardType);
 
 
     void RenameBank(int64_t bankId, const std::string&newName);
@@ -224,6 +231,7 @@ public:
     //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);
 
 private:
+    BankFile&CurrentBankFile(PedalboardType pedalboardType);
     bool pluginPresetIndexChanged = false;
     void LoadPluginPresetIndex();
     void SavePluginPresetIndex();
@@ -283,8 +291,8 @@ public:
 
 
     std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
-    int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
-    int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+    int64_t ImportPresetsFromBank(PedalboardType pedalboardType,int64_t bankInstanceId, const std::vector<int64_t> &presets);
+    int64_t CopyPresetsToBank(PedalboardType pedalboardType, int64_t destinationBankInstanceId, const std::vector<int64_t> &presets);
 
 };
 

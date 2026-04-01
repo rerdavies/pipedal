@@ -1,6 +1,10 @@
+
+
 summaries for Mono audio adapaters.
 Check PWA on windows, edge and chrome.
 Make sure Pi 4 default audio device is still hidden when selecting devices!
+
+Check handling of preset dropdown when preset has been deleted. (esp. for MainInsert and AuxInsert view)
 
 A final solution for rate-limiting on Tone3000.
 

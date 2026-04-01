@@ -1963,7 +1963,7 @@ PluginPresets PluginHost::GetFactoryPluginPresets(const std::string &pluginUri)
     return result;
 }
 
-IEffect *PluginHost::CreateEffect(PedalboardItem &pedalboardItem)
+IEffect *PluginHost::CreateEffect(PedalboardType pedalboardType,PedalboardItem &pedalboardItem)
 {
     if (pedalboardItem.uri().starts_with("vst3:"))
     {
@@ -1990,7 +1990,7 @@ IEffect *PluginHost::CreateEffect(PedalboardItem &pedalboardItem)
         if (!info)
             return nullptr;
 
-        return new Lv2Effect(this, info, pedalboardItem);
+        return new Lv2Effect(this, info,pedalboardType, pedalboardItem);
     }
 }
 

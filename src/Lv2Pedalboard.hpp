@@ -52,7 +52,7 @@ namespace pipedal
     class Lv2Pedalboard
     {
     private:
-        PedalboardType pedalboardType;
+        PedalboardType pedalboardType = PedalboardType::Invalid;
         IHost *pHost = nullptr;
         size_t currentFrameOffset = 0;
         DbDezipper inputVolume;
@@ -125,6 +125,9 @@ namespace pipedal
         Lv2Pedalboard() {}
         ~Lv2Pedalboard() {}
 
+        PedalboardType GetPedalboardType() { return pedalboardType; }
+        void SetPedalboardType(PedalboardType value) { this->pedalboardType = value; }
+
         void Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList, ExistingEffectMap *existingEffects = nullptr);
 
         std::vector<IEffect *> &GetEffects() { return realtimeEffects; }
@@ -178,7 +181,7 @@ namespace pipedal
 
         float GetControlOutputValue(int effectIndex, int portIndex);
 
-        typedef void(MidiCallbackFn)(void *data, uint64_t intanceId, int controlIndex, float value);
+        typedef void(MidiCallbackFn)(void *data, PedalboardType pedalboardType,uint64_t intanceId, int controlIndex, float value);
         void OnMidiMessage(
             const MidiEvent&message,
             void *callbackHandle,

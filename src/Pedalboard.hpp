@@ -24,6 +24,7 @@
 #include "MidiBinding.hpp"
 #include "StateInterface.hpp"
 #include "atom_object.hpp"
+#include "PedalboardType.hpp"
 
 namespace pipedal
 {
@@ -216,16 +217,11 @@ namespace pipedal
         DECLARE_JSON_MAP(Snapshot);
     };
 
-    enum class PedalboardType
-    {
-        Invalid = 0,
-        MainPedalboard = 1,
-        MainInserts = 2,
-        AuxInserts = 3
-    };
 
     class Pedalboard
     {
+        PedalboardType pedalboardType_ = PedalboardType::MainPedalboard; // Assignment for legacy conversions.
+
         std::string name_;
         float input_volume_db_ = 0;
         float output_volume_db_ = 0;
@@ -239,49 +235,25 @@ namespace pipedal
 
         int64_t selectedPlugin_ = -1;
 
-        static constexpr int64_t TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
-        static constexpr int64_t TWO_POWER_48 = 281474976710656;  // Number of possible instance IDs for Main Pedalboards.
-        static constexpr int64_t MAX_INSTANCE_ID = TWO_POWER_48;
-
     public:
-        static constexpr int64_t MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52 - 2 * MAX_INSTANCE_ID;
-        static constexpr int64_t AUX_INSERT_INSTANCE_BASE = TWO_POWER_52 - 1 * MAX_INSTANCE_ID;
-
-        static constexpr int64_t CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Controls.
-
         static constexpr int64_t START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
         static constexpr int64_t END_CONTROL_ID = -3;   // synthetic PedalboardItem for output volume.
-        static constexpr int64_t MAIN_INSERT_START_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 2;
-        static constexpr int64_t MAIN_INSERT_END_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 3;
-        static constexpr int64_t AUX_INSERT_START_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 2;
-        static constexpr int64_t AUX_INSERT_END_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 3;
 
-        static PedalboardType GetPedalboardTypeFromInstanceId(int64_t instanceId)
+        PedalboardType GetPedalboardType() const
         {
-            if (instanceId == START_CONTROL_ID)
-                return PedalboardType::MainPedalboard;
-            if (instanceId == END_CONTROL_ID)
-                return PedalboardType::MainPedalboard;
-
-            if (instanceId >= MAIN_INSERT_INSTANCE_BASE)
-            {
-                return PedalboardType::MainInserts;
-            }
-            else if (instanceId >= AUX_INSERT_INSTANCE_BASE)
-            {
-                return PedalboardType::AuxInserts;
-            }
-            else
-            {
-                return PedalboardType::MainPedalboard;
-            }
+            return pedalboardType_;
         }
-        PedalboardType GetInstanceType() const
-        {
-            return GetPedalboardTypeFromInstanceId(this->nextInstanceId_); // instanceId is irrelevant here.
+        void SetPedalboardType(PedalboardType pedalboardType) {
+            pedalboardType_ = pedalboardType;
         }
 
-        Pedalboard(PedalboardType instanceType = PedalboardType::MainPedalboard);
+        Pedalboard() = default;
+        Pedalboard(const Pedalboard&) = default;
+        Pedalboard(Pedalboard&&other) = default;
+        Pedalboard&operator=(const Pedalboard&) = default;
+        Pedalboard&operator=(Pedalboard&&) = default;
+
+        Pedalboard(PedalboardType instanceType);
 
         // deep copy, breaking shared pointers.
         Pedalboard DeepCopy();
@@ -317,6 +289,18 @@ namespace pipedal
 
         static Pedalboard MakeDefault(PedalboardType instanceType = PedalboardType::MainPedalboard);
     };
+
+    inline bool isStartOrEndControl(int64_t controlId)
+    {
+        switch (controlId)
+        {
+        case Pedalboard::START_CONTROL_ID:
+        case Pedalboard::END_CONTROL_ID:
+            return true;
+        default:
+            return false;
+        }
+    }
 
 #undef GETTER_SETTER_REF
 #undef GETTER_SETTER_VEC

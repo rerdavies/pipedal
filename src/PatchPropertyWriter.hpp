@@ -50,10 +50,10 @@ namespace pipedal
         };
 
     public:
-        PatchPropertyWriter(int64_t instanceId, LV2_URID patchPropertyUrid)
-            : instanceId(instanceId), patchPropertyUrid(patchPropertyUrid),
-              buffer0(new Buffer(instanceId, patchPropertyUrid)),
-              buffer1(new Buffer(instanceId, patchPropertyUrid))
+        PatchPropertyWriter(PedalboardType pedalboardType,int64_t instanceId, LV2_URID patchPropertyUrid)
+            : pedalboardType(pedalboardType),instanceId(instanceId), patchPropertyUrid(patchPropertyUrid),
+              buffer0(new Buffer(pedalboardType,instanceId, patchPropertyUrid)),
+              buffer1(new Buffer(pedalboardType,instanceId, patchPropertyUrid))
         {
         }
         // no copy.
@@ -78,8 +78,8 @@ namespace pipedal
         public:
             std::atomic<StateT> state{StateT::Empty};
 
-            Buffer(int64_t instanceId, LV2_URID propertyUrid)
-                : instanceId(instanceId), patchPropertyUrid(propertyUrid)
+            Buffer(PedalboardType pedalboardType,int64_t instanceId, LV2_URID propertyUrid)
+                : pedalboardType(pedalboardType),instanceId(instanceId), patchPropertyUrid(propertyUrid)
             {
                 memory.reserve(1024);
             }
@@ -118,6 +118,7 @@ namespace pipedal
                 }
                 state = StateT::Empty;
             }
+            PedalboardType pedalboardType;
             int64_t instanceId;
             LV2_URID patchPropertyUrid;
 
@@ -162,6 +163,7 @@ namespace pipedal
 
         void FlushWrites(IPatchWriterCallback*cbWrite);
 
+        PedalboardType pedalboardType;
         int64_t instanceId;
         LV2_URID patchPropertyUrid;
 

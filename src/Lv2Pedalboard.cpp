@@ -125,7 +125,8 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
                 {
                     try
                     {
-                        pLv2Effect = std::shared_ptr<IEffect>(this->pHost->CreateEffect(item));
+                        assert(pedalboardType != PedalboardType::Invalid);
+                        pLv2Effect = std::shared_ptr<IEffect>(this->pHost->CreateEffect(pedalboardType,item));
                     }
                     catch (const std::exception &e)
                     {
@@ -321,7 +322,7 @@ std::vector<float *> Lv2Pedalboard::PrepareItems(
 void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardErrorList &errorList, ExistingEffectMap *existingEffects)
 {
     this->pHost = pHost;
-    this->pedalboardType = pedalboard.GetInstanceType();
+    this->pedalboardType = pedalboard.GetPedalboardType();
 
     inputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
     outputVolume.SetSampleRate((float)(this->pHost->GetSampleRate()));
@@ -539,7 +540,7 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
         IEffect *effect = effects[i].get();
         if (effect->HasErrorMessage())
         {
-            ringBufferWriter->WriteLv2ErrorMessage(effect->GetInstanceId(), effect->TakeErrorMessage());
+            ringBufferWriter->WriteLv2ErrorMessage(pedalboardType,effect->GetInstanceId(), effect->TakeErrorMessage());
         }
     }
     for (size_t i = 0; i < samples; ++i)
@@ -890,7 +891,7 @@ void Lv2Pedalboard::OnMidiMessage(
 
                             currentValue = currentValue == 0 ? 1 : 0;
                             pEffect->SetControl(mapping.controlIndex, currentValue);
-                            pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
+                            pfnCallback(callbackHandle, GetPedalboardType(), mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                         }
                     }
                     else if (mapping.midiBinding.switchControlType() == SwitchControlTypeT::TOGGLE_ON_VALUE)
@@ -902,7 +903,7 @@ void Lv2Pedalboard::OnMidiMessage(
                         if (currentValue != range)
                         {
                             pEffect->SetControl(mapping.controlIndex, range);
-                            pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), range);
+                            pfnCallback(callbackHandle, GetPedalboardType(), mapping.instanceId, mapping.pPortInfo->index(), range);
                         }
                     }
                     else
@@ -914,7 +915,7 @@ void Lv2Pedalboard::OnMidiMessage(
                         float currentValue = pEffect->GetControlValue(mapping.controlIndex);
                         currentValue = currentValue == 0 ? 1 : 0;
                         pEffect->SetControl(mapping.controlIndex, currentValue);
-                        pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
+                        pfnCallback(callbackHandle, GetPedalboardType(),  mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                     }
                     break;
                 }
@@ -935,7 +936,7 @@ void Lv2Pedalboard::OnMidiMessage(
                     if (pEffect->GetControlValue(mapping.controlIndex) != currentValue)
                     {
                         this->SetControlValue(mapping.effectIndex, mapping.controlIndex, currentValue);
-                        pfnCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), currentValue);
+                        pfnCallback(callbackHandle,GetPedalboardType(),  mapping.instanceId, mapping.pPortInfo->index(), currentValue);
                     }
                     break;
                 }
@@ -1021,7 +1022,7 @@ void Lv2Pedalboard::handleTapTempo(uint8_t value, const MidiTimestamp& timestamp
                     {
                         Lv2Effect *pLv2Effect = dynamic_cast<Lv2Effect *>(pEffect);
                         pEffect->SetControl(mapping.controlIndex, controlValue);
-                        pfnSetControlCallback(callbackHandle, mapping.instanceId, mapping.pPortInfo->index(), controlValue);
+                        pfnSetControlCallback(callbackHandle, GetPedalboardType(), mapping.instanceId, mapping.pPortInfo->index(), controlValue);
                     }
                 }
             }

@@ -54,10 +54,8 @@ namespace pipedal
     enum class RingBufferCommand : int64_t
     {
         Invalid = 0,
-        ReplaceEffect,
-        EffectReplaced,
-        ReplaceRoutingInserts,
-        RoutingInsertsReplaced,
+        ReplacePedalboard,
+        PedalboardReplaced,
         SetValue,
         SetBypass,
         // AudioStopped,
@@ -129,18 +127,21 @@ namespace pipedal
 
     struct RealtimeMidiSnapshotRequest
     {
+        PedalboardType pedalboardType = PedalboardType::MainPedalboard;;
         int32_t snapshotIndex;
         int64_t snapshotRequestId;
     };
 
     struct RealtimeNextMidiProgramRequest
     {
+        PedalboardType pedalboardType = PedalboardType::MainPedalboard;;
         int64_t requestId;
         int32_t direction;
     };
 
     struct RealtimeMidiProgramRequest
     {
+        PedalboardType pedalboardType = PedalboardType::MainPedalboard;;
         int64_t requestId;
         int8_t bank;
         uint8_t program;
@@ -207,6 +208,7 @@ namespace pipedal
     class SetBypassBody
     {
     public:
+        PedalboardType pedalboardType;
         int effectIndex;
         bool enabled;
     };
@@ -214,6 +216,7 @@ namespace pipedal
     class MidiValueChangedBody
     {
     public:
+        PedalboardType pedalboardType;
         int64_t instanceId;
         int controlIndex;
         float value;
@@ -222,6 +225,7 @@ namespace pipedal
     class SetControlValueBody
     {
     public:
+        PedalboardType pedalboardType;
         int effectIndex;
         int controlIndex;
         float value;
@@ -229,6 +233,7 @@ namespace pipedal
     class SetVolumeBody
     {
     public:
+        PedalboardType pedalboardType;
         float value;
     };
 
@@ -237,6 +242,7 @@ namespace pipedal
     class ReplaceEffectBody
     {
     public:
+        PedalboardType pedalboardType;
         Lv2Pedalboard *effect;
     };
     class EffectReplacedBody
@@ -382,21 +388,21 @@ namespace pipedal
                 return;
             }
         }
-        void Lv2StateChanged(uint64_t instanceId)
+        void Lv2StateChanged(PedalboardInstanceId pedalboardInstanceId)
         {
-            write(RingBufferCommand::Lv2StateChanged, instanceId);
+            write(RingBufferCommand::Lv2StateChanged, pedalboardInstanceId);
         }
-        void MaybeLv2StateChanged(uint64_t instanceId)
+        void MaybeLv2StateChanged(PedalboardInstanceId pedalboardInstanceId)
         {
-            write(RingBufferCommand::MaybeLv2StateChanged, instanceId);
+            write(RingBufferCommand::MaybeLv2StateChanged, pedalboardInstanceId);
         }
-        void AtomOutput(uint64_t instanceId, size_t bytes, uint8_t *data)
+        void AtomOutput(PedalboardInstanceId pedalboardInstanceId, size_t bytes, uint8_t *data)
         {
-            write(RingBufferCommand::AtomOutput, instanceId, bytes, data);
+            write(RingBufferCommand::AtomOutput, pedalboardInstanceId, bytes, data);
         }
-        void AtomOutput(uint64_t instanceId, const LV2_Atom *atom)
+        void AtomOutput(PedalboardInstanceId pedalboardInstanceId, const LV2_Atom *atom)
         {
-            write(RingBufferCommand::AtomOutput, instanceId, atom->size + sizeof(LV2_Atom), (uint8_t *)atom);
+            write(RingBufferCommand::AtomOutput, pedalboardInstanceId, atom->size + sizeof(LV2_Atom), (uint8_t *)atom);
         }
         void ParameterRequest(RealtimePatchPropertyRequest *pRequest)
         {
@@ -406,9 +412,10 @@ namespace pipedal
         {
             write(RingBufferCommand::ParameterRequestComplete, pRequest);
         }
-        void MidiValueChanged(int64_t instanceId, int controlIndex, float value)
+        void MidiValueChanged(PedalboardType pedalboardType,int64_t instanceId, int controlIndex, float value)
         {
             MidiValueChangedBody body;
+            body.pedalboardType = pedalboardType;
             body.instanceId = instanceId;
             body.controlIndex = controlIndex;
             body.value = value;
@@ -437,9 +444,9 @@ namespace pipedal
             RealtimeMidiEventRequest msg{eventType};
             write(RingBufferCommand::RealtimeMidiEvent, msg);
         }
-        void OnRealtimeMidiSnapshotRequest(int32_t snapshotIndex, int64_t snapshotRequestId)
+        void OnRealtimeMidiSnapshotRequest(PedalboardType pedalboardType,int32_t snapshotIndex, int64_t snapshotRequestId)
         {
-            RealtimeMidiSnapshotRequest msg{snapshotIndex, snapshotRequestId};
+            RealtimeMidiSnapshotRequest msg{pedalboardType,snapshotIndex, snapshotRequestId};
 
             write(RingBufferCommand::RealtimeMidiSnapshotRequest, msg);
         }
@@ -455,23 +462,26 @@ namespace pipedal
             write(RingBufferCommand::NextMidiBank, msg);
         }
 
-        void SetControlValue(int effectIndex, int controlIndex, float value)
+        void SetControlValue(PedalboardType pedalboardType,int effectIndex, int controlIndex, float value)
         {
             SetControlValueBody body;
+            body.pedalboardType = pedalboardType;
             body.effectIndex = effectIndex;
             body.controlIndex = controlIndex;
             body.value = value;
             write(RingBufferCommand::SetValue, body);
         }
-        void SetInputVolume(float value)
+        void SetInputVolume(PedalboardType pedalboardType,float value)
         {
             SetVolumeBody body;
+            body.pedalboardType = pedalboardType;
             body.value = value;
             write(RingBufferCommand::SetInputVolume, body);
         }
-        void SetOutputVolume(float value)
+        void SetOutputVolume(PedalboardType pedalboardType, float value)
         {
             SetVolumeBody body;
+            body.pedalboardType = pedalboardType;
             body.value = value;
             write(RingBufferCommand::SetOutputVolume, body);
         }
@@ -534,34 +544,29 @@ namespace pipedal
             write(RingBufferCommand::SetMonitorPortSubscription, subscriptions);
         }
 
-        void SetBypass(int effectIndex, bool enabled)
+        void SetBypass(PedalboardType pedalboardType,int effectIndex, bool enabled)
         {
 
             SetBypassBody body;
+            body.pedalboardType = pedalboardType;
             body.effectIndex = effectIndex;
             body.enabled = enabled;
             write(RingBufferCommand::SetBypass, body);
         }
 
-        void ReplaceEffect(Lv2Pedalboard *pedalboard)
+        void ReplacePedalboard(PedalboardType pedalboardType,Lv2Pedalboard *pedalboard)
         {
-            write(RingBufferCommand::ReplaceEffect, pedalboard);
+            ReplaceEffectBody body;
+            body.pedalboardType = pedalboardType;
+            body.effect = pedalboard;
+            write(RingBufferCommand::ReplacePedalboard, body);
         }
 
-        void EffectReplaced(Lv2Pedalboard *pedalboard)
+        void PedalboardReplaced(Lv2Pedalboard *pedalboard)
         {
-            write(RingBufferCommand::EffectReplaced, pedalboard);
+            write(RingBufferCommand::PedalboardReplaced, pedalboard);
         }
 
-        void ReplaceRoutingInserts(Lv2RoutingInserts routingInserts)
-        {
-            write(RingBufferCommand::ReplaceRoutingInserts, routingInserts);
-        }
-
-        void RoutingInsertsReplaced(Lv2RoutingInserts routingInserts)
-        {
-            write(RingBufferCommand::ReplaceRoutingInserts, routingInserts);
-        }
 
 
         void AudioTerminatedAbnormally()
@@ -576,10 +581,11 @@ namespace pipedal
             write(RingBufferCommand::FreeSnapshot, snapshot);
         }
 
-        void WriteLv2ErrorMessage(int64_t instanceId, const char *message)
+        void WriteLv2ErrorMessage(PedalboardType pedalboardType, int64_t instanceId, const char *message)
         {
             size_t length = strlen(message);
-            write(RingBufferCommand::Lv2ErrorMessage, instanceId, length, (uint8_t *)message);
+            PedalboardInstanceId pedalboardInstanceId {pedalboardType, instanceId};
+            write(RingBufferCommand::Lv2ErrorMessage, pedalboardInstanceId, length, (uint8_t *)message);
         }
         void SendPathPropertyBuffer(PatchPropertyWriter::Buffer *buffer)
         {

@@ -511,19 +511,8 @@ Snapshot Pedalboard::MakeSnapshotFromCurrentSettings(const Pedalboard &previousP
 
 
 Pedalboard::Pedalboard(PedalboardType instanceType)
+: pedalboardType_(instanceType)
 {
-    switch (instanceType) 
-    {
-        case PedalboardType::MainPedalboard:
-            nextInstanceId_ = 0;
-            break;
-        case PedalboardType::MainInserts:
-            nextInstanceId_ = MAIN_INSERT_INSTANCE_BASE;;
-            break;
-        case PedalboardType::AuxInserts:
-            nextInstanceId_ = AUX_INSERT_INSTANCE_BASE;;
-            break;
-    }
 }
 
 
@@ -557,6 +546,7 @@ JSON_MAP_END()
 
 JSON_MAP_BEGIN(Pedalboard)
     JSON_MAP_REFERENCE(Pedalboard,name)
+    JSON_MAP_REFERENCE(Pedalboard,pedalboardType)
     JSON_MAP_REFERENCE(Pedalboard,input_volume_db)
     JSON_MAP_REFERENCE(Pedalboard,output_volume_db)
     JSON_MAP_REFERENCE(Pedalboard,items)

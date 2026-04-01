@@ -60,29 +60,28 @@ namespace pipedal
         using ptr = std::shared_ptr<IPiPedalModelSubscriber>;
 
         virtual int64_t GetClientId() = 0;
-        virtual void OnItemEnabledChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
-        virtual void OnItemUseModUiChanged(int64_t clientId, int64_t pedalItemId, bool enabled) = 0;
-        virtual void OnControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value) = 0;
-        virtual void OnInputVolumeChanged(float value) = 0;
-        virtual void OnOutputVolumeChanged(float value) = 0;
+        virtual void OnItemEnabledChanged(int64_t clientId, PedalboardType pedalboardType,int64_t pedalItemId, bool enabled) = 0;
+        virtual void OnItemUseModUiChanged(int64_t clientId, PedalboardType pedalboardType,int64_t pedalItemId, bool enabled) = 0;
+        virtual void OnControlChanged(int64_t clientId, PedalboardType pedalboardType,int64_t pedalItemId, const std::string &symbol, float value) = 0;
+        virtual void OnInputVolumeChanged(PedalboardType pedalboardType,float value) = 0;
+        virtual void OnOutputVolumeChanged(PedalboardType pedalboardType,float value) = 0;
         virtual void OnUpdateStatusChanged(const UpdateStatus &updateStatus) = 0;
-        virtual void OnLv2StateChanged(int64_t pedalItemId, const Lv2PluginState &newState) = 0;
-        virtual void OnVst3ControlChanged(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value, const std::string &state) = 0;
-        virtual void OnPedalboardChanged(int64_t clientId, const Pedalboard &pedalboard) = 0;
-        virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets) = 0;
-        virtual void OnPresetChanged(bool changed) = 0;
-        virtual void OnSnapshotModified(int64_t selectedSnapshot, bool modified) = 0;
-        virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) = 0;
+        virtual void OnLv2StateChanged(PedalboardType pedalboardType, int64_t pedalItemId, const Lv2PluginState &newState) = 0;
+        virtual void OnPedalboardChanged(int64_t clientId, PedalboardType pedalboardType,const Pedalboard &pedalboard) = 0;
+        virtual void OnPresetsChanged(int64_t clientId) = 0;
+        virtual void OnPresetChanged(PedalboardType pedalboardType, bool changed) = 0;
+        virtual void OnSnapshotModified(PedalboardType pedalboardType,int64_t selectedSnapshot, bool modified) = 0;
+        virtual void OnSelectedSnapshotChanged(PedalboardType pedalboardType,int64_t selectedSnapshot) = 0;
         virtual void OnPluginPresetsChanged(const std::string &pluginUri) = 0;
         virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings) = 0;
         virtual void OnVuMeterUpdate(const std::vector<VuUpdateX> &updates) = 0;
         virtual void OnBankIndexChanged(const BankIndex &bankIndex) = 0;
         virtual void OnJackServerSettingsChanged(const JackServerSettings &jackServerSettings) = 0;
         virtual void OnJackConfigurationChanged(const JackConfiguration &jackServerConfiguration) = 0;
-        virtual void OnLoadPluginPreset(int64_t instanceId, const std::vector<ControlValue> &controlValues) = 0;
-        virtual void OnMidiValueChanged(int64_t instanceId, const std::string &symbol, float value) = 0;
+        virtual void OnLoadPluginPreset(PedalboardType pedalboardType,int64_t instanceId, const std::vector<ControlValue> &controlValues) = 0;
+        virtual void OnMidiValueChanged(PedalboardType pedalboardType, int64_t instanceId, const std::string &symbol, float value) = 0;
         virtual void OnNotifyMidiListener(int64_t clientHandle, uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
-        virtual void OnNotifyPatchProperty(int64_t clientModel, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
+        virtual void OnNotifyPatchProperty(int64_t clientModel, PedalboardType pedalboardType, uint64_t instanceId, const std::string &propertyUri, const std::string &atomJson) = 0;
         virtual void OnWifiConfigSettingsChanged(const WifiConfigSettings &wifiConfigSettings) = 0;
         virtual void OnWifiDirectConfigSettingsChanged(const WifiDirectConfigSettings &wifiDirectConfigSettings) = 0;
         virtual void OnGovernorSettingsChanged(const std::string &governor) = 0;
@@ -118,6 +117,7 @@ namespace pipedal
         using NetworkChangedListener = std::function<void(void)>;
 
     private:
+        PedalboardItem *GetPedalboardItemForFileProperty(PedalboardType pedalboardType,const UiFileProperty &fileProperty);
         PedalboardItem *GetPedalboardItemForFileProperty(const UiFileProperty &fileProperty);
 
         // Tone3000Downloader::Listener implementation
@@ -188,13 +188,24 @@ namespace pipedal
         PluginHost pluginHost;
         AtomConverter atomConverter; // must be AFTER pluginHost!
 
-        Pedalboard pedalboard;
+        Pedalboard pedalboard_;
+        Pedalboard mainInsertsPedalboard_;
+        Pedalboard auxInsertsPedalboard_;
+
         ChannelRouterSettings::ptr channelRouterSettings;
 
-        bool previousPedalboardLoaded = false;
-        Pedalboard previousPedalboard;
+
+        std::array<std::shared_ptr<Pedalboard>,size_t(PedalboardType::MaxValue)> previousPedalboards;
+
+        std::shared_ptr<Pedalboard> GetPreviousPedalboard(PedalboardType pedalboardType);
+        void SetPreviousPedalboard(PedalboardType pedalboardType, const Pedalboard &pedalboard);
+        void ErasePreviousPedalboard(PedalboardType pedalboardType);
+
         Storage storage;
-        bool hasPresetChanged = false;
+        std::array<bool, size_t(PedalboardType::MaxValue)> hasPresetChanged_;
+
+        bool hasPresetChanged(PedalboardType pedalboardType) const { return hasPresetChanged_[size_t(pedalboardType)]; }
+        void hasPresetChanged(PedalboardType pedalboardType, bool value) { hasPresetChanged_[size_t(pedalboardType)] = value; }
 
         NetworkChangedListener networkChangedListener;
         void FireNetworkChanged()
@@ -207,21 +218,27 @@ namespace pipedal
 
         std::unique_ptr<AudioHost> audioHost;
         JackConfiguration jackConfiguration;
-        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard;
+        std::shared_ptr<Lv2Pedalboard> lv2Pedalboard_;
+        std::shared_ptr<Lv2Pedalboard> lv2MainInsertPedalboard;
+        std::shared_ptr<Lv2Pedalboard> lv2AuxInsertPedalboard;
+
+        std::shared_ptr<Lv2Pedalboard> GetLv2Pedalboard(PedalboardType pedalboardType);
+        void SetLv2Pedalboard(PedalboardType pedalboardType, std::shared_ptr<Lv2Pedalboard> lv2Pedalboard);
+
         std::filesystem::path webRoot;
 
         std::vector<std::shared_ptr<IPiPedalModelSubscriber>> subscribers;
-        void SetPresetChanged(int64_t clientId, bool value, bool changeSnapshotSelect = true);
-        void FireSnapshotModified(int64_t snapshotIndex, bool modified);
-        void FireSelectedSnapshotChanged(int64_t selectedSnapshot);
+        void SetPresetChanged(int64_t clientId, PedalboardType pedalboardType, bool value, bool changeSnapshotSelect = true);
+        void FireSnapshotModified(PedalboardType pedalboardType,int64_t snapshotIndex, bool modified);
+        void FireSelectedSnapshotChanged(PedalboardType pedalboardType,int64_t selectedSnapshot);
         void FirePresetsChanged(int64_t clientId);
-        void FirePresetChanged(bool changed);
+        void FirePresetChanged(PedalboardType pedalboardType,bool changed);
         void FirePluginPresetsChanged(const std::string &pluginUri);
-        void FirePedalboardChanged(int64_t clientId, bool reloadAudioThread = true);
+        void FirePedalboardChanged(int64_t clientId, PedalboardType pedalboardType,bool reloadAudioThread = true);
         void FireChannelRouterSettingsChanged(int64_t clientId);
         void FireBanksChanged(int64_t clientId);
         void FireJackConfigurationChanged(const JackConfiguration &jackConfiguration);
-        void FireLv2StateChanged(int64_t instanceId, const Lv2PluginState &lv2State);
+        void FireLv2StateChanged(PedalboardType pedalboardType, int64_t instanceId, const Lv2PluginState &lv2State);
         void UpdateDefaults(SnapshotValue &snapshotValue, const PedalboardItem *pedalboardItem);
         void UpdateDefaults(Snapshot *snapshot, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
         void UpdateDefaults(PedalboardItem *pedalboardItem, std::unordered_map<int64_t, PedalboardItem *> &itemMap);
@@ -230,6 +247,7 @@ namespace pipedal
         {
         public:
             int64_t subscriptionHandle;
+            PedalboardType pedalboardType;
             int64_t instanceid;
         };
         int64_t nextSubscriptionId = 1;
@@ -246,23 +264,24 @@ namespace pipedal
 
         IPiPedalModelSubscriber *GetNotificationSubscriber(int64_t clientId);
         std::atomic<bool> closed = false;
-        bool SyncLv2State();
+        bool SyncLv2State(PedalboardType pedalboardType);
 
     private: // IAudioHostCallbacks
-        virtual void OnNotifyLv2StateChanged(uint64_t instanceId) override;
-        virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) override;
+        virtual void OnNotifyLv2StateChanged(PedalboardType pedalboardType,uint64_t instanceId) override;
+        virtual bool OnNotifyMaybeLv2StateChanged(PedalboardType pedalboardType,uint64_t instanceId) override;
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdateX> &updates) override;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) override;
-        virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) override;
+        virtual void OnNotifyMidiValueChanged(PedalboardType pedalboardType, int64_t instanceId, int portIndex, float value) override;
         virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) override;
-        virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
+        virtual void OnPatchSetReply(PedalboardType pedalboardType, uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) override;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) override;
-        virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex, int64_t snapshotRequestId) override;
+        virtual void OnNotifyMidiRealtimeSnapshotRequest(PedalboardType pedalboardType, int32_t snapshotIndex, int64_t snapshotRequestId) override;
         virtual void OnAlsaDriverTerminatedAbnormally() override;
         virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) override;
         virtual void OnAlsaSequencerDeviceRemoved(int client) override;
 
         void OnNotifyPathPatchPropertyReceived(
+            PedalboardType pedalboardType,            
             int64_t instanceId,
             LV2_URID pathPatchProperty,
             LV2_Atom *pathProperty) override;
@@ -270,7 +289,7 @@ namespace pipedal
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) override;
         virtual void OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request) override;
-        virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) override;
+        virtual void OnNotifyLv2RealtimeError(PedalboardType pedalboardType,int64_t instanceId, const std::string &error) override;
 
         PostHandle networkChangingDelayHandle = 0;
         void CancelNetworkChangingTimer();
@@ -278,12 +297,10 @@ namespace pipedal
         void OnNetworkChanging(bool ethernetConnected, bool hotspotConnected);
         void OnNetworkChanged(bool ethernetConnected, bool hotspotConnected);
 
-        void UpdateVst3Settings(Pedalboard &pedalboard);
-
         PiPedalConfiguration configuration;
 
         void CheckForResourceInitialization(Pedalboard &pedalboard);
-        UiFileProperty::ptr FindLoadedPatchProperty(int64_t instanceId, const std::string &patchPropertyUri);
+        UiFileProperty::ptr FindLoadedPatchProperty(PedalboardType pedalboardType,int64_t instanceId, const std::string &patchPropertyUri);
 
     public:
         PiPedalModel();
@@ -301,13 +318,15 @@ namespace pipedal
 
         virtual std::string Tone3000ThumbnailDirectory() override;
 
+        std::shared_ptr<Lv2Pedalboard> CreateLv2Pedalboard(PedalboardType pedalboardType);
+
 
         bool GetHasWifi();
 
-        void NextBank(Direction direction = Direction::Increase);
-        void PreviousBank() { NextBank(Direction::Decrease); }
-        void NextPreset(Direction direction = Direction::Increase);
-        void PreviousPreset() { NextPreset(Direction::Decrease); }
+        void NextBank(PedalboardType pedalboardType,Direction direction = Direction::Increase);
+        void PreviousBank(PedalboardType pedalboardType) { NextBank(pedalboardType,Direction::Decrease); }
+        void NextPreset(PedalboardType pedalboardType, Direction direction = Direction::Increase);
+        void PreviousPreset(PedalboardType pedalboardType) { NextPreset(pedalboardType,Direction::Decrease); }
 
         int64_t DownloadModelsFromTone3000(
             int64_t clientId,
@@ -368,62 +387,58 @@ namespace pipedal
         const PluginHost &GetPluginHost() const { return pluginHost; }
         PluginHost &GetPluginHost() { return pluginHost; }
 
-        Pedalboard GetCurrentPedalboardCopy()
-        {
-            std::lock_guard<std::recursive_mutex> guard(mutex);
-            return pedalboard; // can return a referece because we'd lose  mutex protection
-        }
+        Pedalboard GetCurrentPedalboardCopy(PedalboardType pedalboardType);
+
         PluginUiPresets GetPluginUiPresets(const std::string &pluginUri);
         PluginPresets GetPluginPresets(const std::string &pluginUri);
 
-        void LoadPluginPreset(int64_t pluginInstanceId, uint64_t presetInstanceId);
+        void LoadPluginPreset(int64_t pluginInstanceId, PedalboardType pedalboardType,uint64_t presetInstanceId);
 
         void AddNotificationSubscription(std::shared_ptr<IPiPedalModelSubscriber> pSubscriber);
         void RemoveNotificationSubsription(std::shared_ptr<IPiPedalModelSubscriber> pSubscriber);
 
-        void SetPedalboardItemEnable(int64_t clientId, int64_t instanceId, bool enabled);
-        void SetPedalboardItemUseModUi(int64_t clientId, int64_t instanceId, bool enabled);
-        void SetControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
-        void PreviewControl(int64_t clientId, int64_t pedalItemId, const std::string &symbol, float value);
+        void SetPedalboardItemEnable(int64_t clientId, PedalboardType pedalboardType, int64_t instanceId, bool enabled);
+        void SetPedalboardItemUseModUi(int64_t clientId, PedalboardType pedalboardType, int64_t instanceId, bool enabled);
+        void SetControl(int64_t clientId, PedalboardType pedalboardType, int64_t pedalItemId, const std::string &symbol, float value);
+        void PreviewControl(int64_t clientId, PedalboardType pedalboardType,int64_t pedalItemId, const std::string &symbol, float value);
 
-        void SetInputVolume(float value);
-        void SetOutputVolume(float value);
-        void PreviewInputVolume(float value);
-        void PreviewOutputVolume(float value);
+        void SetInputVolume(PedalboardType pedalboardType, float value);
+        void SetOutputVolume(PedalboardType pedalboardType, float value);
+        void PreviewInputVolume(PedalboardType pedalboardType, float value);
+        void PreviewOutputVolume(PedalboardType pedalboardType, float value);
 
-        void SetPedalboard(int64_t clientId, Pedalboard &pedalboard);
-        Pedalboard &GetPedalboard();
-        std::shared_ptr<Lv2Pedalboard> GetLv2Pedalboard();
+        void SetPedalboard(int64_t clientId, PedalboardType pedalboardType, Pedalboard &pedalboard);
+        Pedalboard &GetPedalboard(PedalboardType pedalboardType);
 
-        void UpdateCurrentPedalboard(int64_t clientId, Pedalboard &pedalboard);
+        void UpdateCurrentPedalboard(int64_t clientId, PedalboardType pedalboardType, Pedalboard &pedalboard);
 
-        void SetSnapshots(std::vector<std::shared_ptr<Snapshot>> &snapshots, int64_t selectedSnapshot);
-        void SetSnapshot(int64_t selectedSnapshot);
+        void SetSnapshots(PedalboardType pedalboardType, std::vector<std::shared_ptr<Snapshot>> &snapshots, int64_t selectedSnapshot);
+        void SetSnapshot(PedalboardType pedalboardType, int64_t selectedSnapshot);
 
-        void GetPresets(PresetIndex *pResult);
+        void GetPresets(PresetIndex *pResult, PedalboardType pedalboardType);
 
-        Pedalboard GetPreset(int64_t instanceId);
+        Pedalboard GetPreset(PedalboardType pedalboardType, int64_t instanceId);
         void GetBank(int64_t instanceId, BankFile *pBank);
 
-        int64_t UploadBank(BankFile &bankFile, int64_t uploadAfter = -1);
-        int64_t UploadPreset(const BankFile &bankFile, int64_t uploadAfter = -1);
+        int64_t UploadBank(PedalboardType pedalboardType,BankFile &bankFile, int64_t uploadAfter = -1);
+        int64_t UploadPreset(PedalboardType pedalboardType,const BankFile &bankFile, int64_t uploadAfter = -1);
         void UploadPluginPresets(const PluginPresets &pluginPresets);
-        void SaveCurrentPreset(int64_t clientId);
-        int64_t SaveCurrentPresetAs(int64_t clientId, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId = -1);
-        int64_t SavePluginPresetAs(int64_t instanceId, const std::string &name);
+        void SaveCurrentPreset(int64_t clientId, PedalboardType pedalboardType);
+        int64_t SaveCurrentPresetAs(int64_t clientId, PedalboardType pedalboardType,int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId = -1);
+        int64_t SavePluginPresetAs(PedalboardType pedalboardType,int64_t instanceId, const std::string &name);
 
-        void LoadPreset(int64_t clientId, int64_t instanceId);
-        bool UpdatePresets(int64_t clientId, const PresetIndex &presets);
+        void LoadPreset(int64_t clientId, PedalboardType pedalboardType, int64_t instanceId);
+        bool UpdatePresets(int64_t clientId, PedalboardType pedalboardType, const PresetIndex &presets);
         void UpdatePluginPresets(const PluginUiPresets &pluginPresets);
-        int64_t DeletePresets(int64_t clientId, const std::vector<int64_t> &presetInstanceIds);
-        bool RenamePreset(int64_t clientId, int64_t instanceId, const std::string &name);
-        int64_t CopyPreset(int64_t clientId, int64_t fromIndex, int64_t toIndex);
+        int64_t DeletePresets(int64_t clientId, PedalboardType pedalboardType, const std::vector<int64_t> &presetInstanceIds);
+        bool RenamePreset(int64_t clientId, PedalboardType pedalboardType, int64_t instanceId, const std::string &name);
+        int64_t CopyPreset(int64_t clientId, PedalboardType pedalboardType, int64_t fromIndex, int64_t toIndex);
         uint64_t CopyPluginPreset(const std::string &pluginUri, uint64_t presetId);
 
         void MoveBank(int64_t clientId, int from, int to);
         int64_t DeleteBank(int64_t clientId, int64_t instanceId);
 
-        int64_t DuplicatePreset(int64_t clientId, int64_t instanceId) { return CopyPreset(clientId, instanceId, -1); }
+        int64_t DuplicatePreset(int64_t clientId, PedalboardType pedalboardType,int64_t instanceId) { return CopyPreset(clientId, pedalboardType,instanceId, -1); }
 
         JackConfiguration GetJackConfiguration();
 
@@ -447,17 +462,18 @@ namespace pipedal
         void SetGovernorSettings(const std::string &governor);
         GovernorSettings GetGovernorSettings();
 
-        int64_t AddVuSubscription(int64_t instanceId);
+        int64_t AddVuSubscription(PedalboardType pedalboardType, int64_t instanceId);
         void RemoveVuSubscription(int64_t subscriptionHandle);
 
         void SetSystemMidiBindings(std::vector<MidiBinding> &bindings);
         std::vector<MidiBinding> GetSystemMidiBidings();
 
-        int64_t MonitorPort(int64_t instanceId, const std::string &key, float updateInterval, PortMonitorCallback onUpdate);
+        int64_t MonitorPort(PedalboardType pedalboardType, int64_t instanceId, const std::string &key, float updateInterval, PortMonitorCallback onUpdate);
         void UnmonitorPort(int64_t subscriptionHandle);
 
         void SendGetPatchProperty(
             int64_t clientId,
+            PedalboardType pedalboardType,             
             int64_t instanceId,
             const std::string uri,
             std::function<void(const std::string &jsonResjult)> onSuccess,
@@ -465,6 +481,7 @@ namespace pipedal
 
         void SendSetPatchProperty(
             int64_t clientId,
+            PedalboardType pedalboardType,             
             int64_t instanceId,
             const std::string uri,
             const json_variant &value,
@@ -474,7 +491,7 @@ namespace pipedal
         BankIndex GetBankIndex() const;
         void RenameBank(int64_t clientId, int64_t bankId, const std::string &newName);
         int64_t SaveBankAs(int64_t clientId, int64_t bankId, const std::string &newName);
-        void OpenBank(int64_t clientId, int64_t bankId);
+        void OpenBank(int64_t clientId, PedalboardType pedalboardType,int64_t bankId);
 
         JackHostStatus GetJackStatus()
         {
@@ -486,7 +503,7 @@ namespace pipedal
         void ListenForMidiEvent(int64_t clientId, int64_t clientHandle);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
-        void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);
+        void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, PedalboardType pedalboardType, uint64_t instanceId, const std::string &propertyUri);
         void CancelMonitorPatchProperty(int64_t clientId, int64_t clientHandle);
 
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
@@ -506,23 +523,24 @@ namespace pipedal
 
         bool IsInUploadsDirectory(const std::string &path);
 
-        std::string UploadUserFile(const std::string &directory, int64_t instanceId, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
-        uint64_t CreateNewPreset();
+        std::string UploadUserFile(const std::string &directory, PedalboardType pedalboardType,int64_t instanceId, const std::string &patchProperty, const std::string &filename, std::istream &inputStream, size_t streamLength);
+        uint64_t CreateNewPreset(PedalboardType pedalboardType);
 
-        bool LoadCurrentPedalboard();
+        bool LoadCurrentPedalboard(PedalboardType pedalboardType);
+
 
         void MoveAudioFile(
             const std::string &path,
             int32_t from,
             int32_t to);
 
-        void SetPedalboardItemTitle(int64_t instanceId, const std::string &title, const std::string &iconColor);
+        void SetPedalboardItemTitle(PedalboardType pedalboardType, int64_t instanceId, const std::string &title, const std::string &iconColor);
 
-        void SetSelectedPedalboardPlugin(uint64_t clientId, uint64_t pedalboardId);
+        void SetSelectedPedalboardPlugin(uint64_t clientId, PedalboardType pedalboardType, uint64_t pedalboardId);
 
         std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
-        int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
-        int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
+        int64_t ImportPresetsFromBank(PedalboardType pedalboardType,int64_t bankInstanceId, const std::vector<int64_t> &presets);
+        int64_t CopyPresetsToBank(PedalboardType pedalboardType,int64_t bankInstanceId, const std::vector<int64_t> &presets);
 
         void SetChannelRouterSettings(int64_t clientId, ChannelRouterSettings::ptr &settings);
         ChannelRouterSettings::ptr GetChannelRouterSettings();

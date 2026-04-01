@@ -183,6 +183,7 @@ namespace pipedal
 
         Urids urids;
 
+        PedalboardType pedalboardType;
         uint64_t instanceId;
         BufferPool bufferPool;
 
@@ -227,7 +228,7 @@ namespace pipedal
         // non RT-thread use only.
         std::string GetPathPatchProperty(const std::string&propertyUri);
         // non RT-thread use only.
-        void SetPathPatchProperty(const std::string &propertyUri, const std::string&jsonAtom);
+        void SetMainThreadPathPatchProperty(const std::string &propertyUri, const std::string&jsonAtom);
 
         virtual bool IsLv2Effect() const { return true; }
         virtual bool GetLv2State(Lv2PluginState*state) override;
@@ -243,7 +244,7 @@ namespace pipedal
         virtual void GatherPatchProperties(RealtimePatchPropertyRequest*pRequest);
         void GatherPathPatchProperties(IPatchWriterCallback *cbPatchWriter);        
         virtual bool IsVst3() const { return false; }
-        virtual void RelayPatchSetMessages(uint64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter) ;
+        virtual void RelayPatchSetMessages(int64_t instanceId,RealtimeRingBufferWriter *realtimeRingBufferWriter) ;
 
         virtual uint8_t*GetAtomInputBuffer() {
             if (this->inputAtomBuffers.size() == 0) return nullptr;
@@ -291,6 +292,7 @@ namespace pipedal
         Lv2Effect(
             IHost *pHost,
             const std::shared_ptr<Lv2PluginInfo> &info,
+            PedalboardType pedalboardType,
             PedalboardItem &pedalboardItem);
         ~Lv2Effect();
 

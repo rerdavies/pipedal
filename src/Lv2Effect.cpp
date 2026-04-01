@@ -83,8 +83,9 @@ inline void Lv2Effect::CheckStagingBufferSentries()
 Lv2Effect::Lv2Effect(
     IHost *pHost_,
     const std::shared_ptr<Lv2PluginInfo> &info_,
+    PedalboardType pedalboardType,
     PedalboardItem &pedalboardItem)
-    : pHost(pHost_), pInstance(nullptr), info(info_), urids(pHost), instanceId(pedalboardItem.instanceId())
+    : pHost(pHost_), pInstance(nullptr), info(info_), urids(pHost), pedalboardType(pedalboardType),instanceId(pedalboardItem.instanceId())
 {
     auto pWorld = pHost_->getWorld();
 
@@ -111,12 +112,12 @@ Lv2Effect::Lv2Effect(
             LV2_URID filePropertyUrid = pHost->GetLv2Urid(fileProperty->patchProperty().c_str());
             this->pathProperties.push_back(filePropertyUrid);
 
-            this->pathPropertyWriters.push_back(PatchPropertyWriter(instanceId, filePropertyUrid));
+            this->pathPropertyWriters.push_back(PatchPropertyWriter(pedalboardType,instanceId, filePropertyUrid));
         }
     }
     for (auto &pathProperty : pedalboardItem.pathProperties_)
     {
-        SetPathPatchProperty(pathProperty.first, pathProperty.second);
+        SetMainThreadPathPatchProperty(pathProperty.first, pathProperty.second);
     }
 
     // initialize the atom forge used on the realtime thread.
@@ -1312,7 +1313,7 @@ void Lv2Effect::SetPatchProperty(LV2_URID uridUri, size_t size, LV2_Atom *value)
     this->requestStateChangedNotification = true;
 }
 
-void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId, RealtimeRingBufferWriter *realtimeRingBufferWriter)
+void Lv2Effect::RelayPatchSetMessages(int64_t instanceId, RealtimeRingBufferWriter *realtimeRingBufferWriter)
 {
     LV2_Atom_Sequence *controlOutput = (LV2_Atom_Sequence *)GetAtomOutputBuffer();
     if (controlOutput == nullptr)
@@ -1336,18 +1337,18 @@ void Lv2Effect::RelayPatchSetMessages(uint64_t instanceId, RealtimeRingBufferWri
             else if (obj->body.otype == urids.patch__Set) // patch_Set is handled elsewhere.
             {
                 maybeStateChanged = true;
-                realtimeRingBufferWriter->AtomOutput(instanceId, obj->atom.size + sizeof(obj->atom), (uint8_t *)obj);
+                realtimeRingBufferWriter->AtomOutput({pedalboardType,instanceId}, obj->atom.size + sizeof(obj->atom), (uint8_t *)obj);
             }
         }
     }
     if (this->requestStateChangedNotification)
     {
         requestStateChangedNotification = false;
-        realtimeRingBufferWriter->Lv2StateChanged(instanceId);
+        realtimeRingBufferWriter->Lv2StateChanged({pedalboardType,instanceId});
     }
     else if (maybeStateChanged)
     {
-        realtimeRingBufferWriter->MaybeLv2StateChanged(instanceId);
+        realtimeRingBufferWriter->MaybeLv2StateChanged({pedalboardType,instanceId});
     }
 }
 
@@ -1540,7 +1541,7 @@ std::string Lv2Effect::GetPathPatchProperty(const std::string &propertyUri)
     }
     return this->mainThreadPathProperties[propertyUri];
 }
-void Lv2Effect::SetPathPatchProperty(const std::string &propertyUri, const std::string &jsonAtom)
+void Lv2Effect::SetMainThreadPathPatchProperty(const std::string &propertyUri, const std::string &jsonAtom)
 {
     mainThreadPathProperties[propertyUri] = jsonAtom;
 }

@@ -176,7 +176,7 @@ namespace pipedal
                         // only transmit changed path patch properties.
                         if (lv2Effect->GetPathPatchProperty(pathProperty.first) != pathProperty.second)
                         {
-                            lv2Effect->SetPathPatchProperty(pathProperty.first, pathProperty.second);
+                            lv2Effect->SetMainThreadPathPatchProperty(pathProperty.first, pathProperty.second);
 
                             PathPatchProperty pathPatchProperty;
                             pathPatchProperty.propertyUrid = pluginHost.GetLv2Urid(pathProperty.first.c_str());
@@ -246,9 +246,10 @@ namespace pipedal
     class IndexedSnapshot
     {
     public:
-        IndexedSnapshot(Snapshot *snapshot, std::shared_ptr<Lv2Pedalboard> currentPedalboard, PluginHost &pluginHost)
+        IndexedSnapshot(Snapshot *snapshot, Lv2Pedalboard *currentPedalboard, PluginHost &pluginHost)
         {
             std::unordered_map<uint64_t, SnapshotValue *> index;
+            this->pedalboardType = currentPedalboard->GetPedalboardType();
             for (auto &value : snapshot->values_)
             {
                 index[value.instanceId_] = &value;
@@ -264,6 +265,7 @@ namespace pipedal
                 snapshotValues.push_back(IndexedSnapshotValue(effect, snapshotValue, pluginHost));
             }
         }
+        PedalboardType GetPedalboardType() const { return pedalboardType; }
         static SnapshotValue *getSnapshotValue(std::unordered_map<uint64_t, SnapshotValue *> &index, uint64_t instanceId)
         {
             auto iter = index.find(instanceId);
@@ -290,6 +292,7 @@ namespace pipedal
         }
 
     private:
+        PedalboardType pedalboardType;
         std::vector<IndexedSnapshotValue> snapshotValues;
     };
 }
@@ -531,8 +534,21 @@ private:
     std::shared_ptr<Lv2Pedalboard> currentAuxInsertPedalboard;
 
     std::vector<std::shared_ptr<Lv2Pedalboard>> activePedalboards; // pedalboards that have been sent to the audio queue.
-    Lv2Pedalboard *realtimeActivePedalboard = nullptr;
-    Lv2RoutingInserts realtimeRoutingInserts;
+
+    std::array<Lv2Pedalboard *, PedalboardTypeArraySize> realtimeActivePedalboards;
+
+    Lv2Pedalboard *GetRealtimeActivePedalboard(PedalboardType pedalboardType)
+    {
+        return realtimeActivePedalboards[(size_t)pedalboardType];
+    }
+    Lv2Pedalboard *SetRealtimeActivePedalboard(PedalboardType pedalboardType, Lv2Pedalboard *pedalboard)
+    {
+        return realtimeActivePedalboards[(size_t)pedalboardType] = pedalboard;
+    }
+
+    Lv2Pedalboard *realtimeMainPedalboard() { return realtimeActivePedalboards[size_t(PedalboardType::MainPedalboard)]; }
+    Lv2Pedalboard *realtimeMainInsertsPedalboard() { return realtimeActivePedalboards[size_t(PedalboardType::MainInserts)]; }
+    Lv2Pedalboard *realtimeAuxInsertsPedalboard() { return realtimeActivePedalboards[size_t(PedalboardType::AuxInserts)]; }
 
     uint32_t sampleRate = 0;
     uint64_t currentSample = 0;
@@ -595,7 +611,12 @@ private:
 
         // release any pdealboards owned by the process thread.
         this->activePedalboards.resize(0);
-        this->realtimeActivePedalboard = nullptr;
+
+        // defensively zero out realtime pedalboard pointers.
+        for (size_t i = 0; i < realtimeActivePedalboards.size(); ++i)
+        {
+            realtimeActivePedalboards[i] = nullptr;
+        }
 
         // clean up any realtime buffers that may have been lost in transit.
         // TODO: These should be lists, really. There may be multiple items in flight..
@@ -763,21 +784,21 @@ private:
             {
                 SetControlValueBody body;
                 realtimeReader.readComplete(&body);
-                this->realtimeActivePedalboard->SetControlValue(body.effectIndex, body.controlIndex, body.value);
+                this->GetRealtimeActivePedalboard(body.pedalboardType)->SetControlValue(body.effectIndex, body.controlIndex, body.value);
                 break;
             }
             case RingBufferCommand::SetInputVolume:
             {
                 SetVolumeBody body;
                 realtimeReader.readComplete(&body);
-                this->realtimeActivePedalboard->SetInputVolume(body.value);
+                this->GetRealtimeActivePedalboard(body.pedalboardType)->SetInputVolume(body.value);
                 break;
             }
             case RingBufferCommand::SetOutputVolume:
             {
                 SetVolumeBody body;
                 realtimeReader.readComplete(&body);
-                this->realtimeActivePedalboard->SetOutputVolume(body.value);
+                this->GetRealtimeActivePedalboard(body.pedalboardType)->SetOutputVolume(body.value);
                 break;
             }
             case RingBufferCommand::ParameterRequest:
@@ -871,77 +892,34 @@ private:
             {
                 SetBypassBody body;
                 realtimeReader.readComplete(&body);
-                this->realtimeActivePedalboard->SetBypass(body.effectIndex, body.enabled);
+                this->GetRealtimeActivePedalboard(body.pedalboardType)->SetBypass(body.effectIndex, body.enabled);
                 break;
             }
-            case RingBufferCommand::ReplaceEffect:
+            case RingBufferCommand::ReplacePedalboard:
             {
                 ReplaceEffectBody body;
                 realtimeReader.readComplete(&body);
+                auto oldValue = this->GetRealtimeActivePedalboard(body.pedalboardType);
+                auto pedalboard = body.effect;
+                this->SetRealtimeActivePedalboard(body.pedalboardType, pedalboard);
 
-                if (body.effect != nullptr)
-                {
-                    auto oldValue = this->realtimeActivePedalboard;
-                    this->realtimeActivePedalboard = body.effect;
-
-                    realtimeWriter.EffectReplaced(oldValue);
-
-                    // invalidate the possibly no-good subscriptions. Model will update them shortly.
-                    freeRealtimeVuConfiguration();
-                    freeRealtimeMonitorPortSubscriptions();
-                    cancelParameterRequests();
-
-                    if (realtimeActivePedalboard)
-                    {
-                        realtimeActivePedalboard->ResetAtomBuffers();
-                        // issue patch gets for all writable path properties.
-                        for (auto pEffect : realtimeActivePedalboard->GetEffects())
-                        {
-                            pEffect->RequestAllPathPatchProperties();
-                        }
-                    }
-                    realtimeActivePedalboard->UpdateAudioPorts();
-                }
-                reEntered = false;
-
-                return false; // signal to caller that the effect has been replaced, and processing needs to start again.
-            }
-            case RingBufferCommand::ReplaceRoutingInserts:
-            {
-                Lv2RoutingInserts body;
-                realtimeReader.readComplete(&body);
-
-                auto oldValue = this->realtimeRoutingInserts;
-                this->realtimeRoutingInserts = body;
-
-                realtimeWriter.RoutingInsertsReplaced(oldValue);
+                if (oldValue != nullptr)
+                    realtimeWriter.PedalboardReplaced(oldValue);
 
                 // invalidate the possibly no-good subscriptions. Model will update them shortly.
                 freeRealtimeVuConfiguration();
                 freeRealtimeMonitorPortSubscriptions();
                 cancelParameterRequests();
 
-                Lv2Pedalboard *mainInserts = body.mainInserts;
-                if (mainInserts)
+                if (pedalboard)
                 {
-                    mainInserts->ResetAtomBuffers();
+                    pedalboard->ResetAtomBuffers();
                     // issue patch gets for all writable path properties.
-                    for (auto pEffect : mainInserts->GetEffects())
+                    for (auto pEffect : pedalboard->GetEffects())
                     {
                         pEffect->RequestAllPathPatchProperties();
                     }
-                    mainInserts->UpdateAudioPorts();
-                }
-                Lv2Pedalboard *auxInserts = body.auxInserts;
-                if (auxInserts)
-                {
-                    auxInserts->ResetAtomBuffers();
-                    // issue patch gets for all writable path properties.
-                    for (auto pEffect : auxInserts->GetEffects())
-                    {
-                        pEffect->RequestAllPathPatchProperties();
-                    }
-                    auxInserts->UpdateAudioPorts();
+                    pedalboard->UpdateAudioPorts();
                 }
                 reEntered = false;
 
@@ -957,7 +935,7 @@ private:
 
     void ApplySnapshot(IndexedSnapshot *snapshot)
     {
-        auto &effects = this->realtimeActivePedalboard->GetEffects();
+        auto &effects = this->GetRealtimeActivePedalboard(snapshot->GetPedalboardType())->GetEffects();
         snapshot->Apply(effects);
     }
     virtual void AckMidiProgramRequest(uint64_t requestId)
@@ -969,13 +947,13 @@ private:
         hostWriter.AckMidiSnapshotRequest(snapshotRequestId);
     }
 
-    void OnMidiValueChanged(uint64_t instanceId, int controlIndex, float value)
+    void OnMidiValueChanged(PedalboardType pedalboardType, uint64_t instanceId, int controlIndex, float value)
     {
-        realtimeWriter.MidiValueChanged(instanceId, controlIndex, value);
+        realtimeWriter.MidiValueChanged(pedalboardType, instanceId, controlIndex, value);
     }
-    static void fnMidiValueChanged(void *data, uint64_t instanceId, int controlIndex, float value)
+    static void fnMidiValueChanged(void *data, PedalboardType pedalboardType, uint64_t instanceId, int controlIndex, float value)
     {
-        ((AudioHostImpl *)data)->OnMidiValueChanged(instanceId, controlIndex, value);
+        ((AudioHostImpl *)data)->OnMidiValueChanged(pedalboardType, instanceId, controlIndex, value);
     }
     static bool isBankChange(MidiEvent &event)
     {
@@ -986,8 +964,14 @@ private:
     {
         // eventBufferWriter.writeMidiEvent(iterator, 0, event.size, event.buffer);
 
-        this->realtimeActivePedalboard->OnMidiMessage(
-            event, this, fnMidiValueChanged);
+        for (auto realtimeActivePedalboard : realtimeActivePedalboards)
+        {
+            if (realtimeActivePedalboard != nullptr)
+            {
+                realtimeActivePedalboard->OnMidiMessage(
+                    event, this, fnMidiValueChanged);
+            }
+        }
         if (listenForMidiEvent)
         {
             if (event.size >= 3)
@@ -1014,11 +998,11 @@ private:
         return true;
     }
 
-    void OnSnapshotTriggered(int snapshotIndex)
+    void OnSnapshotTriggered(PedalboardType pedalboardType,int snapshotIndex)
     {
         // midiProgramChangePending = true;
         this->midiSnapshotRequestPending = true;
-        this->realtimeWriter.OnRealtimeMidiSnapshotRequest(snapshotIndex, ++snapshotRequestId);
+        this->realtimeWriter.OnRealtimeMidiSnapshotRequest(pedalboardType, snapshotIndex, ++snapshotRequestId);
     }
 
     void ProcessMidiEvent(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
@@ -1095,27 +1079,27 @@ private:
         }
         else if (this->snapshot1MidiBinding.IsTriggered(event))
         {
-            OnSnapshotTriggered(0);
+            OnSnapshotTriggered(PedalboardType::MainPedalboard, 0);
         }
         else if (this->snapshot2MidiBinding.IsTriggered(event))
         {
-            OnSnapshotTriggered(1);
+            OnSnapshotTriggered(PedalboardType::MainPedalboard, 1);
         }
         else if (this->snapshot3MidiBinding.IsTriggered(event))
         {
-            OnSnapshotTriggered(2);
+            OnSnapshotTriggered(PedalboardType::MainPedalboard, 2);
         }
         else if (this->snapshot4MidiBinding.IsTriggered(event))
         {
-            OnSnapshotTriggered(3);
+            OnSnapshotTriggered(PedalboardType::MainPedalboard, 3);
         }
         else if (this->snapshot5MidiBinding.IsTriggered(event))
         {
-            OnSnapshotTriggered(4);
+            OnSnapshotTriggered(PedalboardType::MainPedalboard, 4);
         }
         else if (this->snapshot6MidiBinding.IsTriggered(event))
         {
-            OnSnapshotTriggered(5);
+            OnSnapshotTriggered(PedalboardType::MainPedalboard, 5);
         }
         else
         {
@@ -1269,12 +1253,13 @@ private:
 
         std::vector<float *> *pInputBuffers;
         std::vector<float *> *pOutputBuffers;
+        pedalboard = this->GetRealtimeActivePedalboard(pedalboardType);
+
         switch (pedalboardType)
         {
         case PedalboardType::MainPedalboard:
-            pedalboard = this->realtimeActivePedalboard;
             pInputBuffers = &(audioDriver->MainInputBuffers());
-            if (this->realtimeRoutingInserts.mainInserts != nullptr)
+            if (this->realtimeMainInsertsPedalboard() != nullptr)
             {
                 pOutputBuffers = &(audioDriver->MainOutputBuffers());
             }
@@ -1284,13 +1269,10 @@ private:
             }
             break;
         case PedalboardType::MainInserts:
-
-            pedalboard = this->realtimeRoutingInserts.mainInserts;
             pInputBuffers = &(audioDriver->MainOutputBuffers());
             pOutputBuffers = &(audioDriver->MainInsertOutputBuffers());
             break;
         case PedalboardType::AuxInserts:
-            pedalboard = this->realtimeRoutingInserts.auxInserts;
             pInputBuffers = &(audioDriver->AuxInputBuffers());
             pOutputBuffers = &(audioDriver->AuxOutputBuffers());
             break;
@@ -1400,9 +1382,9 @@ private:
             }
             break;
         case PedalboardType::MainInserts:
-            if (this->realtimeActivePedalboard)
+            if (this->GetRealtimeActivePedalboard(PedalboardType::MainPedalboard))
             {
-                for (float *buffer : this->realtimeActivePedalboard->GetoutputBuffers())
+                for (float *buffer : this->GetRealtimeActivePedalboard(PedalboardType::MainPedalboard)->GetoutputBuffers())
                 {
                     masterInputBuffers[inputIx++] = buffer;
                 }
@@ -1419,10 +1401,11 @@ private:
                 {
                 case ChannelRouterSettings::MAIN_OUT_LEFT_CHANNEL:
                 {
+                    auto mainPedalboard = this->GetRealtimeActivePedalboard(PedalboardType::MainPedalboard);
                     float *pBuffer = nullptr;
-                    if (this->realtimeActivePedalboard)
+                    if (mainPedalboard)
                     {
-                        auto &mainOutputBuffers = realtimeActivePedalboard->GetoutputBuffers();
+                        auto &mainOutputBuffers = mainPedalboard->GetoutputBuffers();
                         if (mainOutputBuffers.size() >= 1)
                         {
                             pBuffer = mainOutputBuffers[0];
@@ -1437,15 +1420,16 @@ private:
                 break;
                 case ChannelRouterSettings::MAIN_OUT_RIGHT_CHANNEL:
                 {
+                    auto mainPedalboard = this->GetRealtimeActivePedalboard(PedalboardType::MainPedalboard);
                     float *pBuffer = nullptr;
-                    if (this->realtimeActivePedalboard)
+                    if (mainPedalboard)
                     {
-                        auto &mainOutputBuffers = realtimeActivePedalboard->GetoutputBuffers();
+                        auto &mainOutputBuffers = mainPedalboard->GetoutputBuffers();
                         if (mainOutputBuffers.size() == 1)
                         {
                             pBuffer = mainOutputBuffers[0];
                         }
-                        else if (mainOutputBuffers.size() == 2)
+                        else if (mainOutputBuffers.size() >= 2)
                         {
                             pBuffer = mainOutputBuffers[0];
                         }
@@ -1479,20 +1463,20 @@ private:
         float *masterInputBuffers[2];
         float *masterOutputBuffers[2];
 
-        if (this->realtimeActivePedalboard != nullptr)
+        if (this->realtimeMainPedalboard() != nullptr)
         {
             GetMasterChannels(PedalboardType::MainPedalboard, masterInputBuffers, masterOutputBuffers);
-            realtimeActivePedalboard->ComputeVus(this->realtimeVuBuffers, nFrames, masterInputBuffers, masterOutputBuffers);
+            realtimeMainPedalboard()->ComputeVus(this->realtimeVuBuffers, nFrames, masterInputBuffers, masterOutputBuffers);
         }
-        if (this->realtimeRoutingInserts.mainInserts)
+        if (realtimeMainInsertsPedalboard() != nullptr)
         {
             GetMasterChannels(PedalboardType::MainInserts, masterInputBuffers, masterOutputBuffers);
-            this->realtimeRoutingInserts.mainInserts->ComputeVus(this->realtimeVuBuffers, nFrames, masterInputBuffers, masterOutputBuffers);
+            realtimeMainInsertsPedalboard()->ComputeVus(this->realtimeVuBuffers, nFrames, masterInputBuffers, masterOutputBuffers);
         }
-        if (this->realtimeRoutingInserts.auxInserts)
+        if (realtimeAuxInsertsPedalboard() != nullptr)
         {
             GetMasterChannels(PedalboardType::AuxInserts, masterInputBuffers, masterOutputBuffers);
-            this->realtimeRoutingInserts.auxInserts->ComputeVus(this->realtimeVuBuffers, nFrames, masterInputBuffers, masterOutputBuffers);
+            realtimeAuxInsertsPedalboard()->ComputeVus(this->realtimeVuBuffers, nFrames, masterInputBuffers, masterOutputBuffers);
         }
 
         // periodically send updates.
@@ -1511,19 +1495,12 @@ private:
         {
             float *restrict in, *restrict out;
 
-            Lv2Pedalboard *pedalboard = nullptr;
-            pedalboard = this->realtimeActivePedalboard;
-            if (pedalboard)
+            for (auto pedalboard : this->realtimeActivePedalboards)
             {
-                pedalboard->ResetAtomBuffers();
-            }
-            if (this->realtimeRoutingInserts.auxInserts)
-            {
-                this->realtimeRoutingInserts.auxInserts->ResetAtomBuffers();
-            }
-            if (this->realtimeRoutingInserts.mainInserts)
-            {
-                this->realtimeRoutingInserts.mainInserts->ResetAtomBuffers();
+                if (pedalboard)
+                {
+                    pedalboard->ResetAtomBuffers();
+                }
             }
 
             while (true)
@@ -1533,17 +1510,13 @@ private:
                 {
                     break;
                 }
-                // else a new pedalboard was installed. start again.
-                pedalboard = this->realtimeActivePedalboard;
             }
             bool processed = false;
 
-            if (pedalboard != nullptr)
-            {
-                ProcessGlobalMidiInput();
-            }
+            ProcessGlobalMidiInput();
+
             ProcessLv2Pedalboard(PedalboardType::MainPedalboard, nframes);
-            if (this->realtimeRoutingInserts.mainInserts != nullptr) // prevent zero-ing of main outputs if there's no mainInserts
+            if (this->realtimeMainInsertsPedalboard() != nullptr) // prevent zero-ing of main outputs if there's no mainInserts
             {
                 ProcessLv2Pedalboard(PedalboardType::MainInserts, nframes);
             }
@@ -1719,7 +1692,7 @@ public:
 
                                 if (this->pNotifyCallbacks)
                                 {
-                                    this->pNotifyCallbacks->OnNotifyMidiValueChanged(body.instanceId, body.controlIndex, body.value);
+                                    this->pNotifyCallbacks->OnNotifyMidiValueChanged(body.pedalboardType, body.instanceId, body.controlIndex, body.value);
                                 }
                             }
                             else if (command == RingBufferCommand::ParameterRequestComplete)
@@ -1790,20 +1763,20 @@ public:
                             }
                             else if (command == RingBufferCommand::Lv2StateChanged)
                             {
-                                uint64_t instanceId;
-                                hostReader.read(&instanceId);
-                                this->pNotifyCallbacks->OnNotifyLv2StateChanged(instanceId);
+                                PedalboardInstanceId pedalboardInstanceId;
+                                hostReader.read(&pedalboardInstanceId);
+                                this->pNotifyCallbacks->OnNotifyLv2StateChanged(pedalboardInstanceId.pedalboardType, pedalboardInstanceId.instanceId);
                             }
                             else if (command == RingBufferCommand::MaybeLv2StateChanged)
                             {
-                                uint64_t instanceId;
-                                hostReader.read(&instanceId);
-                                this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(instanceId);
+                                PedalboardInstanceId pedalboardInstanceId;
+                                hostReader.read(&pedalboardInstanceId);
+                                this->pNotifyCallbacks->OnNotifyMaybeLv2StateChanged(pedalboardInstanceId.pedalboardType, pedalboardInstanceId.instanceId);
                             }
                             else if (command == RingBufferCommand::AtomOutput)
                             {
-                                uint64_t instanceId;
-                                hostReader.read(&instanceId);
+                                PedalboardInstanceId pedalboardInstanceId;
+                                hostReader.read(&pedalboardInstanceId);
                                 size_t extraBytes;
                                 hostReader.read(&extraBytes);
                                 if (atomBuffer.size() < extraBytes)
@@ -1812,31 +1785,35 @@ public:
                                 }
                                 hostReader.read(extraBytes, &(atomBuffer[0]));
 
-                                IEffect *pEffect = currentPedalboard->GetEffect(instanceId);
-                                if (pEffect != nullptr && this->pNotifyCallbacks)
+                                Lv2Pedalboard *pedalboard = this->GetPedalboard(pedalboardInstanceId.pedalboardType);
+                                if (pedalboard != nullptr)
                                 {
-                                    LV2_Atom *atom = (LV2_Atom *)&atomBuffer[0];
-                                    if (atom->type == uris.atom_Object)
+                                    IEffect *pEffect = pedalboard->GetEffect(pedalboardInstanceId.instanceId);
+                                    if (pEffect != nullptr && this->pNotifyCallbacks)
                                     {
-                                        LV2_Atom_Object *obj = (LV2_Atom_Object *)atom;
-                                        if (obj->body.otype == uris.patch_Set)
+                                        LV2_Atom *atom = (LV2_Atom *)&atomBuffer[0];
+                                        if (atom->type == uris.atom_Object)
                                         {
-
-                                            // Get the property and value of the set message
-                                            const LV2_Atom *property = nullptr;
-                                            const LV2_Atom *value = nullptr;
-
-                                            lv2_atom_object_get(
-                                                obj,
-                                                uris.patch_property, &property,
-                                                uris.patch_value, &value,
-                                                0);
-                                            if (property != nullptr && value != nullptr && property->type == uris.atom_URID)
+                                            LV2_Atom_Object *obj = (LV2_Atom_Object *)atom;
+                                            if (obj->body.otype == uris.patch_Set)
                                             {
-                                                LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
-                                                if (this->pNotifyCallbacks)
+
+                                                // Get the property and value of the set message
+                                                const LV2_Atom *property = nullptr;
+                                                const LV2_Atom *value = nullptr;
+
+                                                lv2_atom_object_get(
+                                                    obj,
+                                                    uris.patch_property, &property,
+                                                    uris.patch_value, &value,
+                                                    0);
+                                                if (property != nullptr && value != nullptr && property->type == uris.atom_URID)
                                                 {
-                                                    this->pNotifyCallbacks->OnPatchSetReply(instanceId, propertyUrid, value);
+                                                    LV2_URID propertyUrid = ((LV2_Atom_URID *)property)->body;
+                                                    if (this->pNotifyCallbacks)
+                                                    {
+                                                        this->pNotifyCallbacks->OnPatchSetReply(pedalboardInstanceId.pedalboardType, pedalboardInstanceId.instanceId, propertyUrid, value);
+                                                    }
                                                 }
                                             }
                                         }
@@ -1855,24 +1832,11 @@ public:
                                 hostReader.read(&pSubscriptions);
                                 delete pSubscriptions;
                             }
-                            else if (command == RingBufferCommand::EffectReplaced)
+                            else if (command == RingBufferCommand::PedalboardReplaced)
                             {
                                 EffectReplacedBody body;
                                 hostReader.read(&body);
                                 OnActivePedalboardReleased(body.oldEffect);
-                            }
-                            else if (command == RingBufferCommand::RoutingInsertsReplaced)
-                            {
-                                Lv2RoutingInserts body;
-                                hostReader.read(&body);
-                                if (body.mainInserts)
-                                {
-                                    OnActivePedalboardReleased(body.mainInserts);
-                                }
-                                if (body.auxInserts)
-                                {
-                                    OnActivePedalboardReleased(body.auxInserts);
-                                }
                             }
                             else if (command == RingBufferCommand::FreeSnapshot)
                             {
@@ -1924,14 +1888,16 @@ public:
                                 RealtimeMidiSnapshotRequest request;
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyMidiRealtimeSnapshotRequest(
+                                    request.pedalboardType,
                                     request.snapshotIndex,
                                     request.snapshotRequestId);
                             }
                             else if (command == RingBufferCommand::Lv2ErrorMessage)
                             {
                                 size_t size;
-                                int64_t instanceId;
-                                hostReader.read(&instanceId);
+
+                                PedalboardInstanceId pedalboardInstanceId;
+                                hostReader.read(&pedalboardInstanceId);
                                 hostReader.read(&size);
                                 if (this->atomBuffer.size() < size + 1)
                                 {
@@ -1941,7 +1907,7 @@ public:
                                 char *p = (char *)&(atomBuffer[0]);
                                 p[size] = 0;
                                 std::string message(p);
-                                pNotifyCallbacks->OnNotifyLv2RealtimeError(instanceId, message);
+                                pNotifyCallbacks->OnNotifyLv2RealtimeError(pedalboardInstanceId.pedalboardType, pedalboardInstanceId.instanceId, message);
                             }
                             else
                             {
@@ -2042,6 +2008,7 @@ public:
             audioStopped = false;
             audioDriver->Activate();
             Lv2Log::info(SS("Audio started. " << audioDriver->GetConfigurationDescription()));
+            // yyy: WHEN DO WE ACTIVATE??
         }
         catch (const std::exception &e)
         {
@@ -2062,6 +2029,7 @@ public:
         if (pNotifyCallbacks)
         {
             pNotifyCallbacks->OnNotifyPathPatchPropertyReceived(
+                buffer->pedalboardType,
                 buffer->instanceId,
                 buffer->patchPropertyUrid,
                 (LV2_Atom *)(buffer->memory.data()));
@@ -2086,55 +2054,53 @@ public:
         }
     }
 
-    virtual void SetPedalboard(const std::shared_ptr<Lv2Pedalboard> &pedalboard)
+    virtual void SetPedalboard(PedalboardType pedalboardType, const std::shared_ptr<Lv2Pedalboard> &pedalboard) override
     {
         std::lock_guard guard(mutex);
 
-        this->currentPedalboard = pedalboard;
+        switch (pedalboardType)
+        {
+        case PedalboardType::MainPedalboard:
+            this->currentPedalboard = pedalboard;
+            break;
+        case PedalboardType::AuxInserts:
+            this->currentAuxInsertPedalboard = pedalboard;
+            break;
+        case PedalboardType::MainInserts:
+            this->currentMainInsertPedalboard = pedalboard;
+            break;
+        default:
+            throw std::runtime_error("SetPedalboard: Invalid argument.");
+        }
         if (active && pedalboard)
         {
             pedalboard->Activate();
             this->activePedalboards.push_back(pedalboard);
-            hostWriter.ReplaceEffect(pedalboard.get());
+            hostWriter.ReplacePedalboard(pedalboardType, pedalboard.get());
         }
     }
 
-    virtual void SetChannelRoutingInserts(
-        const std::shared_ptr<Lv2Pedalboard> &mainInserts,
-        const std::shared_ptr<Lv2Pedalboard> &auxInserts) override
+    virtual void SetBypass(PedalboardType pedalboardType, uint64_t instanceId, bool enabled) override
     {
-        if (active && mainInserts)
-        {
-            mainInserts->Activate();
-            this->activePedalboards.push_back(mainInserts);
-        }
-        if (active && auxInserts)
-        {
-            auxInserts->Activate();
-            this->activePedalboards.push_back(auxInserts);
-        }
-        Lv2RoutingInserts routingInserts{mainInserts : mainInserts.get(), auxInserts : auxInserts.get()};
-        hostWriter.ReplaceRoutingInserts(routingInserts);
-    }
-
-    virtual void SetBypass(uint64_t instanceId, bool enabled)
-    {
+        auto pedalboard = this->GetPedalboard(pedalboardType);
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalboard)
+        if (active && pedalboard)
         {
             // use indices not instance ids, so we can just do a straight array index on the audio thread.
-            auto index = currentPedalboard->GetIndexOfInstanceId(instanceId);
+            auto index = pedalboard->GetIndexOfInstanceId(instanceId);
             if (index >= 0)
             {
-                hostWriter.SetBypass((uint32_t)index, enabled);
+                hostWriter.SetBypass(pedalboardType, (uint32_t)index, enabled);
             }
         }
     }
 
-    virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> &values)
+    virtual void SetPluginPreset(PedalboardType pedalboardType, uint64_t instanceId, const std::vector<ControlValue> &values) override
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalboard)
+        auto currentPedalboard = GetPedalboard(pedalboardType);
+
+        if (active && currentPedalboard)
         {
             auto effectIndex = currentPedalboard->GetIndexOfInstanceId(instanceId);
             if (effectIndex != -1)
@@ -2142,58 +2108,64 @@ public:
                 for (size_t i = 0; i < values.size(); ++i)
                 {
                     const ControlValue &value = values[i];
-                    int controlIndex = this->currentPedalboard->GetControlIndex(instanceId, value.key());
+                    int controlIndex = currentPedalboard->GetControlIndex(instanceId, value.key());
                     if (controlIndex != -1 && effectIndex != -1)
                     {
-                        hostWriter.SetControlValue(effectIndex, controlIndex, value.value());
+                        hostWriter.SetControlValue(pedalboardType, effectIndex, controlIndex, value.value());
                     }
                 }
             }
         }
     }
 
-    void SetControlValue(uint64_t instanceId, const std::string &symbol, float value)
+    void SetControlValue(PedalboardType pedalboardType, uint64_t instanceId, const std::string &symbol, float value) override
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalboard)
+        auto currentPedalboard = this->GetPedalboard(pedalboardType);
+        if (active && currentPedalboard)
         {
             // use indices not instance ids, so we can just do a straight array index on the audio thread.
-            int controlIndex = this->currentPedalboard->GetControlIndex(instanceId, symbol);
+            int controlIndex = currentPedalboard->GetControlIndex(instanceId, symbol);
             auto effectIndex = currentPedalboard->GetIndexOfInstanceId(instanceId);
 
             if (controlIndex != -1 && effectIndex != -1)
             {
-                hostWriter.SetControlValue(effectIndex, controlIndex, value);
+                hostWriter.SetControlValue(pedalboardType, effectIndex, controlIndex, value);
             }
         }
     }
 
-    virtual void SetInputVolume(float value)
+    virtual void SetInputVolume(PedalboardType pedalboardType, float value) override
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalboard)
+        auto pedalboard = this->GetPedalboard(pedalboardType);
+
+        if (active && pedalboard)
         {
-            hostWriter.SetInputVolume(value);
+            hostWriter.SetInputVolume(pedalboardType, value);
         }
     }
 
-    virtual void SetOutputVolume(float value)
+    virtual void SetOutputVolume(PedalboardType pedalboardType, float value) override
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalboard)
+        auto pedalboard = this->GetPedalboard(pedalboardType);
+
+        if (active && pedalboard)
         {
-            hostWriter.SetOutputVolume(value);
+            hostWriter.SetOutputVolume(pedalboardType, value);
         }
     }
 
     std::vector<IndexedSnapshot *> pendingSnapshots;
 
-    virtual void LoadSnapshot(Snapshot &snapshot, PluginHost &pluginHost) override
+    virtual void LoadSnapshot(PedalboardType pedalboardType, Snapshot &snapshot, PluginHost &pluginHost) override
     {
         std::lock_guard guard(mutex);
-        if (active && this->currentPedalboard)
+        auto pedalboard = GetPedalboard(pedalboardType);
+        if (active && pedalboard != nullptr)
         {
-            IndexedSnapshot *indexedSnapshot = new IndexedSnapshot(&snapshot, this->currentPedalboard, pluginHost);
+            IndexedSnapshot *indexedSnapshot = new IndexedSnapshot(&snapshot, pedalboard, pluginHost);
             pendingSnapshots.push_back(indexedSnapshot);
             this->hostWriter.LoadSnapshot(indexedSnapshot);
         }
@@ -2202,6 +2174,7 @@ public:
     virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) override;
 
     void OnNotifyPathPatchPropertyReceived(
+        PedalboardType pedalboardType,
         int64_t instanceId,
         const std::string &pathPatchPropertyUri,
         const std::string &jsonAtom) override;
@@ -2231,75 +2204,26 @@ public:
         pendingSnapshots.clear();
     }
 
-    PIPEDAL_NON_INLINE RealtimePedalboardItemIndex GetRealtimeItemIndex(int64_t instanceId)
+    PIPEDAL_NON_INLINE RealtimePedalboardItemIndex GetRealtimeItemIndex(PedalboardType pedalboardType, int64_t instanceId)
     {
-        PedalboardType instanceType = Pedalboard::GetPedalboardTypeFromInstanceId(instanceId);
         int64_t index = -1;
-        switch (instanceType)
+        if (instanceId == Pedalboard::START_CONTROL_ID || instanceId == Pedalboard::END_CONTROL_ID) 
         {
-        case PedalboardType::MainPedalboard:
-            if (this->currentPedalboard)
-            {
-                if (instanceId == Pedalboard::START_CONTROL_ID)
-                {
-                    index = Pedalboard::START_CONTROL_ID;
-                }
-                else if (instanceId == Pedalboard::END_CONTROL_ID)
-                {
-                    index = Pedalboard::END_CONTROL_ID;
-                }
-                else
-                {
-                    index = this->currentPedalboard->GetIndexOfInstanceId(instanceId);
-                }
-            }
-            break;
-        case PedalboardType::MainInserts:
-            if (this->currentMainInsertPedalboard)
-            {
-                if (instanceId == Pedalboard::MAIN_INSERT_START_CONTROL_ID)
-                {
-                    index = Pedalboard::MAIN_INSERT_START_CONTROL_ID;
-                }
-                else if (instanceId == Pedalboard::MAIN_INSERT_END_CONTROL_ID)
-                {
-                    index = Pedalboard::END_CONTROL_ID;
-                }
-                else
-                {
-                    index = this->currentMainInsertPedalboard->GetIndexOfInstanceId(instanceId);
-                }
-            }
-            break;
-        case PedalboardType::AuxInserts:
-            if (this->currentAuxInsertPedalboard)
-            {
-                if (instanceId == Pedalboard::AUX_INSERT_START_CONTROL_ID)
-                {
-                    index = Pedalboard::START_CONTROL_ID;
-                }
-                else if (instanceId == Pedalboard::AUX_INSERT_END_CONTROL_ID)
-                {
-                    index = Pedalboard::END_CONTROL_ID;
-                }
-                else
-                {
-                    index = this->currentAuxInsertPedalboard->GetIndexOfInstanceId(instanceId);
-                }
-            }
-            break;
+            index = instanceId;
+        } else {
+            index = GetPedalboard(pedalboardType)->GetIndexOfInstanceId(instanceId);
         }
-        RealtimePedalboardItemIndex result{instanceType, index};
+        RealtimePedalboardItemIndex result{pedalboardType, index};
         return result;
     }
-    virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds)
+    virtual void SetVuSubscriptions(const std::vector<PedalboardInstanceId> &pedalboardInstanceIds)
     {
         std::lock_guard guard(mutex);
 
         if (active && this->currentPedalboard)
         {
 
-            if (instanceIds.size() == 0)
+            if (pedalboardInstanceIds.size() == 0)
             {
                 this->hostWriter.SetVuSubscriptions(nullptr);
             }
@@ -2307,12 +2231,10 @@ public:
             {
                 RealtimeVuBuffers *vuConfig = new RealtimeVuBuffers();
 
-                for (size_t i = 0; i < instanceIds.size(); ++i)
+                for (const PedalboardInstanceId &pedalboardInstanceId : pedalboardInstanceIds)
                 {
-                    int64_t instanceId = instanceIds[i];
-                    PedalboardType pedalboardType = Pedalboard::GetPedalboardTypeFromInstanceId(instanceId);
                     std::shared_ptr<Lv2Pedalboard> pedalboard;
-                    switch (pedalboardType)
+                    switch (pedalboardInstanceId.pedalboardType)
                     {
                     case PedalboardType::MainPedalboard:
                         pedalboard = this->currentPedalboard;
@@ -2330,17 +2252,17 @@ public:
                     int64_t effectIndex = -1;
                     if (pedalboard != nullptr)
                     {
-                        effectIndex = pedalboard->GetIndexOfInstanceId(instanceId);
+                        effectIndex = pedalboard->GetIndexOfInstanceId(pedalboardInstanceId.instanceId);
                     }
-                    
+
                     if (effectIndex != -1)
                     {
-                        IEffect *effect = pedalboard->GetEffect(instanceId);
-                        RealtimePedalboardItemIndex index = RealtimePedalboardItemIndex(pedalboardType, effectIndex);
+                        IEffect *effect = pedalboard->GetEffect(pedalboardInstanceId.instanceId);
+                        RealtimePedalboardItemIndex index = RealtimePedalboardItemIndex(pedalboardInstanceId.pedalboardType, effectIndex);
                         vuConfig->enabledIndexes.push_back(index);
                         VuUpdateX v;
-                        v.pedalboardType(pedalboardType);
-                        v.instanceId_ = instanceId;
+                        v.pedalboardType(pedalboardInstanceId.pedalboardType);
+                        v.instanceId_ = pedalboardInstanceId.instanceId;
                         // Display mono VUs if a stereo device is being fed identical L/R inputs.
                         v.isStereoInput_ = effect->GetNumberOfInputAudioBuffers() >= 2 && effect->GetAudioInputBuffer(0) != effect->GetAudioInputBuffer(1);
                         v.isStereoOutput_ = effect->GetNumberOfOutputAudioBuffers() >= 2;
@@ -2349,40 +2271,50 @@ public:
                         vuConfig->vuUpdateResponseData.push_back(v);
                     }
                     else if (
-                        instanceId == Pedalboard::START_CONTROL_ID ||
-                        instanceId == Pedalboard::END_CONTROL_ID ||
-                        instanceId == Pedalboard::MAIN_INSERT_START_CONTROL_ID ||
-                        instanceId == Pedalboard::MAIN_INSERT_END_CONTROL_ID ||
-                        instanceId == Pedalboard::AUX_INSERT_START_CONTROL_ID ||
-                        instanceId == Pedalboard::AUX_INSERT_END_CONTROL_ID)
+                        isStartOrEndControl(pedalboardInstanceId.instanceId))
                     {
-                        auto index = GetRealtimeItemIndex(instanceId);
+                        auto index = GetRealtimeItemIndex(pedalboardInstanceId.pedalboardType, pedalboardInstanceId.instanceId);
                         VuUpdateX v;
                         vuConfig->enabledIndexes.push_back(index);
 
-                        v.instanceId_ = instanceId;
+                        v.instanceId_ = pedalboardInstanceId.instanceId;
                         size_t nChannels = 0;
 
-                        switch (instanceId)
+                        if (pedalboardInstanceId.pedalboardType == PedalboardType::MainPedalboard)
                         {
-                        case Pedalboard::START_CONTROL_ID:
-                            nChannels = this->pHost->GetChannelSelection().mainInputChannels().size();
-                            break;
-                        case Pedalboard::END_CONTROL_ID:
-                            nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
-                            break;
-                        case Pedalboard::MAIN_INSERT_START_CONTROL_ID:
-                            nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
-                            break;
-                        case Pedalboard::MAIN_INSERT_END_CONTROL_ID:
-                            nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
-                            break;
-                        case Pedalboard::AUX_INSERT_START_CONTROL_ID:
-                            nChannels = this->pHost->GetChannelSelection().auxInputChannels().size();
-                            break;
-                        case Pedalboard::AUX_INSERT_END_CONTROL_ID:
-                            nChannels = this->pHost->GetChannelSelection().auxOutputChannels().size();
-                            break;
+                            switch (pedalboardInstanceId.instanceId)
+                            {
+                            case Pedalboard::START_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainInputChannels().size();
+                                break;
+                            case Pedalboard::END_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
+                                break;
+                            }
+                        }
+                        else if (pedalboardInstanceId.pedalboardType == PedalboardType::MainInserts)
+                        {
+                            switch (pedalboardInstanceId.instanceId)
+                            {
+                            case Pedalboard::START_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
+                                break;
+                            case Pedalboard::END_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().mainOutputChannels().size();
+                                break;
+                            }
+                        }
+                        else if (pedalboardInstanceId.pedalboardType == PedalboardType::AuxInserts)
+                        {
+                            switch (pedalboardInstanceId.instanceId)
+                            {
+                            case Pedalboard::START_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().auxInputChannels().size();
+                                break;
+                            case Pedalboard::END_CONTROL_ID:
+                                nChannels = this->pHost->GetChannelSelection().auxOutputChannels().size();
+                                break;
+                            }
                         }
                         v.isStereoInput_ = v.isStereoOutput_ = nChannels > 1;
                         vuConfig->vuUpdateWorkingData.push_back(v);
@@ -2402,9 +2334,9 @@ public:
         case PedalboardType::MainPedalboard:
             return this->currentPedalboard.get();
         case PedalboardType::MainInserts:
-            return this->realtimeRoutingInserts.mainInserts;
+            return this->currentMainInsertPedalboard.get();
         case PedalboardType::AuxInserts:
-            return this->realtimeRoutingInserts.auxInserts;
+            return this->currentAuxInsertPedalboard.get();
         default:
             throw std::runtime_error("AudioHostImpl::GetPedalboard: invalid argument.");
         }
@@ -2413,7 +2345,7 @@ public:
     {
         RealtimeMonitorPortSubscription result;
         result.subscriptionHandle = subscription.subscriptionHandle;
-        result.pedalboardType = Pedalboard::GetPedalboardTypeFromInstanceId(subscription.subscriptionHandle);
+        result.pedalboardType = subscription.pedalboardType;
         result.instanceIndex = this->currentPedalboard->GetIndexOfInstanceId(subscription.instanceid);
         IEffect *pEffect = this->currentPedalboard->GetEffect(subscription.instanceid);
 
@@ -2452,7 +2384,7 @@ public:
 
 private:
     // virtual bool UpdatePluginStates(Pedalboard &pedalboard) override;
-    virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) override;
+    virtual bool UpdatePluginState(PedalboardType pedalboardType, PedalboardItem &pedalboardItem) override;
 
     class RestartThread
     {
@@ -2717,13 +2649,16 @@ AudioHost *AudioHost::CreateInstance(IHost *pHost)
 // }
 
 void AudioHostImpl::OnNotifyPathPatchPropertyReceived(
+    PedalboardType pedalboardType,
     int64_t instanceId,
     const std::string &pathPatchPropertyUri,
     const std::string &jsonAtom)
 {
-    if (this->currentPedalboard)
+    Lv2Pedalboard *pedalboard = GetPedalboard(pedalboardType);
+
+    if (pedalboard)
     {
-        IEffect *effect = this->currentPedalboard->GetEffect(instanceId);
+        IEffect *effect = pedalboard->GetEffect(instanceId);
         if (!effect)
         {
             return;
@@ -2731,14 +2666,27 @@ void AudioHostImpl::OnNotifyPathPatchPropertyReceived(
         if (effect->IsLv2Effect())
         {
             Lv2Effect *lv2Effect = (Lv2Effect *)effect;
-            lv2Effect->SetPathPatchProperty(pathPatchPropertyUri, jsonAtom);
+            lv2Effect->SetMainThreadPathPatchProperty(pathPatchPropertyUri, jsonAtom);
         }
     }
 }
 
-bool AudioHostImpl::UpdatePluginState(PedalboardItem &pedalboardItem)
+bool AudioHostImpl::UpdatePluginState(PedalboardType pedalboardType, PedalboardItem &pedalboardItem)
 {
-    IEffect *effect = currentPedalboard->GetEffect(pedalboardItem.instanceId());
+    std::shared_ptr<Lv2Pedalboard> lv2Pedalboard;
+    switch (pedalboardType)
+    {
+    case PedalboardType::MainPedalboard:
+        lv2Pedalboard = this->currentPedalboard;
+        break;
+    case PedalboardType::MainInserts:
+        lv2Pedalboard = this->currentMainInsertPedalboard;
+        break;
+    case PedalboardType::AuxInserts:
+        lv2Pedalboard = this->currentAuxInsertPedalboard;
+        break;
+    }
+    IEffect *effect = lv2Pedalboard->GetEffect(pedalboardItem.instanceId());
     if (effect != nullptr)
     {
         try

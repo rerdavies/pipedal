@@ -17,6 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#include "PiPedalCommon.hpp"
 #include "WebServerConfig.hpp"
 #include "WebServer.hpp"
 #include <boost/system/error_code.hpp>
@@ -287,11 +288,19 @@ public:
         writer.write(pluginPresets);
         *pContent = s.str();
     }
+    
+    PIPEDAL_NON_INLINE PedalboardType ParsePedalboardTypeArg(const std::string&queryParameter) {
+        if (queryParameter.empty()) {
+            throw std::runtime_error("pedalboardType not specified.");
+        }
+        return queryParameter.empty() ? PedalboardType::MainPedalboard : static_cast<PedalboardType>(std::stoi(queryParameter));
+    }
     void GetPreset(const uri &request_uri, std::string *pName, std::string *pContent)
     {
+        PedalboardType pedalboardType = ParsePedalboardTypeArg(request_uri.query("pedalboardType"));
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
-        auto pedalboard = model->GetPreset(instanceId);
+        auto pedalboard = model->GetPreset(pedalboardType,instanceId);
 
         // a certain elegance to using same file format for banks and presets.
         BankFile file;
@@ -900,7 +909,9 @@ public:
                 {
                     uploadAfter = std::stol(strUploadAfter);
                 }
-                uint64_t instanceId = model->UploadPreset(bankFile, uploadAfter);
+                PedalboardType pedalboardType = ParsePedalboardTypeArg(request_uri.query("pedalboardType"));
+
+                uint64_t instanceId = model->UploadPreset(pedalboardType,bankFile, uploadAfter);
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
@@ -943,7 +954,8 @@ public:
                     uploadAfter = std::stol(strUploadAfter);
                 }
 
-                uint64_t instanceId = model->UploadBank(bankFile, uploadAfter);
+                PedalboardType pedalboardType = ParsePedalboardTypeArg(request_uri.query("pedalboardType"));
+                uint64_t instanceId = model->UploadBank(pedalboardType,bankFile, uploadAfter);
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
@@ -1010,7 +1022,9 @@ public:
                                     if (extensionChecker.IsValidExtension(extension) || isInfoFile(inputFile))
                                     {
                                         auto si = zipFile->GetFileInputStream(inputFile);
-                                        std::string path = this->model->UploadUserFile(directory, instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
+                                        PedalboardType pedalboardType = ParsePedalboardTypeArg(request_uri.query("pedalboardType"));
+
+                                        std::string path = this->model->UploadUserFile(directory, pedalboardType,instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
                                     }
                                 }
                             }
@@ -1028,7 +1042,8 @@ public:
                     }
                     else
                     {
-                        outputFileName = this->model->UploadUserFile(directory, instanceId, patchProperty, filename, req.get_body_input_stream(), req.content_length());
+                        PedalboardType pedalboardType = ParsePedalboardTypeArg(request_uri.query("pedalboardType"));
+                        outputFileName = this->model->UploadUserFile(directory, pedalboardType, instanceId, patchProperty, filename, req.get_body_input_stream(), req.content_length());
                     }
 
                     if (outputFileName.is_relative())

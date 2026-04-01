@@ -22,6 +22,7 @@
 
 #include "JackConfiguration.hpp"
 
+#include <compare>
 #include "Lv2Pedalboard.hpp"
 #include "VuUpdate.hpp"
 #include "json.hpp"
@@ -45,6 +46,22 @@ namespace pipedal
 
     using PortMonitorCallback = std::function<void(int64_t handle, float value)>;
 
+
+    struct PedalboardInstanceId {
+        PedalboardInstanceId() { }
+        PedalboardInstanceId(PedalboardType pedalboardType, int64_t instanceId)
+        : pedalboardType(pedalboardType), instanceId(instanceId) { }
+
+        PedalboardType pedalboardType;
+        int64_t instanceId;
+
+        PedalboardInstanceId(const PedalboardInstanceId&) = default;
+
+        bool operator==(const PedalboardInstanceId&other) const = default;
+        auto operator<=>(const PedalboardInstanceId &other) const = default;
+
+    };
+
     class MonitorPortUpdate
     {
     public:
@@ -56,6 +73,7 @@ namespace pipedal
     {
     public:
         int64_t clientId;
+        PedalboardType pedalboardType;
         int64_t instanceId;
         LV2_URID uridUri;
         std::string uri;
@@ -158,19 +176,24 @@ namespace pipedal
     class IAudioHostCallbacks
     {
     public:
-        virtual void OnNotifyLv2StateChanged(uint64_t instanceId) = 0;
-        virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
+        virtual void OnNotifyLv2StateChanged(PedalboardType pedalboardType,uint64_t instanceId) = 0;
+        virtual bool OnNotifyMaybeLv2StateChanged(PedalboardType pedalboardType,uint64_t instanceId) = 0;
         virtual void OnNotifyVusSubscription(const std::vector<VuUpdateX> &updates) = 0;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
-        virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
+        virtual void OnNotifyMidiValueChanged(PedalboardType pedalboardType,int64_t instanceId, int portIndex, float value) = 0;
         virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
 
         virtual void OnNotifyPathPatchPropertyReceived(
+            PedalboardType pedalboardType,
             int64_t instanceId,
             LV2_URID pathPatchProperty,
             LV2_Atom *pathProperty) = 0;
 
-        virtual void OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue) = 0;
+        virtual void OnPatchSetReply(
+            PedalboardType pedalboardType,            
+            uint64_t instanceId, 
+            LV2_URID patchSetProperty, 
+            const LV2_Atom *atomValue) = 0;
 
         // virtual bool WantsAtomOutput(uint64_t instanceId,LV2_URID patchSetProperty) = 0;
         // virtual void OnNotifyPatchProperty(uint64_t instanceId, LV2_URID patchSetProperty, const std::string&atomJson) = 0;
@@ -178,9 +201,9 @@ namespace pipedal
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) = 0;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) = 0;
         virtual void OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request) = 0;
-        virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) = 0;
+        virtual void OnNotifyLv2RealtimeError(PedalboardType pedalboardType,int64_t instanceId, const std::string &error) = 0;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) = 0;
-        virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
+        virtual void OnNotifyMidiRealtimeSnapshotRequest(PedalboardType pedalboardType,int32_t snapshotIndex,int64_t snapshotRequestId) = 0;
 
         virtual void OnAlsaDriverTerminatedAbnormally() = 0;
         virtual void OnAlsaSequencerDeviceAdded(int client, const std::string &clientName) = 0;
@@ -225,7 +248,7 @@ namespace pipedal
         virtual void SetListenForAtomOutput(bool listen) = 0;
 
         //virtual bool UpdatePluginStates(Pedalboard &pedalboard) = 0;
-        virtual bool UpdatePluginState(PedalboardItem &pedalboardItem) = 0;
+        virtual bool UpdatePluginState(PedalboardType pedalboardType,PedalboardItem &pedalboardItem) = 0;
 
         virtual std::string AtomToJson(const LV2_Atom *atom) = 0;
 
@@ -237,23 +260,18 @@ namespace pipedal
 
         virtual JackConfiguration GetServerConfiguration() = 0;
 
-        virtual void SetPedalboard(const std::shared_ptr<Lv2Pedalboard> &pedalboard) = 0;
-
-        virtual void SetChannelRoutingInserts(
-            const std::shared_ptr<Lv2Pedalboard> &mainInserts,
-            const std::shared_ptr<Lv2Pedalboard> &auxInserts
-        ) = 0;
+        virtual void SetPedalboard(PedalboardType pedalboardType,const std::shared_ptr<Lv2Pedalboard> &pedalboard) = 0;
 
 
-        virtual void SetControlValue(uint64_t instanceId, const std::string &symbol, float value) = 0;
-        virtual void SetInputVolume(float value) = 0;
-        virtual void SetOutputVolume(float value) = 0;
-        virtual void SetPluginPreset(uint64_t instanceId, const std::vector<ControlValue> &values) = 0;
-        virtual void SetBypass(uint64_t instanceId, bool enabled) = 0;
+        virtual void SetControlValue(PedalboardType pedalboardType,uint64_t instanceId, const std::string &symbol, float value) = 0;
+        virtual void SetInputVolume(PedalboardType pedalboardType,float value) = 0;
+        virtual void SetOutputVolume(PedalboardType pedalboardType,float value) = 0;
+        virtual void SetPluginPreset(PedalboardType pedalboardType, uint64_t instanceId, const std::vector<ControlValue> &values) = 0;
+        virtual void SetBypass(PedalboardType pedalboardType,uint64_t instanceId, bool enabled) = 0;
 
         virtual bool IsOpen() const = 0;
 
-        virtual void SetVuSubscriptions(const std::vector<int64_t> &instanceIds) = 0;
+        virtual void SetVuSubscriptions(const std::vector<PedalboardInstanceId> &instanceIds) = 0;
         virtual void SetMonitorPortSubscriptions(const std::vector<MonitorPortSubscription> &subscriptions) = 0;
 
         virtual void SetSystemMidiBindings(const std::vector<MidiBinding> &bindings) = 0;
@@ -265,9 +283,10 @@ namespace pipedal
 
         virtual JackHostStatus getJackStatus() = 0;
 
-        virtual void LoadSnapshot(Snapshot &snapshot, PluginHost &pluginHost) = 0;
+        virtual void LoadSnapshot(PedalboardType pedalboardType,Snapshot &snapshot, PluginHost &pluginHost) = 0;
 
         virtual void OnNotifyPathPatchPropertyReceived(
+            PedalboardType pedalboardType,
             int64_t instanceId,
             const std::string &pathPatchPropertyUri,
             const std::string &jsonAtom) = 0;

@@ -54,8 +54,8 @@
 
 #define JSON_MAP_END() \
     }                  \
-    }                  \
-    ;
+    };                  \
+    
 
 
 #define JSON_GETTER_SETTER_REF(name)                               \
@@ -712,6 +712,14 @@ namespace pipedal
 
             end_object();
         }
+
+        template <typename T>
+        requires std::is_enum_v<T>
+        void write(const T &value)
+        {
+            // For enums, write as integer value
+            os << static_cast<std::underlying_type_t<T>>(value);
+        }
         template <typename U>
         void write(const std::map<std::string, U> &map)
         {
@@ -827,6 +835,19 @@ namespace pipedal
         {
             dynamic_cast<JsonSerializable*>(pObject)->read_json(*this);
         }
+
+        template <typename T>
+        requires std::is_enum_v<T>
+        void read(T *pEnum)
+        {
+            skip_whitespace();
+            std::underlying_type_t<T> value;
+            is_ >> value;
+            if (is_.fail())
+                throw JsonException("Invalid format.");
+            *pEnum = static_cast<T>(value);
+        }
+
         template <typename T>
         void read(T *pObject)
         {

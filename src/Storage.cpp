@@ -287,7 +287,7 @@ void Storage::UpgradeFactoryPresets()
             }
             catch (const std::exception &e)
             {
-                Lv2Log::error(SS("Failed to isntall factory presets. Can't read " << defaultBankPath << "."));
+                Lv2Log::error(SS("Failed to install factory presets. Can't read " << defaultBankPath << "."));
             }
         }
         newFactoryPresets.name("Factory Presets");
@@ -317,10 +317,10 @@ void Storage::UpgradeFactoryPresets()
             bankFile.name(name);
             BankFile *pFactoryPresetsBank = nullptr;
             bool usingCurrentBank = false;
-            if (bankIndex.selectedBank() == existingEntry->instanceId())
+            if (bankIndex.selectedBank(PedalboardType::MainPedalboard) == existingEntry->instanceId())
             {
                 usingCurrentBank = true;
-                pFactoryPresetsBank = &(this->currentBank);
+                pFactoryPresetsBank = GetCurrentBankFile(PedalboardType::MainPedalboard).get();
             }
             else
             {
@@ -374,7 +374,7 @@ void Storage::Initialize()
     }
     LoadPluginPresetIndex();
     LoadBankIndex();
-    LoadCurrentBank();
+    LoadCurrentBanks();
     try
     {
         LoadJackChannelSelection();
@@ -392,19 +392,23 @@ void Storage::Initialize()
     UpgradeChannelRouterSettings();
 }
 
-void Storage::LoadBank(int64_t instanceId)
+void Storage::LoadBank(PedalboardType pedalboardType, int64_t instanceId)
 {
     auto indexEntry = this->bankIndex.getBankIndexEntry(instanceId);
 
     try
     {
-        LoadBankFile(indexEntry.name(), &(this->currentBank));
-        if (this->bankIndex.selectedBank() != instanceId)
+        BankFile newBank;
+        LoadBankFile(indexEntry.name(), &(newBank));
+        int64_t selectedPreset = newBank.selectedPreset(pedalboardType);
+        this->currentBankFiles[(size_t)pedalboardType] = std::make_shared<BankFile>(std::move(newBank));
+
+        if (this->bankIndex.selectedBank(pedalboardType) != instanceId)
         {
-            this->bankIndex.selectedBank(instanceId);
+            this->bankIndex.selectedBank(pedalboardType,instanceId);
             SaveBankIndex();
         }
-        this->LoadPreset(this->currentBank.selectedPreset());
+        this->LoadPreset(pedalboardType,selectedPreset);
     }
     catch (const std::exception &e)
     {
@@ -412,9 +416,12 @@ void Storage::LoadBank(int64_t instanceId)
     }
 }
 
-void Storage::LoadCurrentBank()
+void Storage::LoadCurrentBanks()
 {
-    LoadBank(bankIndex.selectedBank());
+    LoadBank(PedalboardType::MainPedalboard, bankIndex.selectedBank(PedalboardType::MainPedalboard));
+    LoadBank(PedalboardType::MainInserts, bankIndex.selectedBank(PedalboardType::MainInserts));
+    LoadBank(PedalboardType::AuxInserts, bankIndex.selectedBank(PedalboardType::AuxInserts));
+
 }
 
 std::filesystem::path Storage::GetPresetsDirectory() const
@@ -463,6 +470,16 @@ void Storage::LoadBankIndex()
         s.open(path);
         json_reader reader(s);
         reader.read(&bankIndex);
+
+        // upgrade if neccessary.
+        if (bankIndex.selectedAuxInsertBank() == -1)
+        {
+            bankIndex.selectedAuxInsertBank(bankIndex.selectedBank(PedalboardType::MainPedalboard));
+        }
+        if (bankIndex.selectedMainInsertBank() == -1) 
+        {
+            bankIndex.selectedMainInsertBank(bankIndex.selectedBank(PedalboardType::MainPedalboard));
+        }
     }
     catch (const std::exception &)
     {
@@ -471,15 +488,20 @@ void Storage::LoadBankIndex()
 
         if (bankIndex.entries().size() == 0)
         {
-            currentBank.clear();
+            for (size_t i = 0; i < this->currentBankFiles.size(); ++i)
+            {
+                currentBankFiles[i] = nullptr;
+            }
             Pedalboard defaultPedalboard = Pedalboard::MakeDefault(PedalboardType::MainPedalboard);
-            int64_t instanceId = currentBank.addPreset(defaultPedalboard);
-            currentBank.selectedPreset(instanceId);
-
+            BankFile bankFile;
+            int64_t instanceId = bankFile.addPreset(defaultPedalboard);
+            bankFile.selectedPreset(instanceId);
             std::string name = "Default Bank";
-            SaveBankFile(name, currentBank);
+            SaveBankFile(name, bankFile);
             int64_t selectedBank = bankIndex.addBank(-1, name);
-            bankIndex.selectedBank(selectedBank);
+            bankIndex.selectedBank(PedalboardType::MainPedalboard, selectedBank);
+            bankIndex.selectedMainInsertBank(selectedBank);
+            bankIndex.selectedAuxInsertBank(selectedBank);
         }
         SaveBankIndex();
     }
@@ -553,7 +575,7 @@ void Storage::ReIndex()
     {
         CreateBank("Default Bank");
     }
-    bankIndex.selectedBank(bankIndex.entries()[0].instanceId());
+    bankIndex.selectedBank(PedalboardType::MainPedalboard, bankIndex.entries()[0].instanceId());
 }
 
 void Storage::CreateBank(const std::string &name)
@@ -566,6 +588,8 @@ void Storage::CreateBank(const std::string &name)
 
     int64_t instanceId = bankFile.presets()[0]->instanceId();
     bankFile.selectedPreset(instanceId);
+    bankFile.selectedMainInsertPreset(instanceId);
+    bankFile.selectedAuxInsertPreset(instanceId);
     SaveBankFile(name, bankFile);
     this->bankIndex.addBank(-1, name);
     this->SaveBankIndex();
@@ -580,6 +604,15 @@ void Storage::GetBankFile(int64_t instanceId, BankFile *pBank) const
     json_reader reader(is);
     reader.read(pBank);
     pBank->name(indexEntry.name());
+
+    // Upgrade (v2.0)
+    if (pBank->selectedAuxInsertPreset() == -1)
+    {
+        pBank->selectedAuxInsertPreset(pBank->selectedPreset());
+    }
+    if (pBank->selectedMainInsertPreset() == -1) {
+        pBank->selectedMainInsertPreset(pBank->selectedPreset());
+    }
 }
 
 void Storage::LoadBankFile(const std::string &name, BankFile *pBank)
@@ -624,63 +657,81 @@ void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
     }
 }
 
-void Storage::SaveCurrentBank()
+void Storage::SaveCurrentBank(PedalboardType pedalboardType)
 {
-    auto indexEntry = this->bankIndex.getBankIndexEntry(this->bankIndex.selectedBank());
-    SaveBankFile(indexEntry.name(), this->currentBank);
+    auto indexEntry = this->bankIndex.getBankIndexEntry(this->bankIndex.selectedBank(pedalboardType));
+    SaveBankFile(indexEntry.name(), *GetCurrentBankFile(pedalboardType));
 }
 
-const Pedalboard &Storage::GetCurrentPreset()
+Pedalboard Storage::GetCurrentPreset(PedalboardType pedalboardType)
 {
-    auto &item = currentBank.getItem(currentBank.selectedPreset());
-    return item.preset();
-}
-
-bool Storage::LoadPreset(int64_t instanceId)
-{
-    if (!currentBank.hasItem(instanceId))
-        return false;
-    if (instanceId != currentBank.selectedPreset())
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+    auto *item = currentBank->maybeGetItem(currentBank->selectedPreset(pedalboardType));
+    if (item == nullptr) 
     {
-        currentBank.selectedPreset(instanceId);
-        SaveCurrentBank();
+        return Pedalboard::MakeDefault(pedalboardType);
+    }
+    return item->preset();
+}
+
+bool Storage::LoadPreset(PedalboardType pedalboardType,int64_t instanceId)
+{
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+    if (!currentBank->hasItem(instanceId))
+        return false;
+    if (instanceId != currentBank->selectedPreset())
+    {
+        currentBank->selectedPreset(pedalboardType,instanceId);
+        SaveCurrentBank(pedalboardType);
     }
     return true;
 }
-void Storage::SaveCurrentPreset(const Pedalboard &pedalboard)
+void Storage::SaveCurrentPreset(PedalboardType pedalboardType, const Pedalboard &pedalboard)
 {
-    auto &item = currentBank.getItem(currentBank.selectedPreset());
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+    auto &item = currentBank->getItem(currentBank->selectedPreset(pedalboardType));
     item.preset(pedalboard);
-    SaveCurrentBank();
+    SaveCurrentBank(pedalboardType);
 }
-int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId)
+int64_t Storage::SaveCurrentPresetAs(PedalboardType pedalboardType,const Pedalboard&pedalboard, int64_t bankInstanceId,const std::string&name,int64_t saveAfterInstanceId)
 {
+
     Pedalboard newPedalboard = pedalboard;
     newPedalboard.name(name);
 
-    if (bankInstanceId == this->bankIndex.selectedBank())
+
+    // Copy into same bank?
+    auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
+    if (bankIndex.selectedBank(pedalboardType) == bankInstanceId) 
     {
-        int64_t newInstanceId = currentBank.addPreset(newPedalboard, saveAfterInstanceId);
-        currentBank.selectedPreset(newInstanceId);
-        SaveCurrentBank();
+        auto bankFile = GetCurrentBankFile(pedalboardType);
+        int64_t newInstanceId = bankFile->addPreset(newPedalboard,saveAfterInstanceId);
+        SaveCurrentBank(pedalboardType);
         return newInstanceId;
     }
-    else
+    // Copy into a cached bank?
+    for (size_t i = 1; i < size_t(PedalboardType::MaxValue); ++i) {
+        PedalboardType thisType = (PedalboardType)i;
+        if (bankIndex.selectedBank(thisType) == bankInstanceId) 
+        {
+        auto bankFile = GetCurrentBankFile(pedalboardType);
+        int64_t newInstanceId = bankFile->addPreset(newPedalboard,-1);
+        SaveCurrentBank(pedalboardType);
+        return -1;
+        }
+    }
+    // Copy into a bank that's not loaded.
+    try
     {
-        auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
-
-        try
-        {
-            BankFile bankFile;
-            LoadBankFile(indexEntry.name(), &(bankFile));
-            int64_t newInstanceId = bankFile.addPreset(newPedalboard, -1);
-            SaveBankFile(indexEntry.name(), bankFile);
-            return -1;
-        }
-        catch (const std::exception &e)
-        {
-            throw std::logic_error(SS("Bank file corrupted. " << e.what() << "(" << GetBankFileName(indexEntry.name()) << ")"));
-        }
+        BankFile bankFile;
+        LoadBankFile(indexEntry.name(), &(bankFile));
+        int64_t newInstanceId = bankFile.addPreset(newPedalboard, -1);
+        SaveBankFile(indexEntry.name(), bankFile);
+        return -1;
+    }
+    catch (const std::exception &e)
+    {
+        throw std::logic_error(SS("Bank file corrupted. " << e.what() << "(" << GetBankFileName(indexEntry.name()) << ")"));
     }
 }
 
@@ -742,9 +793,9 @@ static std::string makeUniqueName(const std::string &name, const std::set<std::s
         ++i;
     }
 }
-int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+int64_t Storage::ImportPresetsFromBank(PedalboardType pedalboardType, int64_t bankInstanceId, const std::vector<int64_t> &presets)
 {
-    if (bankIndex.selectedBank() == bankInstanceId)
+    if (bankIndex.selectedBank(pedalboardType) == bankInstanceId)
     {
         throw std::runtime_error("Can't import to self.");
     }
@@ -753,12 +804,16 @@ int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector
 
     std::set<std::string> existingNames;
 
-    for (auto &preset : this->currentBank.presets())
+    BankFile bankFile;
+    LoadBankFile(indexEntry.name(), &bankFile);
+
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    for (auto &preset : currentBank->presets())
     {
         existingNames.insert(preset->preset().name());
     }
-    BankFile bankFile;
-    LoadBankFile(indexEntry.name(), &bankFile);
+
     int64_t lastPresetId = -1;
     for (auto &presetEntry : bankFile.presets())
     {
@@ -768,32 +823,35 @@ int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector
             existingNames.insert(uniqueName);
             Pedalboard t = presetEntry->preset();
             t.name(uniqueName);
-            lastPresetId = this->currentBank.addPreset(t);
+            lastPresetId = currentBank->addPreset(t);
         }
     }
-    SaveCurrentBank();
+    SaveCurrentBank(pedalboardType);
     return lastPresetId;
 }
-int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+int64_t Storage::CopyPresetsToBank(PedalboardType pedalboardType, int64_t destinationBankInstanceId, const std::vector<int64_t> &presets)
 {
-    if (bankIndex.selectedBank() == bankInstanceId)
+    if (bankIndex.selectedBank(pedalboardType) == destinationBankInstanceId)
     {
         throw std::runtime_error("Can't copy to self.");
     }
 
-    auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
-    BankFile bankFile;
-    LoadBankFile(indexEntry.name(), &bankFile);
+    auto indexEntry = this->bankIndex.getBankIndexEntry(destinationBankInstanceId);
+    std::shared_ptr<BankFile> newBankFile = std::make_shared<BankFile>();
+
+    LoadBankFile(indexEntry.name(), newBankFile.get());
 
     std::set<int64_t> presetsSet{presets.begin(), presets.end()};
 
     std::set<std::string> existingNames;
 
-    for (auto &preset : bankFile.presets())
+    for (auto &preset : newBankFile->presets())
     {
         existingNames.insert(preset->preset().name());
     }
-    for (auto &presetEntry : this->currentBank.presets())
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    for (auto &presetEntry : currentBank->presets())
     {
         if (presetsSet.contains(presetEntry->instanceId()))
         {
@@ -801,10 +859,19 @@ int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int
             existingNames.insert(uniqueName);
             Pedalboard t = presetEntry->preset();
             t.name(uniqueName);
-            bankFile.addPreset(t);
+            newBankFile->addPreset(t);
         }
     }
-    SaveBankFile(indexEntry.name(), bankFile);
+    SaveBankFile(indexEntry.name(), *newBankFile);
+    // update cached copies. 
+    for (size_t i = 0; i < size_t(PedalboardType::MaxValue); ++i) 
+    {
+        PedalboardType targetType = (PedalboardType)i;
+        if (bankIndex.selectedBank(pedalboardType) == destinationBankInstanceId)
+        {
+            this->currentBankFiles[i] = newBankFile;
+        }
+    }
     return -1;
 }
 
@@ -823,14 +890,20 @@ std::vector<PresetIndexEntry> Storage::RequestBankPresets(int64_t bankInstanceId
     return result;
 }
 
-void Storage::SetPresetIndex(const PresetIndex &presets)
+void Storage::SetPresetIndex(PedalboardType pedalboardType, const PresetIndex &presets)
 {
+    // input is a preset index,which is a limited view of the underlying bank file.
+    // Modify the bank file to refelect the contents of the preset index.
+
     // painful because we must move unique_ptrs.
     std::map<int64_t, std::unique_ptr<BankFileEntry> *> entries;
-    for (int i = 0; i < this->currentBank.presets().size(); ++i)
+
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    for (int i = 0; i < currentBank->presets().size(); ++i)
     {
-        auto &preset = this->currentBank.presets()[i];
-        entries[preset->instanceId()] = &(this->currentBank.presets()[i]);
+        auto &preset = currentBank->presets()[i];
+        entries[preset->instanceId()] = &(currentBank->presets()[i]);
     }
     std::vector<std::unique_ptr<BankFileEntry> *> newPresets;
     for (size_t i = 0; i < presets.presets().size(); ++i)
@@ -843,26 +916,35 @@ void Storage::SetPresetIndex(const PresetIndex &presets)
         newPresets.push_back(p);
     }
     // we made it this far. So now we know we can rebuild a new BankFile.
-    BankFile bankFile;
-    bankFile.presets().resize(newPresets.size());
+    std::shared_ptr<BankFile> bankFile = std::make_shared<BankFile>();
+    bankFile->presets().resize(newPresets.size());
     for (int i = 0; i < presets.presets().size(); ++i)
     {
         std::unique_ptr<BankFileEntry> *oldBankFilePreset = newPresets[i];
 
-        bankFile.presets()[i] = std::move((*oldBankFilePreset));
+        bankFile->presets()[i] = std::move((*oldBankFilePreset));
     }
-    bankFile.nextInstanceId(currentBank.nextInstanceId());
-    bankFile.selectedPreset(currentBank.selectedPreset());
+    bankFile->nextInstanceId(currentBank->nextInstanceId());
+    bankFile->selectedPreset(currentBank->selectedPreset());
 
-    this->currentBank = std::move(bankFile); // deleting any stray presets while we're at it.
-    this->SaveCurrentBank();
+    int64_t indexToUpdate = this->bankIndex.selectedBank(pedalboardType);
+
+    for (PedalboardType ix = PedalboardType::MainPedalboard; ix < PedalboardType::MaxValue; ++ix) {
+        if (bankIndex.selectedBank(ix) == indexToUpdate) 
+        {
+            this->currentBankFiles[(size_t)ix] = bankFile;
+        }
+    } 
+    this->SaveCurrentBank(pedalboardType);
 }
 
-void Storage::GetPresetIndex(PresetIndex *pResult)
+void Storage::GetPresetIndex(PedalboardType pedalboardType, PresetIndex *pResult)
 {
     *pResult = PresetIndex();
-    pResult->selectedInstanceId(this->currentBank.selectedPreset());
-    for (auto &item : this->currentBank.presets())
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    pResult->selectedInstanceId(currentBank->selectedPreset(pedalboardType));
+    for (auto &item : currentBank->presets())
     {
         PresetIndexEntry entry;
         entry.instanceId(item->instanceId());
@@ -870,45 +952,62 @@ void Storage::GetPresetIndex(PresetIndex *pResult)
         pResult->presets().push_back(entry);
     }
 }
-int64_t Storage::GetPresetByProgramNumber(uint8_t program) const
+int64_t Storage::GetPresetByProgramNumber(PedalboardType pedalboardType, uint8_t program) const
 {
-    if (program >= currentBank.presets().size())
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    if (program >= currentBank->presets().size())
     {
-        if (currentBank.presets().size() == 0)
+        if (currentBank->presets().size() == 0)
             return -1;
-        program = (uint8_t)currentBank.presets().size() - 1;
+        program = (uint8_t)currentBank->presets().size() - 1;
     }
-    return currentBank.presets()[program]->instanceId();
+    return currentBank->presets()[program]->instanceId();
 }
 
-Pedalboard Storage::GetPreset(int64_t instanceId) const
+Pedalboard Storage::GetPreset(PedalboardType pedalboardType,int64_t instanceId) const
 {
-    for (size_t i = 0; i < currentBank.presets().size(); ++i)
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    for (size_t i = 0; i < currentBank->presets().size(); ++i)
     {
-        if (currentBank.presets()[i]->instanceId() == instanceId)
+        if (currentBank->presets()[i]->instanceId() == instanceId)
         {
-            return currentBank.presets()[i]->preset();
+            return currentBank->presets()[i]->preset();
         }
     }
     throw PiPedalException("Not found.");
 }
 
-int64_t Storage::DeletePresets(const std::vector<int64_t> &presetInstanceIds)
+void Storage::DeletePresets(PedalboardType pedalboardType,const std::vector<int64_t> &presetInstanceIds, std::set<PedalboardType> *changedPedalboards)
 {
-    int64_t newSelection = currentBank.selectedPreset();
+
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+    
     for (auto presetId : presetInstanceIds)
     {
-        newSelection = currentBank.deletePreset(presetId);
+        int64_t newSelection = currentBank->deletePreset(presetId);
+        if (newSelection != presetId) {
+            for (auto targetType = PedalboardType::MainInserts; targetType < PedalboardType::MaxValue; ++targetType)
+            {
+                if (currentBank->selectedPreset(targetType) == presetId) 
+                {
+                    currentBank->selectedPreset(targetType,newSelection);
+                    changedPedalboards->insert(targetType);
+                }
+            }
+        }
     }
-    SaveCurrentBank();
-    return newSelection;
+    SaveCurrentBank(pedalboardType);
 }
 
-bool Storage::RenamePreset(int64_t presetId, const std::string &name)
+bool Storage::RenamePreset(PedalboardType pedalboardType, int64_t presetId, const std::string &name)
 {
-    if (this->currentBank.renamePreset(presetId, name))
+    std::shared_ptr<BankFile> currentBank = GetCurrentBankFile(pedalboardType);
+
+    if (currentBank->renamePreset(presetId, name))
     {
-        SaveCurrentBank();
+        SaveCurrentBank(pedalboardType);
         return true;
     }
     return false;
@@ -928,8 +1027,9 @@ static int lastIndexOf(const char *sz, char c)
     }
     return -1;
 }
-std::string Storage::GetPresetCopyName(const std::string &name)
+std::string Storage::GetPresetCopyName(PedalboardType pedalboardType,const std::string &name)
 {
+    auto currentBankFile = GetCurrentBankFile(pedalboardType);
     const char *str = name.c_str();
     std::string stem;
     if (name.length() != 0 && name[name.length() - 1] == ')')
@@ -963,7 +1063,7 @@ std::string Storage::GetPresetCopyName(const std::string &name)
             s << stem << " (Copy " << copyNumber << ")";
             candidate = s.str();
         }
-        if (!this->currentBank.hasName(candidate))
+        if (!currentBankFile->hasName(candidate))
         {
             return candidate;
         }
@@ -971,17 +1071,19 @@ std::string Storage::GetPresetCopyName(const std::string &name)
     }
 }
 
-int64_t Storage::CreateNewPreset()
+int64_t Storage::CreateNewPreset(PedalboardType pedalboardType)
 {
     Pedalboard newPedalboard = Pedalboard::MakeDefault();
     std::string name = "New";
-    if (currentBank.hasName(name))
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+
+    if (currentBank->hasName(name))
     {
         int copyNumber = 2;
         while (true)
         {
             name = SS("New (" << copyNumber << ")");
-            if (!currentBank.hasName(name))
+            if (!currentBank->hasName(name))
             {
                 break;
             }
@@ -989,29 +1091,30 @@ int64_t Storage::CreateNewPreset()
         }
     }
     newPedalboard.name(name);
-    auto t = this->currentBank.addPreset(newPedalboard, -1);
-    SaveCurrentBank();
+    auto t = currentBank->addPreset(newPedalboard, -1);
+    SaveCurrentBank(pedalboardType);
     return t;
 }
 
-int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
+int64_t Storage::CopyPreset(PedalboardType pedalboardType, int64_t fromId, int64_t toId)
 {
-    auto &fromItem = this->currentBank.getItem(fromId);
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+    auto &fromItem = currentBank->getItem(fromId);
     int64_t result;
     if (toId == -1)
     {
         Pedalboard newPedalboard = fromItem.preset();
-        std::string name = GetPresetCopyName(fromItem.preset().name());
+        std::string name = GetPresetCopyName(pedalboardType,fromItem.preset().name());
         newPedalboard.name(name);
-        result = this->currentBank.addPreset(newPedalboard, fromId);
+        result = currentBank->addPreset(newPedalboard, fromId);
     }
     else
     {
-        auto &toItem = this->currentBank.getItem(toId);
+        auto &toItem = currentBank->getItem(toId);
         toItem.preset(fromItem.preset());
         result = toId;
     }
-    SaveCurrentBank();
+    SaveCurrentBank(pedalboardType);
     return result;
 }
 
@@ -1271,9 +1374,12 @@ int64_t Storage::DeleteBank(int64_t bankId)
                 int64_t selectedBank = bankIndex.addBank(-1, name);
                 newSelection = selectedBank;
             }
-            if (this->bankIndex.selectedBank() == bankId)
+            for (PedalboardType ix = PedalboardType::MainPedalboard; ix < PedalboardType::MaxValue; ++ix) 
             {
-                this->bankIndex.selectedBank(newSelection);
+                if (this->bankIndex.selectedBank(ix) == bankId)
+                {
+                    this->bankIndex.selectedBank(ix,newSelection);
+                }
             }
             this->SaveBankIndex();
             std::filesystem::remove(fileName);
@@ -1283,14 +1389,17 @@ int64_t Storage::DeleteBank(int64_t bankId)
     throw PiPedalStateException("Bank not found.");
 }
 
-int64_t Storage::GetCurrentPresetId() const
+int64_t Storage::GetCurrentPresetId(PedalboardType pedalboardType) const
 {
-    return this->currentBank.selectedPreset();
+    auto currentBank = GetCurrentBankFile(pedalboardType);
+    return currentBank->selectedPreset(pedalboardType);
 }
 
-int64_t Storage::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)
+int64_t Storage::UploadPreset(PedalboardType pedalboardType, const BankFile &bankFile, int64_t uploadAfter)
 {
-    int64_t lastPreset = this->currentBank.selectedPreset();
+    auto currentBankFile = GetCurrentBankFile(pedalboardType);
+
+    int64_t lastPreset = currentBankFile->selectedPreset();
     if (uploadAfter != -1)
     {
         lastPreset = uploadAfter;
@@ -1306,21 +1415,21 @@ int64_t Storage::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)
 
         int n = 2;
         std::string baseName = preset.name();
-        while (this->currentBank.hasName(preset.name()))
+        while (currentBankFile->hasName(preset.name()))
         {
             std::stringstream s;
             s << baseName << "(" << n++ << ")";
             preset.name(s.str());
         }
 
-        lastPreset = this->currentBank.addPreset(preset, lastPreset);
+        lastPreset = currentBankFile->addPreset(preset, lastPreset);
     }
-    this->SaveCurrentBank();
+    this->SaveCurrentBank(pedalboardType);
     return lastPreset;
 }
-int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
+int64_t Storage::UploadBank(PedalboardType pedalboardType,BankFile &bankFile, int64_t uploadAfter)
 {
-    int64_t lastBank = this->bankIndex.selectedBank();
+    int64_t lastBank = this->bankIndex.selectedBank(pedalboardType);
     if (uploadAfter != -1)
     {
         lastBank = uploadAfter;
@@ -3142,6 +3251,38 @@ void Storage::UpgradeChannelRouterSettings()
 
 const ChannelSelection& Storage::GetChannelSelection() const {
     return channelSelection;
+}
+
+
+std::shared_ptr<BankFile> Storage::GetCurrentBankFile(PedalboardType pedalboardType)
+{
+    if (pedalboardType == PedalboardType::Invalid) { 
+        throw std::runtime_error("Storage::GetCurrentBankFile: Invalid argument."); 
+    }
+
+    std::shared_ptr<BankFile> result = currentBankFiles[size_t(pedalboardType)];
+    if (result != nullptr)
+    {
+        return result;
+    }
+    size_t bankFileIndex = this->bankIndex.selectedBank(pedalboardType);
+
+    for (auto ix = size_t(PedalboardType::MainInserts); ix < size_t(PedalboardType::MaxValue); ++ix)
+    {
+        if (bankIndex.selectedBank((PedalboardType)ix) == bankFileIndex && this->currentBankFiles[ix] != nullptr) 
+        {
+            result = this->currentBankFiles[size_t(ix)];
+            break;
+        }
+    }
+    if (!result) {
+        // Try to load the file.
+        result = std::make_shared<BankFile>();
+        GetBankFile(bankFileIndex,result.get());
+    }
+    this->currentBankFiles[size_t(pedalboardType)] = result;
+    return result;
+
 }
 
 

@@ -995,7 +995,7 @@ namespace pipedal
             uint32_t size,
             uint32_t type);
 
-        virtual IEffect *CreateEffect(PedalboardItem &pedalboardItem);
+        virtual IEffect *CreateEffect(PedalboardType pedalboardType, PedalboardItem &pedalboardItem);
         void LoadPluginClassesFromLilv();
         void AddJsonClassesToMap(std::shared_ptr<Lv2PluginClass> pluginClass);
 

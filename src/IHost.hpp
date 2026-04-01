@@ -19,6 +19,7 @@
 #pragma once
 
 #include <lilv/lilv.h>
+#include "PedalboardType.hpp"
 
 namespace pipedal {
     class MapFeature;
@@ -46,7 +47,7 @@ namespace pipedal {
         virtual bool HasMidiInputChannel() const = 0;
         virtual std::shared_ptr<Lv2PluginInfo> GetPluginInfo(const std::string &uri) const = 0;
 
-        virtual IEffect *CreateEffect(PedalboardItem &pedalboard) = 0;
+        virtual IEffect *CreateEffect(PedalboardType pedalboardType,PedalboardItem &pedalboard) = 0;
 
         virtual std::string GetPluginStoragePath() const = 0;
         virtual const ChannelSelection&GetChannelSelection() const = 0;

@@ -128,7 +128,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
     if (profileOptions.presetName.length() != 0)
     {
         PresetIndex presetIndex;
-        model.GetPresets(&presetIndex);
+        model.GetPresets(&presetIndex, PedalboardType::MainPedalboard);
 
         int64_t presetIndexId = 0;
         bool presetIndexFound = false;
@@ -145,7 +145,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
         {
             throw std::runtime_error("Preset not found.");
         }
-        model.LoadPreset(-1, presetIndexId);
+        model.LoadPreset(-1, PedalboardType::MainPedalboard, presetIndexId);
     }
     else if (profileOptions.presetFileName.length() != 0)
     {
@@ -164,7 +164,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
                 throw new std::runtime_error(SS("Invalid preset file. Expection one preset, but " << bankFile.presets().size() << " presets were found."));
             }
             Pedalboard pedalboard = (bankFile.presets()[0]->preset());
-            model.SetPedalboard(-1,pedalboard);
+            model.SetPedalboard(-1,PedalboardType::MainPedalboard, pedalboard);
         }
         catch (const std::exception &e)
         {
@@ -176,10 +176,10 @@ void profilePlugin(const ProfileOptions &profileOptions)
         throw std::runtime_error("You must specify either a preset name or a preset file.");
     }
 
-    auto pedalboard = model.GetCurrentPedalboardCopy();
+    auto pedalboard = model.GetCurrentPedalboardCopy(PedalboardType::MainPedalboard);
     cout << "uri: " << pedalboard.items()[0].uri() << endl;
     /* *** Get and prepare the audio thread pedalboard. */
-    auto lv2Pedalboard = model.GetLv2Pedalboard();
+    auto lv2Pedalboard = model.CreateLv2Pedalboard(PedalboardType::MainPedalboard);
 
     lv2Pedalboard->Activate();
 

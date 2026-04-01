@@ -48,6 +48,74 @@
 using namespace std;
 using namespace pipedal;
 
+
+class DeletePresetItemsBody {
+public:
+    PedalboardType pedalboardType_;
+    std::vector<int64_t> items_;
+
+    DECLARE_JSON_MAP(DeletePresetItemsBody);
+
+};
+
+JSON_MAP_BEGIN(DeletePresetItemsBody) 
+JSON_MAP_REFERENCE(DeletePresetItemsBody,pedalboardType)
+JSON_MAP_REFERENCE(DeletePresetItemsBody,items)
+JSON_MAP_END()
+
+class OpenBankBody {
+public:
+    PedalboardType pedalboardType_;
+    int64_t bankId_;
+
+    DECLARE_JSON_MAP(OpenBankBody);
+
+};
+
+JSON_MAP_BEGIN(OpenBankBody) 
+JSON_MAP_REFERENCE(OpenBankBody,pedalboardType)
+JSON_MAP_REFERENCE(OpenBankBody,bankId)
+JSON_MAP_END()
+
+
+class SaveCurrentPresetBody {
+public:
+    int64_t clientId_;
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
+
+    DECLARE_JSON_MAP(PedalboardVolumeBody);
+
+};
+
+JSON_MAP_BEGIN(SaveCurrentPresetBody) 
+JSON_MAP_REFERENCE(SaveCurrentPresetBody,clientId)
+JSON_MAP_REFERENCE(SaveCurrentPresetBody,pedalboardType)
+JSON_MAP_END()
+
+
+class InstanceIdBody {
+public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
+    int64_t instanceId_;
+    DECLARE_JSON_MAP(InstanceIdBody);
+};
+JSON_MAP_BEGIN(InstanceIdBody) 
+JSON_MAP_REFERENCE(InstanceIdBody,pedalboardType)
+JSON_MAP_REFERENCE(InstanceIdBody,instanceId)
+JSON_MAP_END()
+
+class PedalboardVolumeBody {
+public:
+    PedalboardType pedalboardType_;
+    float volume_;
+    DECLARE_JSON_MAP(PedalboardVolumeBody);
+};
+
+JSON_MAP_BEGIN(PedalboardVolumeBody) 
+JSON_MAP_REFERENCE(PedalboardVolumeBody,pedalboardType)
+JSON_MAP_REFERENCE(PedalboardVolumeBody,volume)
+JSON_MAP_END()
+
 class DownloadModelsFromTone3000Body {
 public:
     std::string downloadPath_;
@@ -64,23 +132,27 @@ JSON_MAP_END()
 
 class CopyPresetsToBankBody {
     public: 
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t bankInstanceId_;
     std::vector<int64_t> presets_;
     DECLARE_JSON_MAP(CopyPresetsToBankBody);
 };
 JSON_MAP_BEGIN(CopyPresetsToBankBody)
+JSON_MAP_REFERENCE(CopyPresetsToBankBody, pedalboardType)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, presets)
 JSON_MAP_END()
 
 
 class ImportPresetsFromBankBody {
-    public: 
+public: 
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t bankInstanceId_;
     std::vector<int64_t> presets_;
     DECLARE_JSON_MAP(ImportPresetsFromBankBody);
 };
 JSON_MAP_BEGIN(ImportPresetsFromBankBody)
+JSON_MAP_REFERENCE(ImportPresetsFromBankBody, pedalboardType)
 JSON_MAP_REFERENCE(ImportPresetsFromBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(ImportPresetsFromBankBody, presets)
 JSON_MAP_END()
@@ -152,12 +224,14 @@ JSON_MAP_END()
 class GetPatchPropertyBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     uint64_t instanceId_;
     std::string propertyUri_;
     DECLARE_JSON_MAP(GetPatchPropertyBody);
 };
 
 JSON_MAP_BEGIN(GetPatchPropertyBody)
+JSON_MAP_REFERENCE(GetPatchPropertyBody, pedalboardType)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(GetPatchPropertyBody, propertyUri)
 JSON_MAP_END()
@@ -174,7 +248,7 @@ JSON_MAP_BEGIN(MoveAudioFileArgs)
 JSON_MAP_REFERENCE(MoveAudioFileArgs, path)
 JSON_MAP_REFERENCE(MoveAudioFileArgs, from)
 JSON_MAP_REFERENCE(MoveAudioFileArgs, to)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class CreateNewSampleDirectoryArgs
 {
@@ -187,7 +261,7 @@ public:
 JSON_MAP_BEGIN(CreateNewSampleDirectoryArgs)
 JSON_MAP_REFERENCE(CreateNewSampleDirectoryArgs, relativePath)
 JSON_MAP_REFERENCE(CreateNewSampleDirectoryArgs, uiFileProperty)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class RenameSampleFileArgs
 {
@@ -202,7 +276,7 @@ JSON_MAP_BEGIN(RenameSampleFileArgs)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, oldRelativePath)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, newRelativePath)
 JSON_MAP_REFERENCE(RenameSampleFileArgs, uiFileProperty)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class CopySampleFileArgs
 {
@@ -238,12 +312,14 @@ JSON_MAP_END()
 class Lv2StateChangedBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     uint64_t instanceId_;
     Lv2PluginState state_;
     DECLARE_JSON_MAP(Lv2StateChangedBody);
 };
 
 JSON_MAP_BEGIN(Lv2StateChangedBody)
+JSON_MAP_REFERENCE(Lv2StateChangedBody, pedalboardType)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, instanceId)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, state)
 JSON_MAP_END()
@@ -252,12 +328,14 @@ class SetPatchPropertyBody
 {
 public:
     uint64_t instanceId_;
+    PedalboardType pedalboardType_;
     std::string propertyUri_;
     json_variant value_;
     DECLARE_JSON_MAP(SetPatchPropertyBody);
 };
 
 JSON_MAP_BEGIN(SetPatchPropertyBody)
+JSON_MAP_REFERENCE(SetPatchPropertyBody, pedalboardType)
 JSON_MAP_REFERENCE(SetPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(SetPatchPropertyBody, propertyUri)
 JSON_MAP_REFERENCE(SetPatchPropertyBody, value)
@@ -266,6 +344,7 @@ JSON_MAP_END()
 class SetPedalboardItemTitleBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     uint64_t instanceId_;
     std::string title_;
     std::string colorKey_;
@@ -273,6 +352,7 @@ public:
 };
 
 JSON_MAP_BEGIN(SetPedalboardItemTitleBody)
+JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, pedalboardType)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, colorKey)
@@ -312,7 +392,7 @@ JSON_MAP_REFERENCE(NotifyAtomOutputBody, clientHandle)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, instanceId)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, propertyUri)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, atomJson)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class ListenForMidiEventBody
 {
@@ -328,6 +408,7 @@ JSON_MAP_END()
 class MonitorPatchPropertyBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     uint64_t instanceId_;
     int64_t clientHandle_;
     std::string propertyUri_;
@@ -335,6 +416,7 @@ public:
 };
 
 JSON_MAP_BEGIN(MonitorPatchPropertyBody)
+JSON_MAP_REFERENCE(MonitorPatchPropertyBody, pedalboardType)
 JSON_MAP_REFERENCE(MonitorPatchPropertyBody, instanceId)
 JSON_MAP_REFERENCE(MonitorPatchPropertyBody, clientHandle)
 JSON_MAP_REFERENCE(MonitorPatchPropertyBody, propertyUri)
@@ -356,12 +438,14 @@ JSON_MAP_END()
 class LoadPluginPresetBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     uint64_t pluginInstanceId_;
     uint64_t presetInstanceId_;
     DECLARE_JSON_MAP(LoadPluginPresetBody);
 };
 
 JSON_MAP_BEGIN(LoadPluginPresetBody)
+JSON_MAP_REFERENCE(LoadPluginPresetBody, pedalboardType)
 JSON_MAP_REFERENCE(LoadPluginPresetBody, pluginInstanceId)
 JSON_MAP_REFERENCE(LoadPluginPresetBody, presetInstanceId)
 JSON_MAP_END()
@@ -406,9 +490,13 @@ JSON_MAP_REFERENCE(FileRequestArgs, relativePath)
 JSON_MAP_REFERENCE(FileRequestArgs, fileProperty)
 JSON_MAP_END()
 
+#define CHECK_PEDALBOARD_TYPE(ss) \
+    { if (ss.pedalboardType_ == PedalboardType::Invalid) throw std::runtime_error("PedalboardType not specified."); }
+
 class MonitorPortBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t instanceId_ = -1;
     std::string key_;
     float_t updateRate_ = 0;
@@ -416,15 +504,17 @@ public:
     DECLARE_JSON_MAP(MonitorPortBody);
 };
 JSON_MAP_BEGIN(MonitorPortBody)
+JSON_MAP_REFERENCE(MonitorPortBody, pedalboardType)
 JSON_MAP_REFERENCE(MonitorPortBody, instanceId)
 JSON_MAP_REFERENCE(MonitorPortBody, key)
 JSON_MAP_REFERENCE(MonitorPortBody, updateRate)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class SaveCurrentPresetAsBody
 {
 public:
     int64_t clientId_ = -1;
+    PedalboardType pedalboardType_  = PedalboardType::Invalid;
     int64_t bankInstanceId_ = -1;
     std::string name_;
     int64_t saveAfterInstanceId_ = -1;
@@ -433,6 +523,7 @@ public:
 };
 JSON_MAP_BEGIN(SaveCurrentPresetAsBody)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, clientId)
+JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, pedalboardType)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, bankInstanceId)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, name)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, saveAfterInstanceId)
@@ -441,6 +532,7 @@ JSON_MAP_END();
 class SavePluginPresetAsBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t instanceId_ = -1;
     std::string name_;
 
@@ -448,6 +540,7 @@ public:
 };
 JSON_MAP_BEGIN(SavePluginPresetAsBody)
 JSON_MAP_REFERENCE(SavePluginPresetAsBody, instanceId)
+JSON_MAP_REFERENCE(SavePluginPresetAsBody, pedalboardType)
 JSON_MAP_REFERENCE(SavePluginPresetAsBody, name)
 JSON_MAP_END();
 
@@ -461,13 +554,14 @@ public:
 JSON_MAP_BEGIN(RenameBankBody)
 JSON_MAP_REFERENCE(RenameBankBody, bankId)
 JSON_MAP_REFERENCE(RenameBankBody, newName)
-JSON_MAP_END()
+JSON_MAP_END();
 
 
 class RenamePresetBody
 {
 public:
     int64_t clientId_ = -1;
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t instanceId_ = -1;
     std::string name_;
 
@@ -475,6 +569,7 @@ public:
 };
 JSON_MAP_BEGIN(RenamePresetBody)
 JSON_MAP_REFERENCE(RenamePresetBody, clientId)
+JSON_MAP_REFERENCE(RenamePresetBody, pedalboardType)
 JSON_MAP_REFERENCE(RenamePresetBody, instanceId)
 JSON_MAP_REFERENCE(RenamePresetBody, name)
 JSON_MAP_END()
@@ -482,6 +577,7 @@ JSON_MAP_END()
 class CopyPresetBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t clientId_ = -1;
     int64_t fromId_ = -1;
     int64_t toId_ = -1;
@@ -490,6 +586,7 @@ public:
 };
 JSON_MAP_BEGIN(CopyPresetBody)
 JSON_MAP_REFERENCE(CopyPresetBody, clientId)
+JSON_MAP_REFERENCE(CopyPresetBody, pedalboardType)
 JSON_MAP_REFERENCE(CopyPresetBody, fromId)
 JSON_MAP_REFERENCE(CopyPresetBody, toId)
 JSON_MAP_END()
@@ -511,6 +608,7 @@ class PedalboardItemEnabledBody
 {
 public:
     int64_t clientId_ = -1;
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t instanceId_ = -1;
     bool enabled_ = true;
 
@@ -518,6 +616,7 @@ public:
 };
 JSON_MAP_BEGIN(PedalboardItemEnabledBody)
 JSON_MAP_REFERENCE(PedalboardItemEnabledBody, clientId)
+JSON_MAP_REFERENCE(PedalboardItemEnabledBody, pedalboardType)
 JSON_MAP_REFERENCE(PedalboardItemEnabledBody, instanceId)
 JSON_MAP_REFERENCE(PedalboardItemEnabledBody, enabled)
 JSON_MAP_END()
@@ -526,6 +625,7 @@ class PedalboardItemUseModGuiBody
 {
 public:
     int64_t clientId_ = -1;
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t instanceId_ = -1;
     bool useModUi_ = true;
 
@@ -533,6 +633,7 @@ public:
 };
 JSON_MAP_BEGIN(PedalboardItemUseModGuiBody)
 JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, clientId)
+JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, pedalboardType)
 JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, instanceId)
 JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, useModUi)
 JSON_MAP_END()
@@ -542,6 +643,7 @@ class UpdateCurrentPedalboardBody
 {
 public:
     int64_t clientId_ = -1;
+    PedalboardType pedalboardType_;
     Pedalboard pedalboard_;
 
     DECLARE_JSON_MAP(UpdateCurrentPedalboardBody);
@@ -549,12 +651,30 @@ public:
 
 JSON_MAP_BEGIN(UpdateCurrentPedalboardBody)
 JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, clientId)
+JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, pedalboardType)
 JSON_MAP_REFERENCE(UpdateCurrentPedalboardBody, pedalboard)
 JSON_MAP_END()
+
+class SetSnapshotBody
+{
+public:
+    PedalboardType pedalboardType_;
+    int64_t  snapshotIndex_;
+
+    DECLARE_JSON_MAP(SetSnapshotBody);
+};
+
+JSON_MAP_BEGIN(SetSnapshotBody)
+JSON_MAP_REFERENCE(SetSnapshotBody, pedalboardType)
+JSON_MAP_REFERENCE(SetSnapshotBody, snapshotIndex)
+JSON_MAP_END()
+
+
 
 class SetSnapshotsBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     std::vector<std::shared_ptr<Snapshot>> snapshots_;
     int64_t selectedSnapshot_;
 
@@ -562,6 +682,7 @@ public:
 };
 
 JSON_MAP_BEGIN(SetSnapshotsBody)
+JSON_MAP_REFERENCE(SetSnapshotsBody, pedalboardType)
 JSON_MAP_REFERENCE(SetSnapshotsBody, snapshots)
 JSON_MAP_REFERENCE(SetSnapshotsBody, selectedSnapshot)
 JSON_MAP_END()
@@ -570,6 +691,7 @@ class SetSelectedPedalboardPluginBody
 {
 public:
     uint64_t clientId_;
+    PedalboardType pedalboardType_;
     uint64_t pluginInstanceId_;
 
     DECLARE_JSON_MAP(SetSelectedPedalboardPluginBody);
@@ -577,6 +699,7 @@ public:
 
 JSON_MAP_BEGIN(SetSelectedPedalboardPluginBody)
 JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, clientId)
+JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, pedalboardType)
 JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, pluginInstanceId)
 JSON_MAP_END()
 
@@ -584,6 +707,7 @@ JSON_MAP_END()
 class SnapshotModifiedBody
 {
 public:
+    PedalboardType pedalboardType_;
     int64_t snapshotIndex_;
     bool modified_;
 
@@ -591,9 +715,40 @@ public:
 };
 
 JSON_MAP_BEGIN(SnapshotModifiedBody)
+JSON_MAP_REFERENCE(SnapshotModifiedBody, pedalboardType)
 JSON_MAP_REFERENCE(SnapshotModifiedBody, snapshotIndex)
 JSON_MAP_REFERENCE(SnapshotModifiedBody, modified)
-JSON_MAP_END()
+JSON_MAP_END();
+
+class SnapshotChangedBody
+{
+public:
+    PedalboardType pedalboardType_;
+    int64_t selectedSnapshot_;
+
+    DECLARE_JSON_MAP(SnapshotChangedBody);
+};
+
+JSON_MAP_BEGIN(SnapshotChangedBody)
+JSON_MAP_REFERENCE(SnapshotChangedBody, pedalboardType)
+JSON_MAP_REFERENCE(SnapshotChangedBody, selectedSnapshot)
+JSON_MAP_END();
+
+class PresetChangedBody
+{
+public:
+    PedalboardType pedalboardType_;
+    bool changed_;
+
+    DECLARE_JSON_MAP(PresetChangedBody);
+};
+
+JSON_MAP_BEGIN(PresetChangedBody)
+JSON_MAP_REFERENCE(PresetChangedBody, pedalboardType)
+JSON_MAP_REFERENCE(PresetChangedBody, changed)
+JSON_MAP_END();
+
+
 
 class ChannelRouterSettingsChangedBody
 {
@@ -613,7 +768,7 @@ public:
 JSON_MAP_BEGIN(ChannelRouterSettingsChangedBody)
 JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, clientId)
 JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, channelRouterSettings)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class PresetsChangedBody
 {
@@ -628,9 +783,23 @@ JSON_MAP_REFERENCE(PresetsChangedBody, clientId)
 JSON_MAP_REFERENCE(PresetsChangedBody, presets)
 JSON_MAP_END()
 
+class UpdatePresetsBody
+{
+public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
+    PresetIndex presets_;
+
+    DECLARE_JSON_MAP(UpdatePresetsBody);
+};
+JSON_MAP_BEGIN(UpdatePresetsBody)
+JSON_MAP_REFERENCE(UpdatePresetsBody, pedalboardType)
+JSON_MAP_REFERENCE(UpdatePresetsBody, presets)
+JSON_MAP_END();
+
 class ControlChangedBody
 {
 public:
+    PedalboardType pedalboardType_ = PedalboardType::Invalid;
     int64_t clientId_;
     int64_t instanceId_;
     std::string symbol_;
@@ -640,6 +809,7 @@ public:
 };
 
 JSON_MAP_BEGIN(ControlChangedBody)
+JSON_MAP_REFERENCE(ControlChangedBody, pedalboardType)
 JSON_MAP_REFERENCE(ControlChangedBody, clientId)
 JSON_MAP_REFERENCE(ControlChangedBody, instanceId)
 JSON_MAP_REFERENCE(ControlChangedBody, symbol)
@@ -681,7 +851,7 @@ JSON_MAP_REFERENCE(Vst3ControlChangedBody, instanceId)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, symbol)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, value)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class PiPedalSocketHandler;
 namespace {
@@ -711,6 +881,7 @@ private:
     struct VuSubscription
     {
         int64_t subscriptionHandle;
+        PedalboardType pedalboardType;
         int64_t instanceId;
     };
 
@@ -1146,7 +1317,10 @@ public:
     void MonitorPort(int replyTo, MonitorPortBody &body)
     {
         std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+        CHECK_PEDALBOARD_TYPE(body);
+
         int64_t subscriptionHandle = model.MonitorPort(
+            body.pedalboardType_,
             body.instanceId_,
             body.key_,
             body.updateRate_,
@@ -1184,7 +1358,7 @@ public:
     void handle_setControl(int replyTo, json_reader*pReader) {
         ControlChangedBody message;
         pReader->read(&message);
-        this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+        this->model.SetControl(message.clientId_, message.pedalboardType_,message.instanceId_, message.symbol_, message.value_);
 
     }
     REGISTER_MESSAGE_HANDLER(setControl)
@@ -1192,40 +1366,38 @@ public:
     void handle_previewControl(int replyTo, json_reader*pReader) {
         ControlChangedBody message;
         pReader->read(&message);
-        this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+        this->model.PreviewControl(message.clientId_, message.pedalboardType_,message.instanceId_, message.symbol_, message.value_);
 
     }
     REGISTER_MESSAGE_HANDLER(previewControl)
 
     void handle_setInputVolume(int replyTo, json_reader*pReader) {
-        float value;
-        pReader->read(&value);
-        this->model.SetInputVolume(value);
+        PedalboardVolumeBody body;
+        pReader->read(&body);
+        this->model.SetInputVolume(body.pedalboardType_,body.volume_);
 
     }
     REGISTER_MESSAGE_HANDLER(setInputVolume)
 
     void handle_setOutputVolume(int replyTo, json_reader*pReader) {
-        float value;
-        pReader->read(&value);
-        this->model.SetOutputVolume(value);
-
+        PedalboardVolumeBody body;
+        pReader->read(&body);
+        this->model.SetOutputVolume(body.pedalboardType_,body.volume_);
     }
     REGISTER_MESSAGE_HANDLER(setOutputVolume)
 
     void handle_previewInputVolume(int replyTo, json_reader*pReader) {
-        float value;
-        pReader->read(&value);
-        this->model.PreviewInputVolume(value);
+        PedalboardVolumeBody body;
+        pReader->read(&body);
+        this->model.PreviewInputVolume(body.pedalboardType_,body.volume_);
 
     }
     REGISTER_MESSAGE_HANDLER(previewInputVolume)
 
     void handle_previewOutputVolume(int replyTo, json_reader*pReader) {
-        float value;
-        pReader->read(&value);
-        this->model.PreviewOutputVolume(value);
-
+        PedalboardVolumeBody body;
+        pReader->read(&body);
+        this->model.PreviewOutputVolume(body.pedalboardType_,body.volume_);
     }
     REGISTER_MESSAGE_HANDLER(previewOutputVolume)
 
@@ -1248,7 +1420,7 @@ public:
     void handle_monitorPatchProperty(int replyTo, json_reader*pReader) {
         MonitorPatchPropertyBody body;
         pReader->read(&body);
-        this->model.MonitorPatchProperty(this->clientId, body.clientHandle_, body.instanceId_, body.propertyUri_);
+        this->model.MonitorPatchProperty(this->clientId, body.clientHandle_, body.pedalboardType_,body.instanceId_, body.propertyUri_);
 
     }
     REGISTER_MESSAGE_HANDLER(monitorPatchProperty)
@@ -1326,7 +1498,7 @@ public:
     void handle_loadPluginPreset(int replyTo, json_reader*pReader) {
         LoadPluginPresetBody body;
         pReader->read(&body);
-        this->model.LoadPluginPreset(body.pluginInstanceId_, body.presetInstanceId_);
+        this->model.LoadPluginPreset(body.pluginInstanceId_, body.pedalboardType_,body.presetInstanceId_);
 
     }
     REGISTER_MESSAGE_HANDLER(loadPluginPreset)
@@ -1438,7 +1610,9 @@ public:
     REGISTER_MESSAGE_HANDLER(getJackSettings)
 
     void handle_saveCurrentPreset(int replyTo, json_reader*pReader) {
-        this->model.SaveCurrentPreset(this->clientId);
+        SaveCurrentPresetBody body;
+        pReader->read(&body);
+        this->model.SaveCurrentPreset(this->clientId, body.pedalboardType_);
 
     }
     REGISTER_MESSAGE_HANDLER(saveCurrentPreset)
@@ -1446,7 +1620,7 @@ public:
     void handle_saveCurrentPresetAs(int replyTo, json_reader*pReader) {
         SaveCurrentPresetAsBody body;
         pReader->read(&body);
-        int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_,body.name_, body.saveAfterInstanceId_);
+        int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.pedalboardType_, body.bankInstanceId_,body.name_, body.saveAfterInstanceId_);
         Reply(replyTo, "saveCurrentPresetsAs", result);
 
     }
@@ -1455,7 +1629,7 @@ public:
     void handle_setSelectedPedalboardPlugin(int replyTo, json_reader*pReader) {
         SetSelectedPedalboardPluginBody body;
         pReader->read(&body);
-        this->model.SetSelectedPedalboardPlugin(body.clientId_,body.pluginInstanceId_);
+        this->model.SetSelectedPedalboardPlugin(body.clientId_,body.pedalboardType_, body.pluginInstanceId_);
 
     }
     REGISTER_MESSAGE_HANDLER(setSelectedPedalboardPlugin)
@@ -1463,49 +1637,49 @@ public:
     void handle_savePluginPresetAs(int replyTo, json_reader*pReader) {
         SavePluginPresetAsBody body;
         pReader->read(&body);
-        int64_t result = this->model.SavePluginPresetAs(body.instanceId_, body.name_);
-        Reply(replyTo, "saveCurrentPresetsAs", result);
+        int64_t result = this->model.SavePluginPresetAs(body.pedalboardType_,body.instanceId_, body.name_);
+        Reply(replyTo, "savePluginPresetAs", result);
 
     }
     REGISTER_MESSAGE_HANDLER(savePluginPresetAs)
 
     void handle_getPresets(int replyTo, json_reader*pReader) {
-        PresetIndex presets;
-        this->model.GetPresets(&presets);
-        Reply(replyTo, "getPresets", presets);
+        PedalboardType pedalboardType = PedalboardType::Invalid;
+        pReader->read(&pedalboardType);
 
+        PresetIndex presets;
+        this->model.GetPresets(&presets,pedalboardType);
+        Reply(replyTo, "getPresets", presets);
     }
     REGISTER_MESSAGE_HANDLER(getPresets)
 
     void handle_setPedalboardItemEnable(int replyTo, json_reader*pReader) {
         PedalboardItemEnabledBody body;
         pReader->read(&body);
-        model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
-
+        model.SetPedalboardItemEnable(body.clientId_, body.pedalboardType_, body.instanceId_, body.enabled_);
     }
     REGISTER_MESSAGE_HANDLER(setPedalboardItemEnable)
 
     void handle_setPedalboardItemUseModUi(int replyTo, json_reader*pReader) {
         PedalboardItemUseModGuiBody body;
         pReader->read(&body);
-        model.SetPedalboardItemUseModUi(body.clientId_, body.instanceId_, body.useModUi_);
+        model.SetPedalboardItemUseModUi(body.clientId_, body.pedalboardType_,body.instanceId_, body.useModUi_);
 
     }
     REGISTER_MESSAGE_HANDLER(setPedalboardItemUseModUi)
 
     void handle_updateCurrentPedalboard(int replyTo, json_reader*pReader) {
         UpdateCurrentPedalboardBody body;
-
         pReader->read(&body);
-        this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboard_);
-
+        this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboardType_,body.pedalboard_);
     }
     REGISTER_MESSAGE_HANDLER(updateCurrentPedalboard)
 
     void handle_setSnapshot(int replyTo, json_reader*pReader) {
-        int64_t snapshotIndex = -1;
-        pReader->read(&snapshotIndex);
-        this->model.SetSnapshot(snapshotIndex);
+        SetSnapshotBody body;
+        pReader->read(&body);
+
+        this->model.SetSnapshot(body.pedalboardType_,body.snapshotIndex_);
 
     }
     REGISTER_MESSAGE_HANDLER(setSnapshot)
@@ -1513,13 +1687,15 @@ public:
     void handle_setSnapshots(int replyTo, json_reader*pReader) {
         SetSnapshotsBody body;
         pReader->read(&body);
-        this->model.SetSnapshots(body.snapshots_, body.selectedSnapshot_);
+        this->model.SetSnapshots(body.pedalboardType_,body.snapshots_, body.selectedSnapshot_);
 
     }
     REGISTER_MESSAGE_HANDLER(setSnapshots)
 
     void handle_currentPedalboard(int replyTo, json_reader*pReader) {
-        auto pedalboard = model.GetCurrentPedalboardCopy();
+        PedalboardType pedalboardType = PedalboardType::Invalid;
+        pReader->read(&pedalboardType);     
+        auto pedalboard = model.GetCurrentPedalboardCopy(pedalboardType);
         Reply(replyTo, "currentPedalboard", pedalboard);
 
     }
@@ -1569,17 +1745,17 @@ public:
     REGISTER_MESSAGE_HANDLER(version)
 
     void handle_loadPreset(int replyTo, json_reader*pReader) {
-        int64_t instanceId = 0;
-        pReader->read(&instanceId);
-        model.LoadPreset(this->clientId, instanceId);
+        InstanceIdBody body;
+        pReader->read(&body);
+        model.LoadPreset(this->clientId, body.pedalboardType_, body.instanceId_);
 
     }
     REGISTER_MESSAGE_HANDLER(loadPreset)
 
     void handle_updatePresets(int replyTo, json_reader*pReader) {
-        PresetIndex newIndex;
-        pReader->read(&newIndex);
-        bool result = model.UpdatePresets(this->clientId, newIndex);
+        UpdatePresetsBody body;
+        pReader->read(&body);
+        bool result = model.UpdatePresets(this->clientId, body.pedalboardType_, body.presets_);
         this->Reply(replyTo, "updatePresets", result);
 
     }
@@ -1618,9 +1794,10 @@ public:
     REGISTER_MESSAGE_HANDLER(restart)
 
     void handle_deletePresetItems(int replyTo, json_reader*pReader) {
-        std::vector<int64_t> items;
-        pReader->read(&items);
-        int64_t result = model.DeletePresets(this->clientId, items);
+        DeletePresetItemsBody body;
+        pReader->read(&body);
+
+        int64_t result = model.DeletePresets(this->clientId, body.pedalboardType_, body.items_);
         this->Reply(replyTo, "deletePresetItems", result);
 
     }
@@ -1664,11 +1841,11 @@ public:
     REGISTER_MESSAGE_HANDLER(renameBank)
 
     void handle_openBank(int replyTo, json_reader*pReader) {
-        int64_t bankId = -1;
-        pReader->read(&bankId);
+        OpenBankBody body;
+        pReader->read(&body);
         try
         {
-            model.OpenBank(this->clientId, bankId);
+            model.OpenBank(this->clientId, body.pedalboardType_, body.bankId_);
             ;
             this->Reply(replyTo, "openBank");
         }
@@ -1676,7 +1853,6 @@ public:
         {
             this->SendError(replyTo, std::string(e.what()));
         }
-
     }
     REGISTER_MESSAGE_HANDLER(openBank)
 
@@ -1697,25 +1873,33 @@ public:
     REGISTER_MESSAGE_HANDLER(saveBankAs)
 
     void handle_nextBank(int replyTo, json_reader*pReader) {
-        model.NextBank();
+        PedalboardType pedalboardType;
+        pReader->read(&pedalboardType);
+        model.NextBank(pedalboardType);
 
     }
     REGISTER_MESSAGE_HANDLER(nextBank)
 
     void handle_previousBank(int replyTo, json_reader*pReader) {
-        model.PreviousBank();
+        PedalboardType pedalboardType;
+        pReader->read(&pedalboardType);
+        model.PreviousBank(pedalboardType);
 
     }
     REGISTER_MESSAGE_HANDLER(previousBank)
 
     void handle_nextPreset(int replyTo, json_reader*pReader) {
-        model.NextPreset();
+        PedalboardType pedalboardType;
+        pReader->read(&pedalboardType);
+        model.NextPreset(pedalboardType);
 
     }
     REGISTER_MESSAGE_HANDLER(nextPreset)
 
     void handle_previousPreset(int replyTo, json_reader*pReader) {
-        model.PreviousPreset();
+        PedalboardType pedalboardType;
+        pReader->read(&pedalboardType);
+        model.PreviousPreset(pedalboardType);
 
     }
     REGISTER_MESSAGE_HANDLER(previousPreset)
@@ -1724,16 +1908,15 @@ public:
         RenamePresetBody body;
         pReader->read(&body);
 
-        bool result = model.RenamePreset(body.clientId_, body.instanceId_, body.name_);
+        bool result = model.RenamePreset(body.clientId_, body.pedalboardType_,body.instanceId_, body.name_);
         this->Reply(replyTo, "renamePresetItem", result);
-
     }
     REGISTER_MESSAGE_HANDLER(renamePresetItem)
 
     void handle_copyPreset(int replyTo, json_reader*pReader) {
         CopyPresetBody body;
         pReader->read(&body);
-        int64_t result = model.CopyPreset(body.clientId_, body.fromId_, body.toId_);
+        int64_t result = model.CopyPreset(body.clientId_, body.pedalboardType_, body.fromId_, body.toId_);
         this->Reply(replyTo, "copyPreset", result);
 
     }
@@ -1751,18 +1934,16 @@ public:
     void handle_setPatchProperty(int replyTo, json_reader*pReader) {
         SetPatchPropertyBody body;
         pReader->read(&body);
-        model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
+        model.SendSetPatchProperty(clientId, body.pedalboardType_, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
                                    { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
                                    { this->SendError(replyTo, error.c_str()); });
-
     }
     REGISTER_MESSAGE_HANDLER(setPatchProperty)
 
     void handle_setPedalboardItemTitle(int replyTo, json_reader*pReader) {
         SetPedalboardItemTitleBody body;
         pReader->read(&body);
-        model.SetPedalboardItemTitle(body.instanceId_, body.title_, body.colorKey_);
-
+        model.SetPedalboardItemTitle(body.pedalboardType_,body.instanceId_, body.title_, body.colorKey_);
     }
     REGISTER_MESSAGE_HANDLER(setPedalboardItemTitle)
 
@@ -1772,6 +1953,7 @@ public:
 
         model.SendGetPatchProperty(
             this->clientId,
+            body.pedalboardType_,
             body.instanceId_,
             body.propertyUri_,
             [this, replyTo](const std::string &jsonResult)
@@ -1782,7 +1964,6 @@ public:
             {
                 this->SendError(replyTo, error.c_str());
             });
-
     }
     REGISTER_MESSAGE_HANDLER(getPatchProperty)
 
@@ -1820,15 +2001,15 @@ public:
     REGISTER_MESSAGE_HANDLER(unmonitorPort)
 
     void handle_addVuSubscription(int replyTo, json_reader*pReader) {
-        int64_t instanceId = -1;
+        InstanceIdBody body;
 
-        pReader->read(&instanceId);
+        pReader->read(&body);
 
-        int64_t subscriptionHandle = model.AddVuSubscription(instanceId);
+        int64_t subscriptionHandle = model.AddVuSubscription(body.pedalboardType_, body.instanceId_);
 
         {
             std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-            activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, instanceId});
+            activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, body.pedalboardType_, body.instanceId_});
         }
         this->Reply(replyTo, "addVuSubscription", subscriptionHandle);
 
@@ -1922,7 +2103,9 @@ public:
     REGISTER_MESSAGE_HANDLER(requestFileList2)
 
     void handle_newPreset(int replyTo, json_reader*pReader) {
-        int64_t presetId = this->model.CreateNewPreset();
+        PedalboardType pedalboardType;
+        pReader->read(&pedalboardType);
+        int64_t presetId = this->model.CreateNewPreset(pedalboardType);
         this->Reply(replyTo, "newPreset", presetId);
 
     }
@@ -2040,7 +2223,7 @@ public:
     void handle_importPresetsFromBank(int replyTo, json_reader*pReader) {
         ImportPresetsFromBankBody args;
         pReader->read(&args);
-        auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
+        auto result = this->model.ImportPresetsFromBank(args.pedalboardType_, args.bankInstanceId_, args.presets_);
         this->Reply(replyTo,"importPresetsFromBank",result);
 
     }
@@ -2049,9 +2232,8 @@ public:
     void handle_copyPresetsToBank(int replyTo, json_reader*pReader) {
         CopyPresetsToBankBody args;
         pReader->read(&args);
-        auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
+        auto result = this->model.CopyPresetsToBank(args.pedalboardType_,args.bankInstanceId_, args.presets_);
         this->Reply(replyTo,"copyPresetsToBank",result);
-
     }
     REGISTER_MESSAGE_HANDLER(copyPresetsToBank)
 
@@ -2225,14 +2407,14 @@ protected:
     }
 
 private:
-    virtual void OnUpdateStatusChanged(const UpdateStatus &updateStatus)
+    virtual void OnUpdateStatusChanged(const UpdateStatus &updateStatus) override
     {
         Send("onUpdateStatusChanged", updateStatus);
     }
 
-    virtual void OnLv2StateChanged(int64_t instanceId, const Lv2PluginState &state)
+    virtual void OnLv2StateChanged(PedalboardType pedalboardType,int64_t instanceId, const Lv2PluginState &state) override
     {
-        Lv2StateChangedBody message{(uint64_t)instanceId, state};
+        Lv2StateChangedBody message{pedalboardType, (uint64_t)instanceId, state};
         Send("onLv2StateChanged", message);
     }
 
@@ -2241,7 +2423,7 @@ private:
         Send("onLv2PluginsChanging", true);
         Flush();
     }
-    virtual void OnHasWifiChanged(bool hasWifi)
+    virtual void OnHasWifiChanged(bool hasWifi) override
     {
         Send("onHasWifiChanged", hasWifi);
         Flush();
@@ -2264,7 +2446,7 @@ private:
         }
     }
 
-    virtual void OnErrorMessage(const std::string &message)
+    virtual void OnErrorMessage(const std::string &message) override
     {
         Send("onErrorMessage", message);
     }
@@ -2294,54 +2476,59 @@ private:
         body.errorMessage_ = errorMessage;
         Send("onTone3000DownloadError", body);
     }
-    
-    // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
-    // {
-    //     PatchPropertyChangedBody body;
-    //     body.clientId_ = clientId;
-    //     body.instanceId_ = instanceId;
-    //     body.propertyUri_ = propertyUri;
-    //     body.value_ = value;
-    //     Send("onPatchPropertyChanged",body);
-    // }
 
-    virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding> &bindings)
+    virtual void OnSystemMidiBindingsChanged(const std::vector<MidiBinding> &bindings) override
     {
         Send("onSystemMidiBindingsChanged", bindings);
     }
 
-    virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites)
+    virtual void OnFavoritesChanged(const std::map<std::string, bool> &favorites) override
     {
         Send("onFavoritesChanged", favorites);
     }
 
-    virtual void OnShowStatusMonitorChanged(bool show)
+    virtual void OnShowStatusMonitorChanged(bool show) override
     {
         Send("onShowStatusMonitorChanged", show);
     }
 
-    virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings)
+    virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings) override
     {
         ChannelRouterSettingsChangedBody body(clientId, channelRouterSettings);
         Send("onChannelSelectionChanged", body);
     }
 
-    virtual void OnSnapshotModified(int64_t snapshotIndex, bool modified)
+    virtual void OnSnapshotModified(PedalboardType pedalboardType,int64_t snapshotIndex, bool modified) override
     {
-        SnapshotModifiedBody body;
-        body.snapshotIndex_ = snapshotIndex;
-        body.modified_ = modified;
+        SnapshotModifiedBody body
+        {
+            pedalboardType_: pedalboardType,
+            snapshotIndex_: snapshotIndex,
+            modified_: modified
+        };
         Send("onSnapshotModified", body);
     }
 
-    virtual void OnSelectedSnapshotChanged(int64_t selectedSnapshot) override
+    virtual void OnSelectedSnapshotChanged(PedalboardType pedalboardType,int64_t selectedSnapshot) override
     {
-        Send("onSelectedSnapshotChanged", selectedSnapshot);
+        SnapshotChangedBody body
+        {
+            pedalboardType_: pedalboardType,
+            selectedSnapshot_: selectedSnapshot,
+        };        
+        Send("onSelectedSnapshotChanged", body);
     }
 
-    virtual void OnPresetChanged(bool changed) override
+    virtual void OnPresetChanged(PedalboardType pedalboardType, bool changed) override
     {
-        Send("onPresetChanged", changed);
+        PresetChangedBody body
+        {
+            pedalboardType_: pedalboardType,
+            changed_: changed,
+        };        
+
+        Send("onPresetChanged", body);
+        xxx;
     }
 
     virtual void OnPresetsChanged(int64_t clientId, const PresetIndex &presets)
@@ -2427,7 +2614,7 @@ private:
         Send("onVst3ControlChanged", body);
     }
 
-    virtual void OnControlChanged(int64_t clientId, int64_t instanceId, const std::string &key, float value)
+    virtual void OnControlChanged(int64_t clientId, int64_t instanceId, const std::string &key, float value) override
     {
         ControlChangedBody body;
         body.clientId_ = clientId;
@@ -2436,7 +2623,7 @@ private:
         body.value_ = value;
         Send("onControlChanged", body);
     }
-    virtual void OnInputVolumeChanged(float value)
+    virtual void OnInputVolumeChanged(float value) override
     {
         ControlChangedBody body;
         Send("onInputVolumeChanged", value);

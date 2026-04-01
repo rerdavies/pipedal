@@ -98,13 +98,21 @@ namespace pipedal
         std::string name_;
         int64_t nextInstanceId_ = 0;
         int64_t selectedPreset_ = -1;
+        int64_t selectedMainInsertPreset_ = -1;
+        int64_t selectedAuxInsertPreset_ = -1;
+
         std::vector<std::unique_ptr<BankFileEntry>> presets_;
 
     public:
         GETTER_SETTER(name);
         GETTER_SETTER(nextInstanceId);
         GETTER_SETTER(selectedPreset);
+        GETTER_SETTER(selectedMainInsertPreset);
+        GETTER_SETTER(selectedAuxInsertPreset);
         GETTER_SETTER_VEC(presets);
+
+        int64_t selectedPreset(PedalboardType pedalboardType) const;
+        void selectedPreset(PedalboardType pedalboardType, int64_t selectedPreset);
 
         void clear()
         {
@@ -216,6 +224,17 @@ namespace pipedal
             }
             throw PiPedalArgumentException("Instance not found.");
         }
+        BankFileEntry *maybeGetItem(int64_t instanceId)
+        {
+            for (size_t i = 0; i < presets_.size(); ++i)
+            {
+                if (presets_[i]->instanceId() == instanceId)
+                {
+                    return (presets_[i].get());
+                }
+            }
+            return nullptr;
+        }
         int64_t deletePreset(int64_t instanceId)
         {
             for (size_t i = 0; i < presets_.size(); ++i)
@@ -272,14 +291,25 @@ namespace pipedal
     class BankIndex
     {
         int64_t selectedBank_ = 0;
+        int64_t selectedMainInsertBank_ = -1;
+        int64_t selectedAuxInsertBank_ = -1;
         int64_t nextInstanceId_ = 0;
         std::vector<BankIndexEntry> entries_;
 
     public:
-        GETTER_SETTER(selectedBank);
+        // deprecated.
+        int64_t selectedBankX() const { return selectedBank_; }
+        // deprecated.
+        void selectedBankX(int64_t value) { selectedBank_ = value; }
+        GETTER_SETTER(selectedMainInsertBank);
+        GETTER_SETTER(selectedAuxInsertBank);
         GETTER_SETTER_VEC(entries);
 
         DECLARE_JSON_MAP(BankIndex);
+
+
+        int64_t selectedBank(PedalboardType pedalboardType) const;
+        void selectedBank(PedalboardType pedalboardType, int64_t selectedIndex);
 
         bool hasName(const std::string &name) const
         {
@@ -340,6 +370,19 @@ namespace pipedal
             }
             return nullptr;
         }
+
+        bool isValidInstanceId(int64_t instanceId) const
+        {
+            for (size_t i = 0; i < entries_.size(); ++i)
+            {
+                if (entries_[i].instanceId() == instanceId)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         BankIndexEntry &getBankIndexEntry(int64_t instanceId)
         {
             for (size_t i = 0; i < entries_.size(); ++i)

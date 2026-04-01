@@ -357,36 +357,24 @@ export class PedalboardSplitItem extends PedalboardItem {
 }
 
 
-let TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
-let TWO_POWER_48 = 281474976710656; // Number of possible instance IDs for Main Pedalboards.
-let MAX_INSTANCE_ID = TWO_POWER_48;
 
 
 
-export enum InstanceType {
-    MainPedalboard,
-    MainInsert,
-    AuxInsert
+export enum PedalboardType {
+    Invalid = -1,
+    MainPedalboard = 0,
+    MainInsert = 1,
+    AuxInsert = 2,
+    MaxValue = 3
 }
 
 
 export class Pedalboard implements Deserializable<Pedalboard> {
 
-    static readonly CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Main Inserts.
-    static readonly CHANNEL_ROUTER_MAIN_INSERT_ID = -5; // Reserved Instance ID for Router Main Inserts.
-    static readonly CHANNEL_ROUTER_AUX_INSERT_ID = -6; // Reserved Instance ID for Router Aux inserts.
 
-    static readonly MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52-2*MAX_INSTANCE_ID;
-    static readonly AUX_INSERT_INSTANCE_BASE = TWO_POWER_52-1*MAX_INSTANCE_ID;
 
     static readonly START_CONTROL = -2; // synthetic PedalboardItem for input volume.
     static readonly END_CONTROL = -3; // synthetic PedalboardItem for output volume.
-    static readonly SEND_OUTPUT_CONTROL = -4; // synthetic PedalboardItem for send output volume.
-    static readonly SEND_RETURN_CONTROL = -5; // synthetic PedalboardItem for send return volume.
-    static readonly MAIN_INSERT_START_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + -2 +  MAX_INSTANCE_ID;
-    static readonly MAIN_INSERT_END_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + -3 + MAX_INSTANCE_ID;
-    static readonly AUX_INSERT_START_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + -2 + MAX_INSTANCE_ID
-    static readonly AUX_INSERT_END_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + -3 + MAX_INSTANCE_ID;
 
 
     static readonly START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";
@@ -402,32 +390,15 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         this.selectedSnapshot = input.selectedSnapshot;
         this.pathProperties = input.pathProperties;
         this.selectedPlugin = input.selectedPlugin??-1;
+        this.instanceType = input.instanceType ?? PedalboardType.MainPedalboard;
         return this;
-    }
-
-    static getInstanceTypeFromInstanceId(instanceId: number): InstanceType {
-        if (instanceId >= Pedalboard.MAIN_INSERT_INSTANCE_BASE) {
-            return InstanceType.MainInsert;
-        }
-        if (instanceId >= Pedalboard.AUX_INSERT_INSTANCE_BASE) {
-            return InstanceType.AuxInsert;
-        }
-        return InstanceType.MainPedalboard;
-    }
-    getInstanceType(): InstanceType {
-        if (this.nextInstanceId >= Pedalboard.MAIN_INSERT_INSTANCE_BASE) {
-            return InstanceType.MainInsert;
-        }
-        if (this.nextInstanceId >= Pedalboard.AUX_INSERT_INSTANCE_BASE) {
-            return InstanceType.AuxInsert;
-        }
-        return InstanceType.MainPedalboard;
     }
 
     clone(): Pedalboard {
         return new Pedalboard().deserialize(this);
     }
     name: string = "";
+    instanceType: PedalboardType = PedalboardType.MainPedalboard;
     input_volume_db: number = 0;
     output_volume_db: number = 0;
     items: PedalboardItem[] = [];
