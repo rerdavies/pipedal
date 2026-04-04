@@ -52,7 +52,6 @@ namespace pipedal
     class Lv2Pedalboard
     {
     private:
-        PedalboardType pedalboardType;
         IHost *pHost = nullptr;
         size_t currentFrameOffset = 0;
         DbDezipper inputVolume;
@@ -174,7 +173,7 @@ namespace pipedal
         void SetOutputVolume(float value) { this->outputVolume.SetTarget(value); }
         void SetBypass(int effectIndex, bool enabled);
 
-        void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float**masterInputBuffers, float **masterOutputBuffers);
+        void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples);
 
         float GetControlOutputValue(int effectIndex, int portIndex);
 

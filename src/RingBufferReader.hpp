@@ -45,19 +45,12 @@ namespace pipedal
         uint8_t cc2_; 
     };
 
-    struct Lv2RoutingInserts {
-
-        Lv2Pedalboard*mainInserts = nullptr;
-        Lv2Pedalboard*auxInserts = nullptr;; 
-    };
 
     enum class RingBufferCommand : int64_t
     {
         Invalid = 0,
         ReplaceEffect,
         EffectReplaced,
-        ReplaceRoutingInserts,
-        RoutingInsertsReplaced,
         SetValue,
         SetBypass,
         // AudioStopped,
@@ -106,19 +99,17 @@ namespace pipedal
 
     struct RealtimePedalboardItemIndex {
         RealtimePedalboardItemIndex()
-            : instanceType(PedalboardType::MainPedalboard), index(-1)
+            : index(-1)
         {
         }
         RealtimePedalboardItemIndex(
-            PedalboardType instanceType,
             int64_t index)
-            : instanceType(instanceType), index(index)
+            : index(index)
         {
         }
         RealtimePedalboardItemIndex(const RealtimePedalboardItemIndex& other) = default;
         RealtimePedalboardItemIndex& operator=(const RealtimePedalboardItemIndex& other) = default;
 
-        PedalboardType instanceType = PedalboardType::MainPedalboard;
         int64_t index = -1;
     };
 
@@ -150,7 +141,6 @@ namespace pipedal
     {
     public:
         RealtimeMonitorPortSubscription() { delete callbackPtr; }
-        PedalboardType pedalboardType = PedalboardType::MainPedalboard;
         int64_t subscriptionHandle;
         int instanceIndex = 0;
         int portIndex = 0;
@@ -553,15 +543,6 @@ namespace pipedal
             write(RingBufferCommand::EffectReplaced, pedalboard);
         }
 
-        void ReplaceRoutingInserts(Lv2RoutingInserts routingInserts)
-        {
-            write(RingBufferCommand::ReplaceRoutingInserts, routingInserts);
-        }
-
-        void RoutingInsertsReplaced(Lv2RoutingInserts routingInserts)
-        {
-            write(RingBufferCommand::ReplaceRoutingInserts, routingInserts);
-        }
 
 
         void AudioTerminatedAbnormally()

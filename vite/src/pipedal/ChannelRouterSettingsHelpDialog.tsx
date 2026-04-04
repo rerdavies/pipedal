@@ -107,49 +107,23 @@ export default class ChannelRouterSettingsHelpDialog extends ResizeResponsiveCom
                     <div style={{ fontSize: "0.9em", lineHeight: "18pt" }}>
                         <p> The Audio Channel Routing Dialog determines how audio signals are processed and routed between input and output audio channels.
                         </p>
-                        <p>By default, guitar effects processing occurs on the <i>Main</i> route only. Plugins in the main PiPedal window are
-                            applied before any insert plugins that have been added to the <i>Main</i> route. Main insert plugins are
-                            applied globally, regardless of the selected preset or effects in the main PiPedal window. You might
-                            want to add an EQ or reverb plugin here, to allow your presets to be globally adjusted to suit the room
-                            in which you are currently performing.
-                        </p>
-                        <p>Plugins in the main PiPedal window are not applied to the <i>Aux</i> route by default. The Aux route is intended to be
-                            used for
-                        </p>
+                        <p>Guitar effects processing occurs on the <i>Main</i> route only.</p>
+                        <p>The Aux route can be used for a variety of purposes, such as:</p>
                         <ul>
                             <li>Passing through a dry (unprocessed) guitar signal that can be recorded by a DAW and
                                 re-amped later during mixing.
                             </li>
-                            <li>Passing through a vocal mic signal from one of the input channels, perhaps with compression, EQ or
-                                other processing performed by plugins in Aux inserts.
+                            <li>Passing through a vocal mic signal from one of the input channels.
                             </li>
                             <li>
-                                Passing through a backing track or other external audio signal from one of the input channels, and then either
+                                Passing through a backing track or other external audio signal from one or two input channels, and then either
                                 mixing it with the processed guitar signal, or passing it out on a dedicated output channel.
                             </li>
                         </ul>
-                        <p>However, if "Main Out L" or "Main Out R" is selected as an Aux input channel, then the Aux route will receive the 
-                            output of the processed Main route. Main route insrts are not applied
-                            to the Aux route input signal, so you can have an independent set of inserts applied to the Main and Aux output signals. 
-                            An example of how one might use this feature: sending the output of the Main route to 
-                            a soundboard or PA system without reverb or EQ applied; and then applying reverb and EQ only to the Aux route whose 
-                            outputs will be used as inputs to a stage monitor or headphones for the performer.
-                        </p>
-                        <p>If the Main and Aux routes share output channels, then the results of the Main and Output signals are
+                        <p>If the Main and Aux routes share output channels, then the results of the Main and Aux signals are
                             summed together on those output channels. For stereo mixing, assign the same left and  right output
                             channels to both the Main and Aux routes. If you have a 2x4 or 4x4 audio interface with two guitar input channels
-                            you can also pass  through stereo dry signals by configuring Main and Aux input  and output channels appropriately.
-                        </p>
-                        <p>The Send route, in conjunction with the TooB Send plugin allows you to send and return audio signals to an external physical device
-                            from within a PiPedal preset. This allows you to integrate external hardware effects into your PiPedal presets.
-                            Connect a cable from the audio interface output <i>Send</i>  channel(s) selected here to the input of your 
-                            hardware effect, and a cable from the output of your hardware effect to the audio interface's <i>Return</i> channel
-                            assigned here. Then insert the TooB Send plugin into your PiPedal preset. The input of the 
-                            TooB Send plugin will be sent to the external hardware effect, and the output the external hardware 
-                            effect will be returned to PiPedal at the output of the TooB Send plugin. PiPedal currently supports 
-                            only one Send plugin instance per preset; and the Send and Return channels may not be shared with the Main 
-                            or Aux routes. Note that you may only use one instance of the TooB Send plugin per preset. The TooB Send plugin 
-                            may not be used as a Main or Aux insert effect.
+                            you can also pass  through stereo dry signals by configuring Main and Aux input and output channels appropriately.
                         </p>
                     </div>
 

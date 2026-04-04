@@ -22,22 +22,18 @@ import { useState } from 'react';
 import VuMeter from './VuMeter';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import Divider from '@mui/material/Divider';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButtonEx from './IconButtonEx';
-import Button from '@mui/material/Button';
 import useWindowSize from "./UseWindowSize";
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import ChannelRouterSettingsHelpDialog from './ChannelRouterSettingsHelpDialog';
 import SpeakerIcon from '@mui/icons-material/Speaker';
 import MicIcon from '@mui/icons-material/Mic';
-import SaveIconOutline from '@mui/icons-material/Save';
-
+import ChannelRouterSettings from './ChannelRouterSettings';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import Typography from '@mui/material/Typography';
-import ChannelRouterSettings, { MAIN_OUT_LEFT_CHANNEL, MAIN_OUT_RIGHT_CHANNEL } from './ChannelRouterSettings';
 import { Pedalboard  } from './Pedalboard';
 
 import DialogEx from './DialogEx';
@@ -58,7 +54,6 @@ export interface ChannelRouterSettingsDialogProps {
 enum RouteType {
     Main,
     Aux,
-    Send
 }
 
 interface ChannelRouterSettingsPreset {
@@ -79,13 +74,8 @@ let factoryRouterPresets: ChannelRouterSettings[] = [
         channelRouterPresetId: -2,
         mainInputChannels: [0, -1],
         mainOutputChannels: [0, -1],
-        mainInserts: new Pedalboard(),
         auxInputChannels: [-1, -1],
         auxOutputChannels: [-1, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: []
     })
     ,
     // Input->Stereo out.
@@ -94,70 +84,48 @@ let factoryRouterPresets: ChannelRouterSettings[] = [
         channelRouterPresetId: -3,
         mainInputChannels: [0, -1],
         mainOutputChannels: [0, 1],
-        mainInserts: new Pedalboard(),
         auxInputChannels: [-1, -1],
         auxOutputChannels: [-1, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: []
+    })
+    ,
+    // Right->Right
+    new ChannelRouterSettings().deserialize({
+        configured: true,
+        channelRouterPresetId: -4,
+        mainInputChannels: [1,-1],
+        mainOutputChannels: [1, -1],
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
     })
     ,
     // Right->Stereo out.
     new ChannelRouterSettings().deserialize({
         configured: true,
-        channelRouterPresetId: -4,
-        mainInputChannels: [1,-1],
-        mainOutputChannels: [0, 1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [-1, -1],
-        auxOutputChannels: [-1, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: [],
-    })
-    ,
-    new ChannelRouterSettings().deserialize({
-        configured: true,
         channelRouterPresetId: -5,
         mainInputChannels: [1,-1],
-        mainOutputChannels: [0, -1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [1,-1],
-        auxOutputChannels: [1,-1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: [],
+        mainOutputChannels: [0, 1],
+        auxInputChannels: [-1, -1],
+        auxOutputChannels: [-1, -1],
     })
     ,
+    // Right->right, aux: Left->Left    .
     new ChannelRouterSettings().deserialize({
         configured: true,
         channelRouterPresetId: -6,
         mainInputChannels: [1,-1],
-        mainOutputChannels: [1,-1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [0, -1],
-        auxOutputChannels: [0, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: [],
+        mainOutputChannels: [1, -1],
+        auxInputChannels: [0,-1],
+        auxOutputChannels: [0,-1],
     })
     ,
+    // Right-Left, re-amp->Right.
     new ChannelRouterSettings().deserialize({
         configured: true,
         channelRouterPresetId: -7,
         mainInputChannels: [1,-1],
         mainOutputChannels: [0, -1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [0, -1],
+        auxInputChannels: [1,-1],
         auxOutputChannels: [1,-1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: []
     })
     ,
     new ChannelRouterSettings().deserialize({
@@ -165,80 +133,35 @@ let factoryRouterPresets: ChannelRouterSettings[] = [
         channelRouterPresetId: -8,
         mainInputChannels: [0, -1],
         mainOutputChannels: [0, -1],
-        mainInserts: new Pedalboard(),
         auxInputChannels: [1,-1],
         auxOutputChannels: [1,-1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: []
     })
     ,
     new ChannelRouterSettings().deserialize({
         configured: true,
         channelRouterPresetId: -9,
-        mainInputChannels: [0, -1],
-        mainOutputChannels: [0, -1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [-1, -1],
-        auxOutputChannels: [-1, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [1,-1],
-        sendOutputChannels: [1,-1],
-        controlValues: []
+        mainInputChannels: [1, -1],
+        mainOutputChannels: [0, 1],
+        auxInputChannels: [2, 3],
+        auxOutputChannels: [0, 1],
     })
     ,
     new ChannelRouterSettings().deserialize({
         configured: true,
         channelRouterPresetId: -10,
-        mainInputChannels: [1,-1],
-        mainOutputChannels: [1,-1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [-1, -1],
-        auxOutputChannels: [-1, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [0, -1],
-        sendOutputChannels: [0, -1],
-        controlValues: []
-    })
-    ,
-    new ChannelRouterSettings().deserialize({
-        configured: true,
-        channelRouterPresetId: -11,
-        mainInputChannels: [0, -1],
+        mainInputChannels: [1, -1],
         mainOutputChannels: [0, 1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [0, -1],
-        auxOutputChannels: [2, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [-1, -1],
-        sendOutputChannels: [-1, -1],
-        controlValues: []
-    })
-    ,
-    new ChannelRouterSettings().deserialize({
-        configured: true,
-        channelRouterPresetId: -12,
-        mainInputChannels: [0, -1],
-        mainOutputChannels: [0, 1],
-        mainInserts: new Pedalboard(),
-        auxInputChannels: [-1, -1],
-        auxOutputChannels: [-1, -1],
-        auxInserts: new Pedalboard(),
-        sendInputChannels: [2, 3],
-        sendOutputChannels: [2, 3],
-        controlValues: []
+        auxInputChannels: [2, 3],
+        auxOutputChannels: [2, 3],
     })
     ,
 ];
 
 let cellPortraitInOutDiv: React.CSSProperties = {
-    width: 80, display: "flex", columnGap: 4, flexDirection: "row", alignItems: "center", justifyContent: "right",
+    display: "flex", columnGap: 4, flexDirection: "row", alignItems: "center", justifyContent: "right",
 };
 let cellPortraitSectionHead: React.CSSProperties = {
     border: "0px",
-    paddingTop: 4,
-    paddingBottom: 4,
     paddingLeft: 0,
     paddingRight: 12,
     width: 50,
@@ -248,9 +171,8 @@ let cellPortraitSectionHead: React.CSSProperties = {
 };
 
 let cellPortraitControlStrip: React.CSSProperties = {
-    border: "0px",
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 0,
+    paddingBottom: 0,
     paddingLeft: 0,
     paddingRight: 0,
     margin: "0px",
@@ -261,6 +183,17 @@ let cellLeft: React.CSSProperties = {
     border: "0px",
     paddingTop: 4,
     paddingBottom: 4,
+    paddingLeft: 4,
+    paddingRight: 12,
+    margin: "0px",
+    textAlign: "left",
+    whiteSpace: "nowrap",
+    verticalAlign: "middle"
+};
+let cellPortraitLeft: React.CSSProperties = {
+    border: "0px",
+    paddingTop: 0,
+    paddingBottom: 0,
     paddingLeft: 4,
     paddingRight: 12,
     margin: "0px",
@@ -279,13 +212,11 @@ let cellLandscapeTitle: React.CSSProperties = {
     verticalAlign: "middle"
 };
 let cellPortraitInOut: React.CSSProperties = {
-    border: "0px",
-    paddingTop: 4,
-    paddingBottom: 4,
-    paddingLeft: 12,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingLeft: 24,
     paddingRight: 12,
     margin: "0px",
-    width: 80,
     textAlign: "right",
     verticalAlign: "middle"
 };
@@ -312,8 +243,6 @@ function makeRoutingPresets(audioConfig: JackConfiguration): ChannelRouterSettin
             normalizeChannelSelection(preset.mainOutputChannels);
             normalizeChannelSelection(preset.auxInputChannels);
             normalizeChannelSelection(preset.auxOutputChannels);
-            normalizeChannelSelection(preset.sendInputChannels);
-            normalizeChannelSelection(preset.sendOutputChannels);
             let newPreset = {
                 id: preset.channelRouterPresetId,
                 name: preset.getDescription(audioConfig),
@@ -346,11 +275,6 @@ function MakeChannelMenu(channelCount: number, routeType: RouteType, input: bool
         for (let i = 0; i < channelCount; ++i) {
             items.push((<MenuItem key={i} value={i} disabled={disallowedSelections.includes(i)}>Ch {i + 1}</MenuItem>));
         }
-    }
-    if (routeType === RouteType.Aux && input) {
-        items.push((<MenuItem key={MAIN_OUT_LEFT_CHANNEL} value={MAIN_OUT_LEFT_CHANNEL} >Main Out L</MenuItem>));
-        items.push((<MenuItem key={MAIN_OUT_RIGHT_CHANNEL} value={MAIN_OUT_RIGHT_CHANNEL} >Main Out R</MenuItem>));
-
     }
     return items;
 }
@@ -435,7 +359,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
         onClose();
     };
     let [windowSize] = useWindowSize();
-    let landscape = windowSize.width > windowSize.height;
+    let landscape = windowSize.height < 600;
     let fullScreen = windowSize.width < 450 || windowSize.height < 600;
 
     let ChannelSelect = (routeType: RouteType, channelIndex: number, input: boolean, icon: boolean = true) => {
@@ -459,21 +383,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
             case RouteType.Aux:
                 channelSelection = input ? settings.auxInputChannels : settings.auxOutputChannels;
                 break;
-            case RouteType.Send:
-                channelSelection = input ? settings.sendInputChannels : settings.sendOutputChannels;
-                break;
         }
         value = channelSelection[channelIndex];
 
         if (value >= channelCount) {
             value = -1;
-        }
-        if (routeType === RouteType.Send) {
-            if (input) {
-                disallowedSelections = settings.mainInputChannels.concat(settings.auxInputChannels);
-            } else {
-                disallowedSelections = settings.mainOutputChannels.concat(settings.auxOutputChannels);
-            }
         }
         if (channelIndex === 1) {
             if (channelSelection[0] !== -1) {
@@ -515,16 +429,6 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                 normalizeChannelSelection(newSettings.auxOutputChannels);
                             }
                             break;
-                        case RouteType.Send:
-                            if (input) {
-                                newSettings.sendInputChannels[channelIndex] = newValue;
-                                normalizeChannelSelection(newSettings.sendInputChannels);
-
-                            } else {
-                                newSettings.sendOutputChannels[channelIndex] = newValue;
-                                normalizeChannelSelection(newSettings.sendOutputChannels);
-                            }
-                            break;
                     }
                     if  (newSettings.channelRouterPresetId >= 0) {
                         newSettings.modified = true; // custom.
@@ -544,23 +448,18 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
         let instanceId: number;
         switch (routeType) {
             case RouteType.Main:
-                instanceId = input ? Pedalboard.START_CONTROL : Pedalboard.MAIN_INSERT_END_CONTROL_ID;
+                instanceId = input ? Pedalboard.START_CONTROL_ID : Pedalboard.END_CONTROL_ID;
                 break;
             case RouteType.Aux:
-                instanceId = input ? Pedalboard.AUX_INSERT_START_CONTROL_ID : Pedalboard.AUX_INSERT_END_CONTROL_ID;
+                instanceId = input ? Pedalboard.AUX_START_CONTROL_ID : Pedalboard.AUX_END_CONTROL_ID;
                 break;
-            case RouteType.Send:
-                instanceId = input ? Pedalboard.SEND_RETURN_CONTROL : Pedalboard.SEND_OUTPUT_CONTROL;
 
         }
         return (
-            <div style={{}} >
-                
                 <VuMeter instanceId={instanceId} 
                     display={input? "input": "output"} 
-                    height={48} /> 
-            </div>
-        );
+                    height={64} displayText={true} /> 
+        );    
     }
 
     let ApplyPresetId = (presetId: number | string | null | undefined) => {
@@ -570,9 +469,6 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
         for (let preset of channelRouterPresets) {
             if (preset.id === presetId) {
                 let newPreset = Object.assign(new ChannelRouterSettings(), preset.settings);
-                // mark the presets as inserts.
-                newPreset.mainInserts.nextInstanceId = Pedalboard.MAIN_INSERT_INSTANCE_BASE;
-                newPreset.auxInserts.nextInstanceId = Pedalboard.AUX_INSERT_INSTANCE_BASE;
                 model.setChannelRouterSettings(newPreset);
                 return;
             }
@@ -586,9 +482,7 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
             (preset.settings.mainInputChannels.every((ch) => ch < inputChannels || ch === -1)) &&
             (preset.settings.mainOutputChannels.every((ch) => ch < outputChannels || ch === -1)) &&
             (preset.settings.auxInputChannels.every((ch) => ch < inputChannels || ch === -1)) &&
-            (preset.settings.auxOutputChannels.every((ch) => ch < outputChannels || ch === -1)) &&
-            (preset.settings.sendInputChannels.every((ch) => ch < inputChannels || ch === -1)) &&
-            (preset.settings.sendOutputChannels.every((ch) => ch < outputChannels || ch === -1))
+            (preset.settings.auxOutputChannels.every((ch) => ch < outputChannels || ch === -1))
         );
     }
 
@@ -612,22 +506,10 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
 
         return items;
     }
-    let handleSave = () => {
-
-    };
 
     let PresetSelect = (width: number | string | undefined) => {
         return (
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: width }}>
-                <div style={{ flex: "0 0 auto" }}>
-                    <IconButtonEx tooltip="Save current preset"
-                        style={{ flex: "0 0 auto", color: "#FFFFFF" }}
-                        onClick={(e) => { handleSave(); }}
-                        size="large">
-                        <SaveIconOutline style={{ opacity: 0.75 }} color="inherit" />
-                    </IconButtonEx>
-                </div>
-
                 <div style={{ flex: "1 1", display: "relative" }}>
                     <Select variant="standard" style={{ width: "100%" }} value={settings.channelRouterPresetId}
                         onChange={(event) => {
@@ -637,16 +519,12 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                         {GeneratePresetMenuItems()}
                     </Select>
                 </div>
-                <IconButtonEx tooltip="Presets" aria-label="more-presets" style={{ marginRight: 8 }}>
-                    <MoreVertIcon style={{ opacity: 0.6 }} onClick={() => { }} />
-                </IconButtonEx>
             </div>
         )
     }
 
 
     let LandscapeView = () => {
-        let auxInsertDisabled = !settings.isAuxActive();
         return (
             <div style={{
                 display: "flex", flexFlow: "row", alignItems: "center", justifyContent: "center",
@@ -673,17 +551,11 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Main, 0, true)}
                             </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Main, true)}</td>
-                            <td rowSpan={2} style={cellLeft}>
-                                <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
-                                    Inserts
-                                </Button>
-                            </td>
-
-                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Main, false)}</td>
+                            <td rowSpan={3} style={cellLeft}>{Vu(RouteType.Main, true)}</td>
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Main, 0, false)}
                             </td>
+                            <td rowSpan={3} style={cellLeft}>{Vu(RouteType.Main, false)}</td>
                         </tr>
                         <tr>
                             <td></td>
@@ -706,20 +578,12 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Aux, 0, true))}
                             </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Aux, true)}</td>
-                            <td rowSpan={2} style={cellLeft}>
-                                <Button variant="outlined" style={{
-                                    textTransform: "none", borderRadius: 24,
-                                }}
-                                    disabled={auxInsertDisabled}>
-                                    Inserts
-                                </Button>
-                            </td>
+                            <td rowSpan={3} style={cellLeft}>{Vu(RouteType.Aux, true)}</td>
 
-                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Aux, false)}</td>
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Aux, 0, false))}
                             </td>
+                            <td rowSpan={3} style={cellLeft}>{Vu(RouteType.Aux, false)}</td>
                         </tr>
                         <tr>
                             <td></td>
@@ -730,36 +594,8 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                                 {(ChannelSelect(RouteType.Aux, 1, false))}
                             </td>
                         </tr>
+                        <tr><td colSpan={9} style={{ height: 2 }}></td></tr>
 
-                        {/* Spacer ---------------- */}
-                        <tr><td colSpan={9} style={{ height: 16 }}></td></tr>
-
-                        {/* Send ---------------- */}
-                        <tr>
-                            <td rowSpan={1} style={cellLandscapeTitle}>
-                                <Typography variant="body2" color="textSecondary">Send</Typography>
-                            </td>
-                            <td style={cellLeft}>
-                                {(ChannelSelect(RouteType.Send, 0, false))}
-                            </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Send,false)}</td>
-                            <td rowSpan={2} style={cellLeft}>
-                                {/* No button */}
-                            </td>
-                            <td rowSpan={2} style={cellLeft}>{Vu(RouteType.Send,true)}</td>
-                            <td style={cellLeft}>
-                                {(ChannelSelect(RouteType.Send, 0, true))}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td style={cellLeft}>
-                                {(ChannelSelect(RouteType.Send, 1, false))}
-                            </td>
-                            <td style={cellLeft}>
-                                {(ChannelSelect(RouteType.Send, 1, true))}
-                            </td>
-                        </tr>
 
                     </tbody>
                 </table>
@@ -767,16 +603,13 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
         );
     };
     let PortraitView = () => {
-        let auxInsertDisabled = !settings.isAuxActive();
         return (
             <div style={{
                 display: "flex", flexFlow: "row", alignItems: "center", justifyContent: "center",
                 width: "100%", flexGrow: 0, fontSize: "14px"
             }} >
-                <table style={{ borderCollapse: "collapse" }}>
+                <table style={{ borderCollapse: "collapse", borderSpacing: 0 }}>
                     <colgroup>
-                        <col style={{ width: "auto" }} />
-                        <col style={{ width: "auto" }} />
                         <col style={{ width: "auto" }} />
                         <col style={{ width: "auto" }} />
                         <col style={{ width: "auto" }} />
@@ -784,80 +617,69 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                     <tbody>
                         {/* Main */}
                         <tr>
-                            <td colSpan={1} style={cellPortraitSectionHead}>
+                            <td colSpan={3} style={cellPortraitSectionHead}>
                                 <Typography variant="body2" color="textSecondary"  >Main</Typography>
-                            </td>
-                            <td colSpan={4}>
-
                             </td>
                         </tr>
                         <tr>
-                            <td style={cellPortraitInOut}>
+                            <td style={cellPortraitInOut} rowSpan={1}>
                                 <div style={cellPortraitInOutDiv}>
                                     <Typography variant="body2" color="textSecondary" >In</Typography>
                                     <MicIcon style={{ verticalAlign: "middle", width: 16, height: 16, opacity: 0.6 }} />
                                 </div>
                             </td>
-                            <td style={cellLeft}>
+                            <td style={cellPortraitLeft}>
                                 {ChannelSelect(RouteType.Main, 0, true, false)}
                             </td>
+                            <td style={cellPortraitControlStrip} rowSpan={3}>
+                                {Vu(RouteType.Main,true)}
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
                             <td style={cellLeft}>
-                                {ChannelSelect(RouteType.Main, 1, true, false)}
-                            </td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td colSpan={4}>
-                                <table>
-                                    <tbody>
-                                        <tr>
-                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Main,true)}</td>
-                                            <td style={cellPortraitControlStrip}>
-                                                <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                                    <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
-                                                        Inserts
-                                                    </Button>
-                                                </div>
-                                            </td>
-
-                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Main,false)}</td>
-                                        </tr>
-
-                                    </tbody>
-                                </table>
+                                {(ChannelSelect(RouteType.Main, 1, true, false))}
                             </td>
                         </tr>
+                        {/* Spacer */}
                         <tr>
-                            <td style={cellPortraitInOut}>
+                            <td colSpan={3} style={{ height: 16 }}></td>
+                        </tr>
+                        <tr>
+                            <td style={cellPortraitInOut} rowSpan={1}>
                                 <div style={cellPortraitInOutDiv}>
                                     <Typography variant="body2" color="textSecondary" >Out</Typography>
                                     <SpeakerIcon style={{ verticalAlign: "middle", width: 16, height: 16, opacity: 0.6 }} />
                                 </div>
                             </td>
-
                             <td style={cellLeft}>
 
                                 {ChannelSelect(RouteType.Main, 0, false, false)}
                             </td>
+                            <td style={cellPortraitControlStrip} rowSpan={3}>
+                                {Vu(RouteType.Main,false)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td style={cellLeft}>
+                                </td>
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Main, 1, false, false)}
                             </td>
-                            <td></td>
                         </tr>
 
                         {/* Spacer ---------------- */}
-                        <tr><td colSpan={5} style={{ height: 16 }}></td></tr>
+                        <tr><td colSpan={3} style={{ height: 16 }}></td></tr>
                         {/* Aux */}
                         <tr>
-                            <td colSpan={1} style={cellPortraitSectionHead}>
+                            <td colSpan={3} style={cellPortraitSectionHead}>
                                 <Typography variant="body2" color="textSecondary"  >Aux</Typography>
                             </td>
-                            <td colSpan={4}></td>
                         </tr>
                         <tr>
                             <td style={cellPortraitInOut}>
-                                <div style={cellPortraitInOutDiv}>
+                                <div style={cellPortraitInOutDiv} >
                                     <Typography variant="body2" color="textSecondary" >In</Typography>
                                     <MicIcon style={{ verticalAlign: "middle", width: 16, height: 16, opacity: 0.6 }} />
                                 </div>
@@ -865,39 +687,20 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Aux, 0, true, false))}
                             </td>
+                             <td style={cellPortraitControlStrip} rowSpan={3}>{Vu(RouteType.Aux, true)}</td>
+                        </tr>
+                        <tr>
+                            <td></td>
                             <td style={cellLeft}>
                                 {(ChannelSelect(RouteType.Aux, 1, true, false))}
                             </td>
-                            <td></td>
+                        </tr>
+                        {/* Spacer */}
+                        <tr>
+                            <td colSpan={3} style={{ height: 16 }}></td>
                         </tr>
                         <tr>
-                            <td></td>
-                            <td colSpan={4}>
-                                <table>
-                                    <tbody>
-                                        <tr>
-                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Aux, true)}</td>
-                                            <td style={cellPortraitControlStrip}>
-                                                <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                                    <Button variant="outlined" style={{
-                                                        textTransform: "none", borderRadius: 24,
-
-                                                    }}
-                                                        disabled={auxInsertDisabled}>
-                                                        Inserts
-                                                    </Button>
-                                                </div>
-                                            </td>
-
-                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Aux, false)}</td>
-                                        </tr>
-
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style={cellPortraitInOut}>
+                            <td style={cellPortraitInOut} rowSpan={1}>
                                 <div style={cellPortraitInOutDiv}>
                                     <Typography variant="body2" color="textSecondary" >Out</Typography>
                                     <SpeakerIcon style={{ verticalAlign: "middle", width: 16, height: 16, opacity: 0.6 }} />
@@ -906,73 +709,13 @@ function ChannelRouterSettingsDialog(props: ChannelRouterSettingsDialogProps) {
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Aux, 0, false, false)}
                             </td>
+                            <td style={cellPortraitControlStrip} rowSpan={3}>{Vu(RouteType.Aux, false)}</td>
+                        </tr>
+                        <tr>
+                            <td></td>
                             <td style={cellLeft}>
                                 {ChannelSelect(RouteType.Aux, 1, false, false)}
                             </td>
-                            <td></td>
-                        </tr>
-
-                        {/* Spacer ---------------- */}
-                        <tr><td colSpan={5} style={{ height: 16 }}></td></tr>
-
-                        {/* Send */}
-                        <tr>
-                            <td colSpan={1} style={cellPortraitSectionHead}>
-                                <Typography variant="body2" color="textSecondary"  >Send</Typography>
-                            </td>
-                            <td colSpan={4}></td>
-                        </tr>
-                        <tr>
-                            <td style={cellPortraitInOut}>
-                                <div style={cellPortraitInOutDiv}>
-                                    <Typography variant="body2" color="textSecondary" >Send</Typography>
-                                    <SpeakerIcon style={{ verticalAlign: "middle", width: 16, height: 16, opacity: 0.6 }} />
-                                </div>
-                            </td>
-                            <td style={cellLeft}>
-                                {(ChannelSelect(RouteType.Send, 0, false, false))}
-                            </td>
-                            <td style={cellLeft}>
-                                {(ChannelSelect(RouteType.Send, 1, false, false))}
-                            </td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td colSpan={4}>
-                                <table>
-                                    <tbody>
-                                        <tr>
-                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Send, false)}</td>
-                                            <td style={cellPortraitControlStrip}>
-                                                <div style={{ marginLeft: 8, marginRight: 8, visibility: "hidden" }}>
-                                                    <Button variant="outlined" style={{ textTransform: "none", borderRadius: 24 }}>
-                                                        Inserts
-                                                    </Button>
-                                                </div>
-                                            </td>
-
-                                            <td style={cellPortraitControlStrip}>{Vu(RouteType.Send, true)}</td>
-                                        </tr>
-
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style={cellPortraitInOut}>
-                                <div style={cellPortraitInOutDiv}>
-                                    <Typography variant="body2" color="textSecondary" >Return</Typography>
-                                    <MicIcon style={{ verticalAlign: "middle", width: 16, height: 16, opacity: 0.6 }} />
-                                </div>
-                            </td>
-                            <td style={cellLeft}>
-                                {ChannelSelect(RouteType.Send, 0, true, false)}
-                            </td>
-                            <td style={cellLeft}>
-                                {ChannelSelect(RouteType.Send, 1, true, false)}
-                            </td>
-                            <td></td>
                         </tr>
 
                     </tbody>

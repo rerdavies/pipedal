@@ -148,7 +148,6 @@ namespace pipedal
     {
     public:
         int64_t subscriptionHandle;
-        PedalboardType pedalboardType;
         int64_t instanceid;
         std::string key;
         float updateInterval;
@@ -239,10 +238,6 @@ namespace pipedal
 
         virtual void SetPedalboard(const std::shared_ptr<Lv2Pedalboard> &pedalboard) = 0;
 
-        virtual void SetChannelRoutingInserts(
-            const std::shared_ptr<Lv2Pedalboard> &mainInserts,
-            const std::shared_ptr<Lv2Pedalboard> &auxInserts
-        ) = 0;
 
 
         virtual void SetControlValue(uint64_t instanceId, const std::string &symbol, float value) = 0;

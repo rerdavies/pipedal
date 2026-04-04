@@ -216,13 +216,6 @@ namespace pipedal
         DECLARE_JSON_MAP(Snapshot);
     };
 
-    enum class PedalboardType
-    {
-        Invalid = 0,
-        MainPedalboard = 1,
-        MainInserts = 2,
-        AuxInserts = 3
-    };
 
     class Pedalboard
     {
@@ -239,49 +232,17 @@ namespace pipedal
 
         int64_t selectedPlugin_ = -1;
 
-        static constexpr int64_t TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
-        static constexpr int64_t TWO_POWER_48 = 281474976710656;  // Number of possible instance IDs for Main Pedalboards.
-        static constexpr int64_t MAX_INSTANCE_ID = TWO_POWER_48;
 
     public:
-        static constexpr int64_t MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52 - 2 * MAX_INSTANCE_ID;
-        static constexpr int64_t AUX_INSERT_INSTANCE_BASE = TWO_POWER_52 - 1 * MAX_INSTANCE_ID;
-
-        static constexpr int64_t CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Controls.
 
         static constexpr int64_t START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
         static constexpr int64_t END_CONTROL_ID = -3;   // synthetic PedalboardItem for output volume.
-        static constexpr int64_t MAIN_INSERT_START_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 2;
-        static constexpr int64_t MAIN_INSERT_END_CONTROL_ID = MAIN_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 3;
-        static constexpr int64_t AUX_INSERT_START_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 2;
-        static constexpr int64_t AUX_INSERT_END_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID - 3;
 
-        static PedalboardType GetPedalboardTypeFromInstanceId(int64_t instanceId)
-        {
-            if (instanceId == START_CONTROL_ID)
-                return PedalboardType::MainPedalboard;
-            if (instanceId == END_CONTROL_ID)
-                return PedalboardType::MainPedalboard;
+        static constexpr int64_t AUX_START_CONTROL_ID = -4; // synthetic PedalboardItem for aux input volume.
+        static constexpr int64_t AUX_END_CONTROL_ID = -5;   // synthetic PedalboardItem for aux output volume.
 
-            if (instanceId >= MAIN_INSERT_INSTANCE_BASE)
-            {
-                return PedalboardType::MainInserts;
-            }
-            else if (instanceId >= AUX_INSERT_INSTANCE_BASE)
-            {
-                return PedalboardType::AuxInserts;
-            }
-            else
-            {
-                return PedalboardType::MainPedalboard;
-            }
-        }
-        PedalboardType GetInstanceType() const
-        {
-            return GetPedalboardTypeFromInstanceId(this->nextInstanceId_); // instanceId is irrelevant here.
-        }
 
-        Pedalboard(PedalboardType instanceType = PedalboardType::MainPedalboard);
+        Pedalboard();
 
         // deep copy, breaking shared pointers.
         Pedalboard DeepCopy();
@@ -315,7 +276,7 @@ namespace pipedal
         PedalboardItem MakeEmptyItem();
         PedalboardItem MakeSplit();
 
-        static Pedalboard MakeDefault(PedalboardType instanceType = PedalboardType::MainPedalboard);
+        static Pedalboard MakeDefault();
     };
 
 #undef GETTER_SETTER_REF

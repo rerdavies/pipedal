@@ -76,8 +76,6 @@ ChannelSelection::ChannelSelection(ChannelRouterSettings&settings)
 , mainOutputChannels_(settings.mainOutputChannels())
 , auxInputChannels_(settings.auxInputChannels())
 , auxOutputChannels_(settings.auxOutputChannels())
-, sendInputChannels_(settings.sendInputChannels())
-, sendOutputChannels_(settings.sendOutputChannels())
 {
     normalizeChannelSelection(); 
 }
@@ -104,8 +102,6 @@ void ChannelSelection::normalizeChannelSelection() {
     normalizeOutputChannels(mainOutputChannels_);
     normalizeInputChannels(auxInputChannels_);
     normalizeOutputChannels(auxOutputChannels_);
-    normalizeInputChannels(sendInputChannels_);
-    normalizeOutputChannels(sendOutputChannels_);
 
     // If either aux inputs or outputs are zero, don't do ANY aux processing.
     if (auxInputChannels_.size() == 0) 
@@ -129,8 +125,6 @@ void ChannelSelection::normalizeChannelSelection() {
 
 
 ChannelRouterSettings::ChannelRouterSettings()
-: mainInserts_(PedalboardType::MainInserts)
-, auxInserts_(PedalboardType::AuxInserts)
 {
     
 }
@@ -152,30 +146,25 @@ JSON_MAP_REFERENCE(ChannelRouterSettings, changed)
 JSON_MAP_REFERENCE(ChannelRouterSettings, channelRouterPresetId)
 JSON_MAP_REFERENCE(ChannelRouterSettings, mainInputChannels)
 JSON_MAP_REFERENCE(ChannelRouterSettings, mainOutputChannels)
-JSON_MAP_REFERENCE(ChannelRouterSettings, mainInserts)
 JSON_MAP_REFERENCE(ChannelRouterSettings, auxInputChannels)
 JSON_MAP_REFERENCE(ChannelRouterSettings, auxOutputChannels)
-JSON_MAP_REFERENCE(ChannelRouterSettings, auxInserts)
-JSON_MAP_REFERENCE(ChannelRouterSettings, sendInputChannels)
-JSON_MAP_REFERENCE(ChannelRouterSettings, sendOutputChannels)   
-JSON_MAP_REFERENCE(ChannelRouterSettings, controlValues)
-JSON_MAP_END()
+JSON_MAP_END();
 
 JSON_MAP_BEGIN(ChannelRouterPresetIndexEntry)
 JSON_MAP_REFERENCE(ChannelRouterPresetIndexEntry, id)
 JSON_MAP_REFERENCE(ChannelRouterPresetIndexEntry, name)
-JSON_MAP_END()
+JSON_MAP_END();
 
 
 JSON_MAP_BEGIN(ChannelRouterPresetBankEntry)
 JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, id)
 JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, name)
 JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, channelRouterSettings)
-JSON_MAP_END()
+JSON_MAP_END();
 
 JSON_MAP_BEGIN(ChannelRouterPresetBank)
 JSON_MAP_REFERENCE(ChannelRouterPresetBank, nextId)
 JSON_MAP_REFERENCE(ChannelRouterPresetBank, version)
 JSON_MAP_REFERENCE(ChannelRouterPresetBank, entries)
-JSON_MAP_END()
+JSON_MAP_END();
 

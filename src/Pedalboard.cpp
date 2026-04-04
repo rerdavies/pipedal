@@ -210,7 +210,7 @@ PedalboardItem Pedalboard::MakeSplit()
 
 
 
-Pedalboard Pedalboard::MakeDefault(PedalboardType instanceType)
+Pedalboard Pedalboard::MakeDefault()
 {
     // copy insanity. but it happens so rarely.
     Pedalboard result;
@@ -510,20 +510,9 @@ Snapshot Pedalboard::MakeSnapshotFromCurrentSettings(const Pedalboard &previousP
 }
 
 
-Pedalboard::Pedalboard(PedalboardType instanceType)
+Pedalboard::Pedalboard()
 {
-    switch (instanceType) 
-    {
-        case PedalboardType::MainPedalboard:
-            nextInstanceId_ = 0;
-            break;
-        case PedalboardType::MainInserts:
-            nextInstanceId_ = MAIN_INSERT_INSTANCE_BASE;;
-            break;
-        case PedalboardType::AuxInserts:
-            nextInstanceId_ = AUX_INSERT_INSTANCE_BASE;;
-            break;
-    }
+    nextInstanceId_ = 0;
 }
 
 

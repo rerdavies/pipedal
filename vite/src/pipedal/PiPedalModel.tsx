@@ -534,7 +534,6 @@ export class PiPedalModel //implements PiPedalModel
     jackServerSettings: ObservableProperty<JackServerSettings>
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
 
-    channelRouterControlValues: ObservableProperty<ControlValue[]> = new ObservableProperty<ControlValue[]>([]);
     channelRouterSettings: ObservableProperty<ChannelRouterSettings> = new ObservableProperty<ChannelRouterSettings>(new ChannelRouterSettings());
 
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
@@ -1752,7 +1751,7 @@ export class PiPedalModel //implements PiPedalModel
 
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
-                if (Pedalboard.START_CONTROL === item.instanceId) {
+                if (Pedalboard.START_CONTROL_ID === item.instanceId) {
                     item.onValueChanged("volume_db", volume_db);
                 }
             }
@@ -1779,7 +1778,7 @@ export class PiPedalModel //implements PiPedalModel
             }
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
-                if (Pedalboard.END_CONTROL === item.instanceId) {
+                if (Pedalboard.END_CONTROL_ID === item.instanceId) {
                     item.onValueChanged("volume_db", volume_db);
                 }
             }
@@ -1788,49 +1787,32 @@ export class PiPedalModel //implements PiPedalModel
 
     private lastControlMessageWasSentbyMe = false;
 
-    private _setChannelRouterControlValue(key: string, value: number, notifyServer: boolean) : void {
-        let channelRouterSettings = this.channelRouterSettings.get();
-        let changed = channelRouterSettings.setControlValue(key, value);
-        if (changed) 
-        {
-            this.channelRouterControlValues.set(this.channelRouterSettings.get().controlValues);
-            if (notifyServer) {
-                this.lastControlMessageWasSentbyMe = true;
-                this._setServerControl("setControl", Pedalboard.CHANNEL_ROUTER_CONTROLS_INSTANCE_ID, key, value);
-            }
-        }
-    }
     private _setPedalboardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
 
-        if (instanceId == Pedalboard.CHANNEL_ROUTER_CONTROLS_INSTANCE_ID) {
-            this._setChannelRouterControlValue(key,value,notifyServer);
-            return;
-        } else {
-            let changed: boolean;
-            let newPedalboard = pedalboard.clone();
+        let changed: boolean;
+        let newPedalboard = pedalboard.clone();
 
-            if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
-                this._setInputVolume(value, notifyServer);
-                return;
-            } else if (instanceId === Pedalboard.END_CONTROL) {
-                this._setOutputVolume(value, notifyServer);
-                return;
+        if (instanceId === Pedalboard.START_CONTROL_ID && key === "volume_db") {
+            this._setInputVolume(value, notifyServer);
+            return;
+        } else if (instanceId === Pedalboard.END_CONTROL_ID) {
+            this._setOutputVolume(value, notifyServer);
+            return;
+        }
+        let item = newPedalboard.getItem(instanceId);
+        changed = item.setControlValue(key, value);
+        if (changed) {
+            if (notifyServer) {
+                this.lastControlMessageWasSentbyMe = true;
+                this._setServerControl("setControl", instanceId, key, value);
             }
-            let item = newPedalboard.getItem(instanceId);
-            changed = item.setControlValue(key, value);
-            if (changed) {
-                if (notifyServer) {
-                    this.lastControlMessageWasSentbyMe = true;
-                    this._setServerControl("setControl", instanceId, key, value);
-                }
-                this.setModelPedalboard(newPedalboard);
-                for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
-                    let item = this._controlValueChangeItems[i];
-                    if (instanceId === item.instanceId) {
-                        item.onValueChanged(key, value);
-                    }
+            this.setModelPedalboard(newPedalboard);
+            for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
+                let item = this._controlValueChangeItems[i];
+                if (instanceId === item.instanceId) {
+                    item.onValueChanged(key, value);
                 }
             }
         }
@@ -2012,10 +1994,10 @@ export class PiPedalModel //implements PiPedalModel
         // mouse is down. Don't update EVERYBODY, but we must change 
         // the control on the running audio plugin.
         // TODO: respect "expensive" port attribute.
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
+        if (instanceId === Pedalboard.START_CONTROL_ID && key === "volume_db") {
             this.previewInputVolume(value);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID) {
             this.previewOutputVolume(value);
             return;
         }
@@ -2155,10 +2137,10 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
-        if (instanceId === Pedalboard.START_CONTROL && append) {
+        if (instanceId === Pedalboard.START_CONTROL_ID && append) {
             instanceId = pedalboard.items[0].instanceId;
             append = false;
-        } else if (instanceId === Pedalboard.END_CONTROL && !append) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID && !append) {
             instanceId = pedalboard.items[pedalboard.items.length - 1].instanceId;
             append = true;
         }
@@ -2180,10 +2162,10 @@ export class PiPedalModel //implements PiPedalModel
     addPedalboardSplitItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
 
-        if (instanceId === Pedalboard.START_CONTROL && append) {
+        if (instanceId === Pedalboard.START_CONTROL_ID && append) {
             instanceId = pedalboard.items[0].instanceId;
             append = false;
-        } else if (instanceId === Pedalboard.END_CONTROL && !append) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID && !append) {
             instanceId = pedalboard.items[pedalboard.items.length - 1].instanceId;
             append = true;
         }
@@ -3817,7 +3799,6 @@ export class PiPedalModel //implements PiPedalModel
 
     setChannelRouterSettings(settings: ChannelRouterSettings) {
         this.channelRouterSettings.set(settings);
-        this.channelRouterControlValues.set(settings.controlValues);
         if (this.webSocket) {
             this.webSocket.send("setChannelRouterSettings", settings);
         }

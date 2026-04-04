@@ -338,24 +338,12 @@ namespace pipedal
         float *discardOutputBuffer = nullptr;
         std::vector<float *> mainCaptureBuffers;
         std::vector<float *> mainPlaybackBuffers;
-        std::vector<float *> mainInsertPlaybackBuffers;
         std::vector<float *> mainVuPlaybackBuffers;
 
         std::vector<float *> auxCaptureBuffers;
         std::vector<float *> auxPlaybackBuffers;
         std::vector<float *> auxVuPlaybackBuffers;
 
-        std::vector<float *> sendCaptureBuffers;
-        std::vector<float *> sendPlaybackBuffers;
-
-        struct OutputBufferMix
-        {
-            size_t outputChannel = 0;
-            std::vector<float *> inputBuffers;
-            float *outputBuffer = nullptr;
-        };
-
-        std::vector<OutputBufferMix> outputBufferMixes;
 
         std::vector<uint8_t> rawCaptureBuffer;
         std::vector<uint8_t> rawPlaybackBuffer;
@@ -1290,9 +1278,8 @@ namespace pipedal
                 << ", " << this->bufferSize << "x" << this->numberOfBuffers
                 << ", " << "device: " << this->DeviceInputBufferCount() << "/" << this->DeviceOutputBufferCount()
                 << ", main: " << this->MainInputBufferCount() << "/" << this->MainOutputBufferCount()
-                << ", main ins: " << this->MainOutputBufferCount() << "/" << this->MainOutputBufferCount()
                 << ", aux: " << this->AuxInputBufferCount() << "/" << this->AuxOutputBufferCount()
-                << ", send: " << this->SendOutputBufferCount() << "/" << this->SendInputBufferCount());
+            );
             return result;
         }
         void PreparePlaybackFunctions(snd_pcm_format_t playbackFormat)
@@ -1833,25 +1820,12 @@ namespace pipedal
                     cpuUse.AddSample(ProfileCategory::Execute);
 
                     // Perform any neccessary mixing of outputs.
-                    for (auto &bufferMix : outputBufferMixes)
+                    for (auto&mixOp: this->mixOps)
                     {
-                        float * PIPEDAL_RESTRICT outputBuffer = bufferMix.outputBuffer;
-                        float * PIPEDAL_RESTRICT inputBuffer = bufferMix.inputBuffers[0];
-                        for (size_t i = 0; i < framesRead; ++i)
-                        {
-                            outputBuffer[i] = inputBuffer[i];
-                        }
-                        for (size_t nInput  = 1; nInput < bufferMix.inputBuffers.size(); ++nInput)
-                        {
-                            float * PIPEDAL_RESTRICT inputBuffer = bufferMix.inputBuffers[nInput];
-                            for (size_t i = 0; i < framesRead; ++i)
-                            {
-                                outputBuffer[i] += inputBuffer[i];
-                            }
-                        }
+                        mixOp(framesRead);
                     }
 
-                    // final downmix.
+                    // final format conversion.
                     (this->*copyOutputFn)(framesRead);
 
                     if (this->driverHost)
@@ -1939,23 +1913,6 @@ namespace pipedal
                 }
             }
         }
-        PIPEDAL_NON_INLINE float *AddMixBuffer(int64_t outputChannel, float *mixBuffer)
-        {
-            for (auto &bufferMix : outputBufferMixes)
-            {
-                if (bufferMix.outputChannel == outputChannel)
-                {
-                    bufferMix.inputBuffers.push_back(mixBuffer);
-                    return bufferMix.outputBuffer;
-                }
-            }
-            OutputBufferMix newMix;
-            newMix.outputChannel = outputChannel;
-            newMix.outputBuffer = devicePlaybackBuffers[outputChannel];
-            newMix.inputBuffers.push_back(mixBuffer);
-            outputBufferMixes.push_back(std::move(newMix));
-            return devicePlaybackBuffers[outputChannel];
-        }
         PIPEDAL_NON_INLINE void AllocateOutputChannels(
             const std::vector<int64_t> &channelSelection,
             std::vector<float *> &channelBuffers)
@@ -1983,73 +1940,118 @@ namespace pipedal
                 }
             }
         }
-        PIPEDAL_NON_INLINE void AllocateOutputChannels(
-            const std::vector<int64_t> &channelSelection,
-            std::vector<float *> &channelBuffers,
-            std::vector<float *> &vuBuffers,
-            const std::set<int64_t> &summedChannels)
-        {
-            size_t nChannels = channelSelection.size();
 
-            if (nChannels == 0)
+
+        PIPEDAL_NON_INLINE  void AllocateAuxChannels()
+        {
+            for (auto ix : channelSelection.auxInputChannels())
             {
-                channelBuffers.resize(0);
-                vuBuffers.resize(0);
-                return;
+                auxCaptureBuffers.push_back(this->deviceCaptureBuffers[ix]);
             }
-            channelBuffers.resize(nChannels);
-            vuBuffers.resize(nChannels);
-            for (size_t i = 0; i < nChannels; ++i)
+            for (auto ix : channelSelection.auxOutputChannels())
             {
-                int64_t deviceChannel = channelSelection[i];
-                if (deviceChannel == -1 || deviceChannel >= playbackChannels)
-                {
-                    channelBuffers[i] = GetDiscardOutputBuffer();
-                }
-                else
-                {
-                    if (!summedChannels.contains(deviceChannel))
-                    {
-                        vuBuffers[i] = channelBuffers[i] = this->devicePlaybackBuffers[deviceChannel];
-                    }
-                    else
-                    {
-                        // Used once already. We need to mix down.
-                        float *mixBuffer = AllocateAudioBuffer();
-                        channelBuffers[i] = mixBuffer;
-                        vuBuffers[i] = AddMixBuffer(deviceChannel, mixBuffer);
-                    }
-                }
+                auxPlaybackBuffers.push_back(this->devicePlaybackBuffers[ix]);
             }
         }
 
-        std::set<int64_t> ComputeSummedChannels()
+        using MixOp = std::function<void(size_t nFrames)>;
+        std::vector<MixOp> mixOps;
+
+        PIPEDAL_NON_INLINE 
+        void AddMixCopyOp(float*inputBuffer, float*outputBuffer)
         {
-            std::set<int64_t> usedOutputChannels;
-            std::set<int64_t> result;
-            for (auto ch : channelSelection.mainOutputChannels())
-            {
-                if (usedOutputChannels.contains(ch))
+            mixOps.push_back([inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
                 {
-                    result.insert(ch);
+                    pOut[i] = pIn[i];
                 }
-                else
+            });
+        }
+        PIPEDAL_NON_INLINE 
+        void AddMixAddOp(float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
                 {
-                    usedOutputChannels.insert(ch);
+                    pOut[i] += pIn[i];
                 }
+            });
+        }
+        PIPEDAL_NON_INLINE 
+        void AddMixCopyOp(float scale, float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([scale,inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
+                {
+                    pOut[i] = scale*pIn[i];
+                }
+            });
+        }
+        PIPEDAL_NON_INLINE 
+        void AddMixAddOp(float scale, float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([scale,inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
+                {
+                    pOut[i] += scale*pIn[i];
+                }
+            });
+        }
+        PIPEDAL_NON_INLINE void AddMixOps() 
+        {
+            std::set<size_t> usedOutputChannels;
+
+            for (size_t i = 0; i < this->channelSelection.mainOutputChannels().size(); ++i) {
+                size_t outputChannel = this->channelSelection.mainOutputChannels()[i];
+                AddMixCopyOp(this->mainPlaybackBuffers[i],this->devicePlaybackBuffers[outputChannel]);
+                usedOutputChannels.insert(outputChannel);
             }
-            for (auto ch : channelSelection.auxOutputChannels())
+            if (channelSelection.auxInputChannels().size() <= channelSelection.auxOutputChannels().size())
             {
-                if (usedOutputChannels.contains(ch))
+                for (size_t i = 0; i < this->channelSelection.auxOutputChannels().size(); ++i)
                 {
-                    result.insert(ch);
+                    size_t outputChannel = this->channelSelection.auxOutputChannels()[i];
+                    size_t inputChannel;
+                    if (this->channelSelection.auxInputChannels().size() == 0) break;
+                    if (i >= this->channelSelection.auxInputChannels().size()) {
+                        inputChannel = 0;
+                    } else {
+                        inputChannel = this->channelSelection.auxInputChannels()[i];
+                    }
+                    if (outputChannel >= this->devicePlaybackBuffers.size())
+                    {
+                        continue;
+                    }
+                    if (usedOutputChannels.contains(outputChannel))
+                    {
+                        AddMixAddOp(this->deviceCaptureBuffers[inputChannel],this->devicePlaybackBuffers[outputChannel]);
+                    } else {
+                        AddMixCopyOp(this->deviceCaptureBuffers[inputChannel],this->devicePlaybackBuffers[outputChannel]);
+                    }
+                    usedOutputChannels.insert(outputChannel);
                 }
-                else
+            } else if (channelSelection.auxInputChannels().size() >= 2 && channelSelection.auxOutputChannels().size() == 1) {
+                float scale = 1.0/channelSelection.auxInputChannels().size();
+                for (size_t i = 0; i < this->channelSelection.auxOutputChannels().size(); ++i)
                 {
-                    usedOutputChannels.insert(ch);
+                    size_t outputChannel = this->channelSelection.auxOutputChannels()[i];
+                    if (usedOutputChannels.contains(outputChannel))
+                    {
+                        AddMixAddOp(scale,this->auxCaptureBuffers[0],this->devicePlaybackBuffers[outputChannel]);
+                    } else {
+                        AddMixCopyOp(scale,this->auxCaptureBuffers[0],this->devicePlaybackBuffers[outputChannel]);
+                    }
+                    usedOutputChannels.insert(outputChannel);
                 }
-            }
-            return result;
+            } 
         }
 
         bool activated = false;
@@ -2078,7 +2080,6 @@ namespace pipedal
                 devicePlaybackBuffers[i] = AllocateAudioBuffer();
             }
 
-            std::set<int64_t> summedOutputChannels = ComputeSummedChannels();
 
             AllocateInputChannels(
                 channelSelection.mainInputChannels(),
@@ -2086,25 +2087,9 @@ namespace pipedal
             AllocateOutputChannels(
                 channelSelection.mainOutputChannels(),
                 this->mainPlaybackBuffers);
-            AllocateOutputChannels(
-                channelSelection.mainOutputChannels(),
-                this->mainInsertPlaybackBuffers,
-                this->mainVuPlaybackBuffers,
-                summedOutputChannels);
-            AllocateInputChannels(
-                channelSelection.auxInputChannels(),
-                this->auxCaptureBuffers);
-            AllocateOutputChannels(
-                channelSelection.auxOutputChannels(),
-                this->auxPlaybackBuffers,
-                this->auxVuPlaybackBuffers,
-                summedOutputChannels);
-            AllocateInputChannels(
-                channelSelection.sendInputChannels(),
-                this->sendCaptureBuffers);
-            AllocateOutputChannels(
-                channelSelection.sendOutputChannels(),
-                this->sendPlaybackBuffers);
+
+            AllocateAuxChannels();                
+            AddMixOps();
 
             audioThread = std::make_unique<std::jthread>([this]()
                                                          { AudioThread(); });
@@ -2189,15 +2174,9 @@ namespace pipedal
 
         virtual std::vector<float *> &MainInputBuffers() override { return this->mainCaptureBuffers; }
         virtual std::vector<float *> &MainOutputBuffers() override { return this->mainPlaybackBuffers; }
-        virtual std::vector<float *> &MainInsertOutputBuffers() override { return this->mainInsertPlaybackBuffers; }
-        virtual std::vector<float *> &MainVuOutputBuffers() override { return this->mainVuPlaybackBuffers; }
 
         virtual std::vector<float *> &AuxInputBuffers() override { return this->auxCaptureBuffers; }
         virtual std::vector<float *> &AuxOutputBuffers() override { return this->auxPlaybackBuffers; }
-        virtual std::vector<float *> &AuxVuOutputBuffers() override { return this->auxVuPlaybackBuffers; }
-
-        virtual const std::vector<float *> &SendInputBuffers() const override { return this->sendCaptureBuffers; }
-        virtual const std::vector<float *> &SendOutputBuffers() const override { return this->sendPlaybackBuffers; }
 
         virtual size_t MainInputBufferCount() const { return mainCaptureBuffers.size(); }
         virtual float *GetMainInputBuffer(size_t channel) override
@@ -2221,16 +2200,6 @@ namespace pipedal
         {
             return auxPlaybackBuffers[channel];
         }
-        virtual size_t SendInputBufferCount() const { return sendCaptureBuffers.size(); }
-        virtual float *GetSendInputBuffer(size_t channel) override
-        {
-            return sendCaptureBuffers[channel];
-        }
-        virtual size_t SendOutputBufferCount() const { return sendPlaybackBuffers.size(); }
-        virtual float *GetSendOutputBuffer(size_t channel) override
-        {
-            return sendPlaybackBuffers[channel];
-        }
 
         virtual size_t GetMidiInputEventCount() override
         {
@@ -2246,20 +2215,6 @@ namespace pipedal
         {
             return mainPlaybackBuffers[channel];
         }
-        virtual size_t MainInsertOutputBufferCount() const override
-        {
-            return mainInsertPlaybackBuffers.size();
-        }
-        virtual float *GetMainInsertOutputBuffer(size_t channel) const
-        {
-            if (channel >= (int64_t)mainCaptureBuffers.size())
-            {
-                throw std::runtime_error("GetMainInsertOutputBuffer: Argument out of range.");
-            }
-
-            return mainInsertPlaybackBuffers[channel];
-        }
-
         float *AllocateAudioBuffer()
         {
             std::vector<float> buffer;
@@ -2274,8 +2229,6 @@ namespace pipedal
             mainPlaybackBuffers.clear();
             auxCaptureBuffers.clear();
             auxPlaybackBuffers.clear();
-            sendCaptureBuffers.clear();
-            sendPlaybackBuffers.clear();
             zeroInputBuffer = nullptr;
             discardOutputBuffer = nullptr;
             allocatedBuffers.clear();

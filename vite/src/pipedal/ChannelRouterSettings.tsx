@@ -1,13 +1,9 @@
 
-import { Pedalboard, ControlValue } from "./Pedalboard.tsx";
 import JackConfiguration from "./Jack.tsx";
 
 
 export const NONE_CHANNEL: number = -1;
 // valid for Aux channel input only.
-export const MAIN_OUT_LEFT_CHANNEL: number = -2;
-// valid for Aux channel input only.
-export const MAIN_OUT_RIGHT_CHANNEL: number = -3;
 
 
 function isActiveChannel(channels: number[]): boolean {
@@ -18,12 +14,6 @@ function isActiveChannel(channels: number[]): boolean {
 function chName(ch: number, maxChannels: number): string {
     if (ch === -1) {
         return "None";
-    }
-    if (ch === MAIN_OUT_LEFT_CHANNEL) {
-        return "Main Out L";
-    }
-    if (ch === MAIN_OUT_RIGHT_CHANNEL) {
-        return "Main Out R";
     }
     if (maxChannels <= 2) {
         if (ch === 0) {
@@ -83,16 +73,10 @@ export default class ChannelRouterSettings {
 
     mainInputChannels: number[] = [1, 1];
     mainOutputChannels: number[] = [0, 1];
-    mainInserts: Pedalboard = new Pedalboard();
 
     auxInputChannels: number[] = [0, 0];
     auxOutputChannels: number[] = [-1, -1];
-    auxInserts: Pedalboard = new Pedalboard();
 
-    sendInputChannels: number[] = [-1, -1];
-    sendOutputChannels: number[] = [-1, -1];
-
-    controlValues: ControlValue[] = [];
     // Inserts...
 
     deserialize(obj: any): ChannelRouterSettings {
@@ -101,41 +85,12 @@ export default class ChannelRouterSettings {
         this.channelRouterPresetId = obj.channelRouterPresetId ? obj.channelRouterPresetId : -1;
         this.mainInputChannels = obj.mainInputChannels.slice();
         this.mainOutputChannels = obj.mainOutputChannels.slice();
-        this.mainInserts = new Pedalboard().deserialize(obj.mainInserts);
         this.auxInputChannels = obj.auxInputChannels.slice();
         this.auxOutputChannels = obj.auxOutputChannels.slice();
-        this.auxInserts = new Pedalboard().deserialize(obj.auxInserts);
-        this.sendInputChannels = obj.sendInputChannels.slice();
-        this.sendOutputChannels = obj.sendOutputChannels.slice();
-        this.controlValues = ControlValue.deserializeArray(obj.controlValues);
         return this;
     }
     clone() : ChannelRouterSettings {
         return  new ChannelRouterSettings().deserialize(this);
-    }
-    getControlValue(symbol: string): number | null {
-        for (let control of this.controlValues) {
-            if (control.key === symbol) {
-                return control.value;
-            }
-        }
-        return null;
-    }
-    setControlValue(symbol: string, value: number): boolean {
-        for (let control of this.controlValues) {
-            if (control.key === symbol) {
-                if (control.value === value) {
-                    return false;
-                }
-                control.value = value;
-                this.controlValues = this.controlValues.slice(); // trigger observers.
-                return true;
-            }
-        }
-        let newValue = new ControlValue(symbol, value);
-        this.controlValues.push(newValue);
-        this.controlValues = this.controlValues.slice(); // trigger observers.
-        return true;
     }
 
     getDescription(jackConfiguration: JackConfiguration): string {
@@ -162,10 +117,6 @@ export default class ChannelRouterSettings {
                 description += " " + ", aux: " + channelPairName(this.auxInputChannels, nInputs,true) + " -> " +
                     channelPairName(this.auxOutputChannels, nOutputs,false);
             }
-        }
-        if (isActiveChannel(this.sendInputChannels) && isActiveChannel(this.sendOutputChannels)) {
-            description += " " + ", send: " +channelPairName(this.sendOutputChannels, nOutputs, false)
-                + " -> " + channelPairName(this.sendInputChannels, nInputs,true);
         }
         return description;
     }
@@ -215,18 +166,10 @@ export default class ChannelRouterSettings {
                 return false;
             }
         }
-        for (let ch of this.sendInputChannels) {
-            if (ch >= maxInputChannels) {
-                return false;
-            }
-        }
         return true;
     }
     isAuxActive() : boolean {
         return isActiveChannel(this.auxInputChannels) && isActiveChannel(this.auxOutputChannels);
-    }
-    isSendActive() : boolean{
-        return isActiveChannel(this.sendInputChannels) && isActiveChannel(this.sendOutputChannels);
     }
 
 }

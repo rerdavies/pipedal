@@ -468,12 +468,16 @@ export const VuMeter =
                     let height = this.props.height;
                     let scale = height / DISPLAY_HEIGHT;
                     return (
-                        <div style={{ height: height, transform: `scale(1.0, ${scale})`, transformOrigin: "top left" }}>
-                            <div className={this.state.isStereo? classes.stereoTextFrame: classes.monoTextFrame}>
-                                {
-                                    this.renderVus()
-                                }
+                        <div style={{ display: "flex" , flexFlow: "column nowrap", alignItems: "center" }}>
+                            <div style={{ height: height, transform: `scale(1.0, ${scale})`, transformOrigin: "top left" }}>
+                                <div className={this.state.isStereo? classes.stereoTextFrame: classes.monoTextFrame}>
+                                    {
+                                        this.renderVus()
+                                    }
+                                </div>
                             </div>
+                            <div ref={this.textRef} className={classes.vuTextFrame}
+                            />
                         </div>
                     );
                 }

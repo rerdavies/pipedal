@@ -107,8 +107,8 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     }
 
     isSyntheticItem(): boolean {
-        return this.instanceId === Pedalboard.START_CONTROL
-        || this.instanceId === Pedalboard.END_CONTROL;
+        return this.instanceId === Pedalboard.START_CONTROL_ID
+        || this.instanceId === Pedalboard.END_CONTROL_ID;
     }
     getInstanceId() : number {
         if (this.instanceId === undefined)
@@ -357,10 +357,6 @@ export class PedalboardSplitItem extends PedalboardItem {
 }
 
 
-let TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
-let TWO_POWER_48 = 281474976710656; // Number of possible instance IDs for Main Pedalboards.
-let MAX_INSTANCE_ID = TWO_POWER_48;
-
 
 
 export enum InstanceType {
@@ -372,21 +368,11 @@ export enum InstanceType {
 
 export class Pedalboard implements Deserializable<Pedalboard> {
 
-    static readonly CHANNEL_ROUTER_CONTROLS_INSTANCE_ID = -4; // Reserved Instance ID for Router Main Inserts.
-    static readonly CHANNEL_ROUTER_MAIN_INSERT_ID = -5; // Reserved Instance ID for Router Main Inserts.
-    static readonly CHANNEL_ROUTER_AUX_INSERT_ID = -6; // Reserved Instance ID for Router Aux inserts.
 
-    static readonly MAIN_INSERT_INSTANCE_BASE = TWO_POWER_52-2*MAX_INSTANCE_ID;
-    static readonly AUX_INSERT_INSTANCE_BASE = TWO_POWER_52-1*MAX_INSTANCE_ID;
-
-    static readonly START_CONTROL = -2; // synthetic PedalboardItem for input volume.
-    static readonly END_CONTROL = -3; // synthetic PedalboardItem for output volume.
-    static readonly SEND_OUTPUT_CONTROL = -4; // synthetic PedalboardItem for send output volume.
-    static readonly SEND_RETURN_CONTROL = -5; // synthetic PedalboardItem for send return volume.
-    static readonly MAIN_INSERT_START_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + -2 +  MAX_INSTANCE_ID;
-    static readonly MAIN_INSERT_END_CONTROL_ID = Pedalboard.MAIN_INSERT_INSTANCE_BASE + -3 + MAX_INSTANCE_ID;
-    static readonly AUX_INSERT_START_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + -2 + MAX_INSTANCE_ID
-    static readonly AUX_INSERT_END_CONTROL_ID = Pedalboard.AUX_INSERT_INSTANCE_BASE + -3 + MAX_INSTANCE_ID;
+    static readonly START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
+    static readonly END_CONTROL_ID = -3; // synthetic PedalboardItem for output volume.
+    static readonly AUX_START_CONTROL_ID = -4;
+    static readonly AUX_END_CONTROL_ID = -5;
 
 
     static readonly START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";
@@ -403,25 +389,6 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         this.pathProperties = input.pathProperties;
         this.selectedPlugin = input.selectedPlugin??-1;
         return this;
-    }
-
-    static getInstanceTypeFromInstanceId(instanceId: number): InstanceType {
-        if (instanceId >= Pedalboard.MAIN_INSERT_INSTANCE_BASE) {
-            return InstanceType.MainInsert;
-        }
-        if (instanceId >= Pedalboard.AUX_INSERT_INSTANCE_BASE) {
-            return InstanceType.AuxInsert;
-        }
-        return InstanceType.MainPedalboard;
-    }
-    getInstanceType(): InstanceType {
-        if (this.nextInstanceId >= Pedalboard.MAIN_INSERT_INSTANCE_BASE) {
-            return InstanceType.MainInsert;
-        }
-        if (this.nextInstanceId >= Pedalboard.AUX_INSERT_INSTANCE_BASE) {
-            return InstanceType.AuxInsert;
-        }
-        return InstanceType.MainPedalboard;
     }
 
     clone(): Pedalboard {
@@ -514,7 +481,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     makeStartItem(): PedalboardItem {
         let result = new PedalboardItem();
         result.pluginName = "Input";
-        result.instanceId = Pedalboard.START_CONTROL;
+        result.instanceId = Pedalboard.START_CONTROL_ID;
         result.uri = Pedalboard.START_PEDALBOARD_ITEM_URI;
         result.isEnabled = true;
         result.controlValues = [new ControlValue("volume_db",this.input_volume_db)];
@@ -524,7 +491,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     makeEndItem(): PedalboardItem {
         let result = new PedalboardItem();
         result.pluginName = "Output";
-        result.instanceId = Pedalboard.END_CONTROL;
+        result.instanceId = Pedalboard.END_CONTROL_ID;
         result.uri = Pedalboard.END_PEDALBOARD_ITEM_URI;
         result.isEnabled = true;
         result.controlValues = [new ControlValue("volume_db",this.output_volume_db)];

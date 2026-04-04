@@ -24,7 +24,6 @@ using namespace pipedal;
 
 
 JSON_MAP_BEGIN(VuUpdateX)
-    JSON_MAP_REFERENCE(VuUpdateX,pedalboardType)
     JSON_MAP_REFERENCE(VuUpdateX,instanceId)
     JSON_MAP_REFERENCE(VuUpdateX,sampleTime)
     JSON_MAP_REFERENCE(VuUpdateX,isStereoInput)

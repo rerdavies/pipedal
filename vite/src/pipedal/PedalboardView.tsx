@@ -46,8 +46,8 @@ import {
 // import { midiChannelBindingControlFeatureEnabled } from './MidiChannelBinding';
 // import CloseIcon from '@mui/icons-material/Close';
 
-const START_CONTROL = Pedalboard.START_CONTROL;
-const END_CONTROL = Pedalboard.END_CONTROL;
+const START_CONTROL = Pedalboard.START_CONTROL_ID;
+const END_CONTROL = Pedalboard.END_CONTROL_ID;
 
 
 const START_PEDALBOARD_ITEM_URI = Pedalboard.START_PEDALBOARD_ITEM_URI;

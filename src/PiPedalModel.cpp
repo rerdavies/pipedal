@@ -82,7 +82,7 @@ PiPedalModel::PiPedalModel()
     this->updater = Updater::Create();
     this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
-    this->pedalboard = Pedalboard::MakeDefault(PedalboardType::MainPedalboard);
+    this->pedalboard = Pedalboard::MakeDefault();
 
     this->jackServerSettings = this->storage.GetJackServerSettings();
 
@@ -394,7 +394,7 @@ void PiPedalModel::Load()
     if (CrashGuard::HasCrashed())
     {
         // ignore the current preset, and load a blank pedalboard in order to avoid a potential plugin crash.
-        this->pedalboard = Pedalboard::MakeDefault(PedalboardType::MainPedalboard);
+        this->pedalboard = Pedalboard::MakeDefault();
     }
     else
     {
@@ -1752,10 +1752,8 @@ static bool isStartOrEndControl(int64_t controlId)
     {
     case Pedalboard::START_CONTROL_ID:
     case Pedalboard::END_CONTROL_ID:
-    case Pedalboard::MAIN_INSERT_START_CONTROL_ID:
-    case Pedalboard::MAIN_INSERT_END_CONTROL_ID:
-    case Pedalboard::AUX_INSERT_START_CONTROL_ID:
-    case Pedalboard::AUX_INSERT_END_CONTROL_ID:
+    case Pedalboard::AUX_START_CONTROL_ID:
+    case Pedalboard::AUX_END_CONTROL_ID:
         return true;
     default:
         return false;
@@ -1794,11 +1792,9 @@ int64_t PiPedalModel::MonitorPort(int64_t instanceId, const std::string &key, fl
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     int64_t subscriptionId = ++nextSubscriptionId;
-    PedalboardType pedalboardType = Pedalboard::GetPedalboardTypeFromInstanceId(instanceId);
     activeMonitorPortSubscriptions.push_back(
         MonitorPortSubscription{
             subscriptionId, 
-            pedalboardType,
             instanceId, 
             key, 
             updateInterval, 

@@ -379,10 +379,10 @@ export const MainPage =
                     let pedalboard = this.model.pedalboard.get();
                     if (!pedalboard) return null;
 
-                    if (selectedId === Pedalboard.START_CONTROL) // synthetic input volume item.
+                    if (selectedId === Pedalboard.START_CONTROL_ID) // synthetic input volume item.
                     {
                         return pedalboard.makeStartItem();
-                    } else if (selectedId === Pedalboard.END_CONTROL) // synthetic output volume.
+                    } else if (selectedId === Pedalboard.END_CONTROL_ID) // synthetic output volume.
                     {
                         return pedalboard.makeEndItem();
                     }

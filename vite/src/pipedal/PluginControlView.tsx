@@ -1041,9 +1041,9 @@ const PluginControlView =
                 let pedalboard = this.model.pedalboard.get();
 
                 let pedalboardItem: PedalboardItem;
-                if (this.props.instanceId === Pedalboard.START_CONTROL) {
+                if (this.props.instanceId === Pedalboard.START_CONTROL_ID) {
                     pedalboardItem = pedalboard.makeStartItem();
-                } else if (this.props.instanceId === Pedalboard.END_CONTROL) {
+                } else if (this.props.instanceId === Pedalboard.END_CONTROL_ID) {
                     pedalboardItem = pedalboard.makeEndItem();
                 } else {
                     pedalboardItem = pedalboard.getItem(this.props.instanceId);

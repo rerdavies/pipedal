@@ -30,9 +30,6 @@ namespace pipedal
     class ChannelRouterSettings
     {
     protected:
-        static constexpr int64_t CHANNEL_ROUTER_MAIN_INSERT_ID = -4; // Reserved Instance ID for Router Main Inserts.
-        static constexpr int64_t CHANNEL_ROUTER_AUX_INSERT_ID = -5;  // Reserved Instance ID for Router Aux inserts.
-
 
         bool configured_ = false;
         int64_t channelRouterPresetId_ = -1;
@@ -40,21 +37,11 @@ namespace pipedal
 
         std::vector<int64_t> mainInputChannels_ = {1, 1};
         std::vector<int64_t> mainOutputChannels_ = {0, 1};
-        Pedalboard mainInserts_;
 
         std::vector<int64_t> auxInputChannels_ = {-1, -1};
         std::vector<int64_t> auxOutputChannels_ = {-1, -1};
-        Pedalboard auxInserts_;
-
-        std::vector<int64_t> sendInputChannels_ = {-1, -1};
-        std::vector<int64_t> sendOutputChannels_ = {-1, -1};
-
-        std::vector<ControlValue> controlValues_;
 
     public:
-
-        static constexpr int64_t MAIN_OUT_LEFT_CHANNEL = -2;
-        static constexpr int64_t MAIN_OUT_RIGHT_CHANNEL = -3;
 
         using self = ChannelRouterSettings;
         using ptr = std::shared_ptr<self>;
@@ -69,13 +56,8 @@ namespace pipedal
         JSON_GETTER_SETTER(changed)
         JSON_GETTER_SETTER_REF(mainInputChannels)
         JSON_GETTER_SETTER_REF(mainOutputChannels)
-        JSON_GETTER_SETTER_REF(mainInserts)
         JSON_GETTER_SETTER_REF(auxInputChannels)
         JSON_GETTER_SETTER_REF(auxOutputChannels)
-        JSON_GETTER_SETTER_REF(auxInserts)
-        JSON_GETTER_SETTER_REF(sendInputChannels)
-        JSON_GETTER_SETTER_REF(sendOutputChannels)
-        JSON_GETTER_SETTER_REF(controlValues)
 
         DECLARE_JSON_MAP(ChannelRouterSettings);
     };
@@ -96,15 +78,11 @@ namespace pipedal
         const std::vector<int64_t> &mainOutputChannels() const { return mainOutputChannels_; }
         const std::vector<int64_t> &auxInputChannels() const { return auxInputChannels_; }
         const std::vector<int64_t> &auxOutputChannels() const { return auxOutputChannels_; }
-        const std::vector<int64_t> &sendInputChannels() const { return sendInputChannels_; }
-        const std::vector<int64_t> &sendOutputChannels() const { return sendOutputChannels_; }
 
         std::vector<int64_t> &mainInputChannels() { return mainInputChannels_; }
         std::vector<int64_t> &mainOutputChannels() { return mainOutputChannels_; }
         std::vector<int64_t> &auxInputChannels() { return auxInputChannels_; }
         std::vector<int64_t> &auxOutputChannels() { return auxOutputChannels_; }
-        std::vector<int64_t> &sendInputChannels() { return sendInputChannels_; }
-        std::vector<int64_t> &sendOutputChannels() { return sendOutputChannels_; }
 
     private:
         void normalizeChannelSelection();
@@ -113,8 +91,6 @@ namespace pipedal
         std::vector<int64_t> mainOutputChannels_;
         std::vector<int64_t> auxInputChannels_;
         std::vector<int64_t> auxOutputChannels_;
-        std::vector<int64_t> sendInputChannels_;
-        std::vector<int64_t> sendOutputChannels_;
     };
 
     class ChannelRouterPresetIndexEntry {

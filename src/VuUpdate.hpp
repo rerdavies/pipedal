@@ -27,7 +27,6 @@ namespace pipedal
     class VuUpdateX
     {
     public:
-        int pedalboardType_ = (int)PedalboardType::Invalid;
         int64_t instanceId_ = 0;
         long sampleTime_ = 0;
         bool isStereoInput_ = false;
@@ -38,9 +37,6 @@ namespace pipedal
         float outputMaxValueR_ = 0;
 
     public:
-
-        PedalboardType pedalboardType() const { return (PedalboardType)pedalboardType_; }
-        void pedalboardType(PedalboardType value) { pedalboardType_ = (int)value; }
         void reset() {
             inputMaxValueL_ = 0;
             inputMaxValueR_ = 0;
