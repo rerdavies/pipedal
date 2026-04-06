@@ -379,7 +379,6 @@ export const VuMeter =
             }
             updateChannel(vuData: VuChannelData, telltaleState: TelltaleState) {
                 let db = aToDb(vuData.value);
-                if (db > MAX_DB) db = MAX_DB;
                 if (db < MIN_DB) db = MIN_DB;
 
                 let y = dbToY(db);

@@ -109,6 +109,7 @@ add_custom_command(
     public/img/default_album.jpg
     public/img/fx_filter_hp.svg
     public/img/fx_parametric_eq.svg
+    public/img/fx_multiband_eq.svg
     public/img/fx_filter.svg
     public/img/fx_error.svg
     public/img/cx_stereo.svg

@@ -33,7 +33,7 @@
 
 <http://two-play.com/plugins/toob-graphiceq>
         a lv2:Plugin ,
-                lv2:EQPlugin ;
+                lv2:MultiEQPlugin ;
         doap:name "TooB GE-7 Graphic Eq" ,
                 "TooB GE-7 Graphic Eq"@en-gb 
                 ;

@@ -1,15 +1,44 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="48px" height="48px" viewBox="0 0 48 48" enable-background="new 0 0 48 48" xml:space="preserve">
-<g id="x">
-</g>
-<path d="M41,1H7C3.687,1,1,3.687,1,7v34c0,3.313,2.687,6,6,6h34c3.313,0,6-2.688,6-6V7C47,3.687,44.313,1,41,1z M19.996,38.5
-	c0,1.381-1.119,2.5-2.5,2.5s-2.5-1.119-2.5-2.5V8.984c0-1.381,1.119-2.5,2.5-2.5s2.5,1.119,2.5,2.5V38.5z M17.496,28.019
-	c-1.381,0-2.5-1.12-2.5-2.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S18.877,28.019,17.496,28.019z M29.996,38.5
-	c0,1.381-1.119,2.5-2.5,2.5s-2.5-1.119-2.5-2.5V8.984c0-1.381,1.119-2.5,2.5-2.5s2.5,1.119,2.5,2.5V38.5z M37.504,31.021
-	c-1.381,0-2.5-1.12-2.5-2.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S38.885,31.021,37.504,31.021z M40.004,38.5
-	c0,1.381-1.119,2.5-2.5,2.5s-2.5-1.119-2.5-2.5V8.984c0-1.381,1.119-2.5,2.5-2.5s2.5,1.119,2.5,2.5V38.5z M27.496,23.016
-	c-1.381,0-2.5-1.12-2.5-2.5s1.119-2.5,2.5-2.5s2.5,1.12,2.5,2.5S28.877,23.016,27.496,23.016z"/>
+
+<svg
+   version="1.1"
+   id="Layer_1"
+   x="0px"
+   y="0px"
+   width="48px"
+   height="48px"
+   viewBox="0 0 48 48"
+   enable-background="new 0 0 48 48"
+   xml:space="preserve"
+   sodipodi:docname="fx_multiband_eq.svg"
+   inkscape:version="1.4.3 (1:1.4.3+202512261035+0d15f75042)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs1" /><sodipodi:namedview
+   id="namedview1"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:zoom="16"
+   inkscape:cx="17.75"
+   inkscape:cy="23.34375"
+   inkscape:window-width="2192"
+   inkscape:window-height="1161"
+   inkscape:window-x="0"
+   inkscape:window-y="0"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Layer_1" />
+
+<path
+   id="path1"
+   style="display:inline"
+   d="M 7,47 C 3.687,47 1,44.313 1,41 V 26.449219 h 6.9863281 c 3.4778329,0 4.5452949,0.863465 5.6289059,2.421875 1.083611,1.55841 1.841011,4.189524 3.126954,7.115234 0.414273,0.942222 1.373242,1.525093 2.40039,1.458984 1.0274,-0.06636 1.903735,-0.767895 2.19336,-1.755859 0.665691,-2.267781 1.974127,-6.82443 4.236328,-10.693359 2.262201,-3.86893 5.126754,-6.712891 9.136718,-6.712891 h 0.002 l 12.285156,-0.05078 -0.01953,-4.900391 -12.287109,0.05078 c -6.324566,0.02448 -10.662115,4.549066 -13.345703,9.138672 -1.12249,1.919738 -1.901359,3.854631 -2.609375,5.683594 C 18.383581,27.490279 18.117026,26.762101 17.63872,26.074219 15.837793,23.484191 12.594172,21.550781 7.9863761,21.550781 H 1 V 7 C 1,3.687 3.687,1 7,1 h 34 c 3.313,0 6,2.688 6,6 v 34 c 0,3.313 -2.687,6 -6,6 z"
+   sodipodi:nodetypes="sscsscccssccccscsscsssssss" />
 </svg>
