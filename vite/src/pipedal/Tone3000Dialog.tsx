@@ -75,7 +75,9 @@ export class Tone3000DownloadHandler {
         let redirectUrl_ = this.redirectUrl();
         let result = `https://www.tone3000.com/api/v1/select?app_id=${this.appId}&redirect_url=${redirectUrl_}`;
         if (downloadType === Tone3000DownloadType.CabIr) {
-            result += "&gear=ir";
+            result += "&platform=ir";
+        } else if (downloadType === Tone3000DownloadType.Nam) {
+            result += "&platform=nam";
         }
         return result;
     }

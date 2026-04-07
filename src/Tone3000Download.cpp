@@ -23,6 +23,7 @@
 
 #include "ss.hpp"
 #include "Tone3000Download.hpp"
+#include "Tone3000Throttler.hpp"
 #include "TemporaryFile.hpp"
 #include <array>
 #include <ctime>
@@ -141,80 +142,6 @@ static std::string mdSanitize(const std::string &str, const std::string &illegal
     }
     return os.str();
 }
-
-#ifdef JUNK
-static std::string mdDataUrl(const std::string &mimeType, const std::filesystem::path &filePath)
-{
-    // maximum 512k!
-    size_t fileSize = fs::file_size(filePath);
-    if (fileSize > 512UL * 1024UL * 1024UL)
-    {
-        return "";
-    }
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open())
-    {
-        return "";
-    }
-
-    static const char kBase64Alphabet[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    std::string result;
-
-    std::ostringstream os;
-    os << "data:" << mimeType << ";base64,";
-
-    result = os.str();
-    size_t encodedDataSize = ((fileSize + 2) / 3) * 4;
-    result.reserve(result.length() + encodedDataSize);
-
-    constexpr size_t kBufferSize = 32 * 1024;
-    std::vector<char> buffer;
-    buffer.resize(kBufferSize);
-
-    size_t offset = 0;
-    while (offset < fileSize)
-    {
-        size_t thisTime = std::min(kBufferSize, fileSize - offset);
-        file.read(buffer.data(), thisTime);
-
-        size_t i = 0;
-        while (i + 2 < thisTime)
-        {
-            unsigned int triple = (buffer[i] << 16) | (buffer[i + 1] << 8) | buffer[i + 2];
-            result.push_back(kBase64Alphabet[(triple >> 18) & 0x3F]);
-            result.push_back(kBase64Alphabet[(triple >> 12) & 0x3F]);
-            result.push_back(kBase64Alphabet[(triple >> 6) & 0x3F]);
-            result.push_back(kBase64Alphabet[triple & 0x3F]);
-            i += 3;
-        }
-
-        if (i < thisTime)
-        {
-            unsigned int triple = buffer[i] << 16;
-            result.push_back(kBase64Alphabet[(triple >> 18) & 0x3F]);
-            if (i + 1 < thisTime)
-            {
-                triple |= buffer[i + 1] << 8;
-                result.push_back(kBase64Alphabet[(triple >> 12) & 0x3F]);
-                result.push_back(kBase64Alphabet[(triple >> 6) & 0x3F]);
-                result.push_back('=');
-            }
-            else
-            {
-                result.push_back(kBase64Alphabet[(triple >> 12) & 0x3F]);
-                result.push_back('=');
-                result.push_back('=');
-            }
-        }
-
-        offset += thisTime;
-    }
-
-    return result;
-}
-#endif
 
 static std::string mdDate(const tone3000_time_point &date_)
 {
@@ -668,6 +595,27 @@ static std::string GetHeader(const std::string &headerName, const std::vector<st
     }
     return "";
 }
+
+static bool CancellableSleep(std::chrono::steady_clock::duration duration, std::function<bool()> &isCancelled)
+{
+    using clock_t = std::chrono::steady_clock;
+
+    auto start = clock_t::now();
+    while (true)
+    {
+        auto now = clock_t::now();
+        auto elapsed = now - start;
+        if (elapsed > duration)
+        {
+            return true;
+        }
+        if (isCancelled())
+        {
+            return false;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 std::string pipedal::tone3000::DownloadTone3000Bundle(
     const std::filesystem::path &destinationFolder,
     const std::string &downloadUrl,
@@ -740,44 +688,82 @@ std::string pipedal::tone3000::DownloadTone3000Bundle(
     }
     try
     {
-        int result = CurlGet(
-            requests,
-            [&](size_t completed, size_t total)
+        size_t downloadIndex = 0;
+        while (downloadIndex < requests.size())
+        {
+            if (isCancelled())
             {
+                throw std::runtime_error("Cancelled");
+            }
+            size_t thisTime = requests.size() - downloadIndex;
+            thisTime = Tone3000Throttler::instance().ReserveDownloadSlots(thisTime);
+            if (thisTime != 0)
+            {
+                std::vector<CurlDownloadRequest> requestsThisTime;
+                for (size_t i = 0; i < thisTime; ++i)
+                {
+                    requestsThisTime.push_back(requests[downloadIndex + i]);
+                }
+
+                int result = CurlGet(
+                    requestsThisTime,
+                    [&](size_t completed, size_t total)
+                    {
+                        if (isCancelled())
+                        {
+                            return false;
+                        }
+                        progress.progress(completed + downloadIndex);
+                        progress.total(requests.size());
+                        progressCallback(progress);
+                        return true;
+                    },
+                    &headers);
+
                 if (isCancelled())
                 {
-                    return false;
+                    throw std::runtime_error("Cancelled");
                 }
-                progress.progress(completed);
-                progress.total(total);
-                progressCallback(progress);
-                return true;
-            },
-            &headers);
-        if (isCancelled())
-        {
-            CleanUpFailedDownload(bundlePath, requests);
-            return "";
+
+                if (result != 200)
+                {
+                    throw std::runtime_error(SS("Server download failed. HTTP Error " << HtmlHelper::httpErrorString(result)));
+                }
+
+                downloadIndex += thisTime;
+            }
+            if (thisTime <= 1)
+            {
+                CancellableSleep(std::chrono::milliseconds(1000), isCancelled);
+            }
         }
-        if (result != 200)
-        {
-            CleanUpFailedDownload(bundlePath, requests);
-            throw std::runtime_error(SS("Server download failed. HTTP Error " << HtmlHelper::httpErrorString(result)));
-        }
+
         fs::path readmePath = bundlePath / "README.md";
 
         std::string thumbnailUrl;
-        if (tone3000Download.images().has_value() &&  tone3000Download.images().value().size() != 0)
+        if (tone3000Download.images().has_value() && tone3000Download.images().value().size() != 0)
         {
 
             TemporaryFile imageFile{TONE3000_THUMBNAIL_PATH};
-
-
 
             std::string imageUrl = tone3000Download.images().value()[0];
             std::vector<std::string> imageHeaders;
             try
             {
+                size_t reserveCount;
+                while (true) 
+                {
+                    reserveCount = Tone3000Throttler::instance().ReserveDownloadSlots(1);
+                    if (reserveCount != 0) 
+                    {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                    if (isCancelled())
+                    {
+                        throw std::runtime_error("Cancelled");
+                    }
+                }
                 if (CurlGet(imageUrl, imageFile.Path(), &imageHeaders) == 200)
                 {
                     std::string mediaType = GetHeader("Content-Type", imageHeaders);
@@ -785,13 +771,17 @@ std::string pipedal::tone3000::DownloadTone3000Bundle(
                     if (mediaType == "image/jpeg")
                     {
                         extension = ".jpeg";
-                    } else if (mediaType == "image/webp")
+                    }
+                    else if (mediaType == "image/webp")
                     {
                         extension = ".webp";
-                    } else if (mediaType == "image/png") 
+                    }
+                    else if (mediaType == "image/png")
                     {
                         extension = ".png";
-                    } else {
+                    }
+                    else
+                    {
                         Lv2Log::warning("Tone3000 thumbnail has an unexpected media type of '%s'", mediaType.c_str());
                         throw std::runtime_error("Invalid thumbnail media type.");
                     }
@@ -806,7 +796,7 @@ std::string pipedal::tone3000::DownloadTone3000Bundle(
                         fs::create_directories(finalPath.parent_path());
                         fs::rename(thumnbailTempPath, finalPath);
                         thumbnailUrl = SS("var/tone3000_thumbnail?id=" << tone3000Download.id());
-//                        thumbnailUrl = mdDataUrl("image/jpeg", finalPath);
+                        //                        thumbnailUrl = mdDataUrl("image/jpeg", finalPath);
                     }
                 }
             }
