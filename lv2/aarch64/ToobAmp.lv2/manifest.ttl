@@ -135,6 +135,15 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobVolume.ttl> .
 
+<http://two-play.com/plugins/toob-tone> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobTone.ttl> .
+
+<http://two-play.com/plugins/toob-tone-stereo> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobToneStereo.ttl> .
+
+
 <http://two-play.com/plugins/toob-noise-gate> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobNoiseGate.ttl> .
