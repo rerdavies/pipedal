@@ -200,8 +200,8 @@ interface VuMeterProps extends WithStyles<typeof styles> {
     instanceId: number;
     display: "input" | "output";
     theme: Theme;
-<<<<<<< HEAD
     height?: number;
+
     displayText?: boolean;
 }
 
