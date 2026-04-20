@@ -27,4 +27,3 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_DOC "Build documentation" OFF)
 add_subdirectory("libzip")
 
-add_subdirectory("NeuralAmpModelerCore")
