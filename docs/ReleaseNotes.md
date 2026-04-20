@@ -1,5 +1,13 @@
 # Release Notes
 
+## PiPedal 2.0.100 Internal
+
+- Tone3000 direct uploads to PiPedal server (Toob NAM and Toob CabIr)
+- New TooB Tone plugin: a simple one-knob tone control.
+- Channel Routing: configure audio channels as Aux or re-amp channels.
+
+
+
 ## PiPedal 1.5.99 Beta
 
 ### Bug Fixes
