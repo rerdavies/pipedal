@@ -1872,7 +1872,7 @@ static std::map<std::string,std::string> ExtractPathPropertiesFromLilvState(
 
 bool Lv2PluginInfo::IsPathProperty(const std::string &uri) const {
     if (!piPedalUI_) {
-
+        return false;
     }
     for (const UiFileProperty::ptr& fileProperty: this->piPedalUI_->fileProperties()) 
     {
