@@ -888,6 +888,14 @@ const PluginControl =
             currentValue: number = 0;
             uiControl?: UiControl = undefined;
 
+            private defaultStep(min: number, max: number): number {
+                let range = Math.abs(max - min);
+                if (range <= 1) return 0.01;    
+                if (range <= 10) return 0.1;
+                if (range <= 100) return 1;
+                if (range <= 1000) return 10;
+                return 100;
+            }
             render() {
                 const classes = withStyles.getClasses(this.props);
                 let t = this.props.uiControl;
@@ -1107,6 +1115,10 @@ const PluginControl =
 
                                                     min: this.props.uiControl?.min_value,
                                                     max: this.props.uiControl?.max_value,
+                                                    step: this.defaultStep(
+                                                        this.props.uiControl?.min_value ?? 0,
+                                                        this.props.uiControl?.max_value ?? 100
+                                                    )
                                                 }}
 
                                                 sx={{

@@ -11,7 +11,6 @@
 - Channel Routing: configure audio channels as Aux or re-amp channels.
 
 
-
 ## PiPedal 1.5.99 Beta
 
 ### Bug Fixes
