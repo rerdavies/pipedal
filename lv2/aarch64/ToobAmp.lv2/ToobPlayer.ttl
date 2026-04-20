@@ -60,7 +60,7 @@ toobPlayer:seek
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 73 ;
+        lv2:microVersion 76 ;
         rdfs:comment """
 Play audio files. Audio files can optionally be loooped by pressing the "Set loop" button.
 
@@ -84,7 +84,7 @@ folder artwork files that have a .jpg file extension.
         mod:label "File Player";
 
         # ONLY works in PiPedal
-        lv2:requiredFeature "http://github.com/rerdavies/pipedal#host" ;
+        lv2:requiredFeature <http://github.com/rerdavies/pipedal#host> ;
 
         lv2:optionalFeature lv2:hardRTCapable,state::freePath, state:makePath, state:mapPath, work:schedule ;
         lv2:extensionData state:interface, work:interface;
