@@ -43,7 +43,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 74 ;
+        lv2:microVersion 76 ;
         rdfs:comment """
 TooB Tone is a simple tone control. For more flexible EQ plugins, see TooB 3 Band Eq, or TooB Parameteric EQ.
 
@@ -84,53 +84,115 @@ TooB Tone is a simple tone control. For more flexible EQ plugins, see TooB 3 Ban
                 units:unit units:db;
                 
         ],  
+
+        [
+                lv2:portProperty epp:notOnGUI;  # Tuning
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                lv2:symbol "lowFc" ;
+                lv2:name "Low Fc";
+
+                lv2:default 110.0 ;
+                lv2:minimum 480.0 ;
+                lv2:maximum 1000.0; 
+                units:unit units:hz;
+                
+        ],  
+        [
+                lv2:portProperty epp:notOnGUI;  # Tuning
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 3 ;
+                lv2:symbol "lowBoost" ;
+                lv2:name "Low Boost";
+
+                lv2:default -17.0 ;
+                lv2:minimum -30.0 ;
+                lv2:maximum 0.0; 
+                units:unit units:db;
+        ],  
+        [
+                lv2:portProperty epp:notOnGUI;  # Tuning
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4 ;
+                lv2:symbol "highFc" ;
+                lv2:name "High Fc";
+
+                lv2:default 480.0 ;
+                lv2:minimum 110.0 ;
+                lv2:maximum 2000.0; 
+                units:unit units:hz;
+                
+        ],  
+        [
+                lv2:portProperty epp:notOnGUI;  # Tuning
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 5 ;
+                lv2:symbol "highBoost" ;
+                lv2:name "High Boost";
+
+                lv2:default -10.0 ;
+                lv2:minimum -30.0 ;
+                lv2:maximum 0.0; 
+                units:unit units:db;
+        ],  
+
         [
                 a atom:AtomPort ,
                   lv2:InputPort;
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 2 ;
+                lv2:index 6 ;
                 lv2:symbol "controlIn" ;
                 lv2:name "Control" ;
                 rdfs:comment "Plugin to GUI communication" ;
         ] , 
+
         [
                 a atom:AtomPort ,
                   lv2:OutputPort ;
                 atom:bufferType atom:Sequence ;
                 # atom:supports patch:Message;
                 lv2:designation lv2:control ;
-                lv2:index 3 ;
+                lv2:index 7 ;
                 lv2:symbol "notifyOut" ;
                 lv2:name "Notify" ;
                 rdfs:comment "Plugin to GUI communication" ;
-        ],        
+        ],
+
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 4 ;
+                lv2:index 8 ;
                 lv2:symbol "in" ;
                 lv2:name "InL"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 5 ;
+                lv2:index 9 ;
                 lv2:symbol "out" ;
                 lv2:name "OutL"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:InputPort ;
-                lv2:index 6 ;
+                lv2:index 10 ;
                 lv2:symbol "inR" ;
                 lv2:name "InR"
         ],
         [
                 a lv2:AudioPort ,
                         lv2:OutputPort ;
-                lv2:index 7 ;
+                lv2:index 11 ;
                 lv2:symbol "outR" ;
                 lv2:name "OutR"
         ]
