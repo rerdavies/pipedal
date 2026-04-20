@@ -377,7 +377,7 @@ void Storage::Initialize()
     LoadTone3000Auth();
     try
     {
-        LoadChannelSelection();
+        LoadJackChannelSelection();
     }
     catch (const std::exception &)
     {
@@ -476,7 +476,7 @@ void Storage::LoadBankIndex()
         if (bankIndex.entries().size() == 0)
         {
             currentBank.clear();
-            Pedalboard defaultPedalboard = Pedalboard::MakeDefault();
+            Pedalboard defaultPedalboard = Pedalboard::MakeDefault(Pedalboard::PedalboardType::MainPedalboard);
             int64_t instanceId = currentBank.addPreset(defaultPedalboard);
             currentBank.selectedPreset(instanceId);
 
@@ -1135,7 +1135,7 @@ AlsaSequencerConfiguration Storage::GetAlsaSequencerConfiguration() const
     return this->alsaSequencerConfiguration;
 }
 
-void Storage::LoadChannelSelection()
+void Storage::LoadJackChannelSelection()
 {
     auto fileName = this->GetChannelSelectionFileName();
     if (std::filesystem::exists(fileName))
@@ -3102,6 +3102,7 @@ ChannelRouterSettings::ptr Storage::LoadChannelRouterSettings()
         json_reader reader(is);
         ChannelRouterSettings::ptr result;
         reader.read(&result);
+        this->channelSelection = ChannelSelection(*result);
     return result;
     } catch (const std::exception &e) {
         Lv2Log::error("Failed to load Channel Router settings: %s", e.what());

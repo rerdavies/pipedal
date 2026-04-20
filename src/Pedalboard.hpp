@@ -230,13 +230,14 @@ class Pedalboard {
 
     int64_t selectedPlugin_ = -1;
 
+                                            
     static constexpr int64_t TWO_POWER_52 = 4503599627370496; // Maximum Javascript integer value.
     static constexpr int64_t TWO_POWER_48 = 281474976710656; // Number of possible instance IDs for Main Pedalboards.
     static constexpr int64_t MAX_INSTANCE_ID = TWO_POWER_48;
 
 public:
 
-    enum class InstanceType {
+    enum class PedalboardType {
         MainPedalboard,
         MainInsert,
         AuxInsert
@@ -253,25 +254,25 @@ public:
     static constexpr int64_t AUX_INSERT_START_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -2;
     static constexpr int64_t AUX_INSERT_END_CONTROL_ID = AUX_INSERT_INSTANCE_BASE + MAX_INSTANCE_ID -3;
 
-    static InstanceType GetInstanceTypeFromInstanceId(int64_t instanceId) { 
-        if (instanceId == START_CONTROL_ID) return InstanceType::MainPedalboard;
-        if (instanceId == END_CONTROL_ID) return InstanceType::MainPedalboard;
+    static PedalboardType GetInstanceTypeFromInstanceId(int64_t instanceId) { 
+        if (instanceId == START_CONTROL_ID) return PedalboardType::MainPedalboard;
+        if (instanceId == END_CONTROL_ID) return PedalboardType::MainPedalboard;
 
         if (instanceId >= MAIN_INSERT_INSTANCE_BASE) {
-            return InstanceType::MainInsert;
+            return PedalboardType::MainInsert;
         } else if (instanceId >= AUX_INSERT_INSTANCE_BASE) {
-            return InstanceType::AuxInsert;
+            return PedalboardType::AuxInsert;
         } else {
-            return InstanceType::MainPedalboard;
+            return PedalboardType::MainPedalboard;
         }
     }
-    InstanceType GetInstanceType() const {
+    PedalboardType GetInstanceType() const {
         return GetInstanceTypeFromInstanceId(this->nextInstanceId_); // instanceId is irrelevant here.
     }   
 
 
 
-    Pedalboard(InstanceType instanceType = InstanceType::MainPedalboard);
+    Pedalboard(PedalboardType instanceType = PedalboardType::MainPedalboard);
 
     // deep copy, breaking shared pointers.
     Pedalboard DeepCopy(); 
@@ -307,7 +308,7 @@ public:
     PedalboardItem MakeSplit();
 
 
-    static Pedalboard MakeDefault(Pedalboard::InstanceType instanceType);
+    static Pedalboard MakeDefault(Pedalboard::PedalboardType instanceType = Pedalboard::PedalboardType::MainPedalboard);
 };
 
 #undef GETTER_SETTER_REF

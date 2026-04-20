@@ -1900,11 +1900,11 @@ public:
 
     PIPEDAL_NON_INLINE RealtimePedalboardItemIndex GetRealtimeItemIndex(int64_t instanceId)
     {
-        Pedalboard::InstanceType instanceType = Pedalboard::GetInstanceTypeFromInstanceId(instanceId);
+        Pedalboard::PedalboardType instanceType = Pedalboard::GetInstanceTypeFromInstanceId(instanceId);
         int64_t index = -1;
         switch (instanceType)
         {
-            case Pedalboard::InstanceType::MainPedalboard:
+            case Pedalboard::PedalboardType::MainPedalboard:
                 if (this->currentPedalboard) {
                     if (instanceId == Pedalboard::START_CONTROL_ID) {
                         index = Pedalboard::START_CONTROL_ID; 
@@ -1915,7 +1915,7 @@ public:
                     }
                 }
                 break;
-            case Pedalboard::InstanceType::MainInsert:
+            case Pedalboard::PedalboardType::MainInsert:
                 if (this->currentMainInsertPedalboard) {
                     if (instanceId == Pedalboard::MAIN_INSERT_START_CONTROL_ID) {
                         index = Pedalboard::MAIN_INSERT_START_CONTROL_ID; 
@@ -1926,7 +1926,7 @@ public:
                     }
                 }   
                 break;
-            case Pedalboard::InstanceType::AuxInsert:
+            case Pedalboard::PedalboardType::AuxInsert:
                 if (this->currentAuxInsertPedalboard) {
                     if (instanceId == Pedalboard::AUX_INSERT_START_CONTROL_ID) {
                         index = Pedalboard::START_CONTROL_ID; 

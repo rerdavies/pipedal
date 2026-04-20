@@ -98,20 +98,20 @@ namespace pipedal
 
     struct RealtimePedalboardItemIndex {
         RealtimePedalboardItemIndex()
-            : instanceType(Pedalboard::InstanceType::MainPedalboard), index(-1)
+            : instanceType(Pedalboard::PedalboardType::MainPedalboard), index(-1)
         {
         }
         RealtimePedalboardItemIndex(
-            Pedalboard::InstanceType instanceType,
-            int index)
+            Pedalboard::PedalboardType instanceType,
+            int64_t index)
             : instanceType(instanceType), index(index)
         {
         }
         RealtimePedalboardItemIndex(const RealtimePedalboardItemIndex& other) = default;
         RealtimePedalboardItemIndex& operator=(const RealtimePedalboardItemIndex& other) = default;
 
-        Pedalboard::InstanceType instanceType = Pedalboard::InstanceType::MainPedalboard;
-        int index = -1;
+        Pedalboard::PedalboardType instanceType = Pedalboard::PedalboardType::MainPedalboard;
+        int64_t index = -1;
     };
 
     struct RealtimeMidiEventRequest

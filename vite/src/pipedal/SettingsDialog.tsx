@@ -519,29 +519,10 @@ const SettingsDialog = withStyles(
         }
 
         handleSelectChannelsDialogResult(channels: string[] | null): void {
-            if (this.state.jackSettings === null) { return; }
-            if (channels) {
-                let newSelection = this.state.jackSettings.clone();
-                if (this.state.showInputSelectDialog) {
-                    newSelection.inputAudioPorts = channels;
-                } else {
-                    newSelection.outputAudioPorts = channels;
-                }
-                this.setState({
-                    jackSettings: newSelection,
-                    showInputSelectDialog: false,
-                    showOutputSelectDialog: false
-
-                });
-                this.model.setJackSettings(newSelection);
-            } else {
-                this.setState({
-                    showInputSelectDialog: false,
-                    showOutputSelectDialog: false
-
-                });
-
-            }
+            this.setState({
+                showInputSelectDialog: false,
+                showOutputSelectDialog: false
+            });
         }
 
         midiSummary(): string {
@@ -618,8 +599,10 @@ const SettingsDialog = withStyles(
             let disableShutdown = this.state.shuttingDown || this.state.restarting;
 
             let canKeepScreenOn = this.model.canKeepScreenOn;
-            let hasAudioConfig = isConfigValid && this.state.jackConfiguration.outputAudioPorts.length >= 1
+            let hasAudioConfig = isConfigValid
                 && this.state.jackConfiguration.inputAudioPorts.length >= 1
+                && this.state.jackConfiguration.outputAudioPorts.length >= 1;
+
 
             return (
                 <DialogEx tag="settings" fullScreen open={this.props.open}
@@ -753,40 +736,43 @@ const SettingsDialog = withStyles(
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
                                         <Typography display="block" variant="body2" noWrap>Channel Routing</Typography>
-                                        <Typography display="block" variant="caption" color="textSecondary" noWrap>{
-                                            this.state.jackSettings == null ? "" :
-                                                this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
+                                        <Typography display="block" variant="caption" 
+                                        color={
+                                            this.state.channelRouterSettings?.isValid(this.state.jackConfiguration) ?? false
+                                             ?  "textSecondary": "error"} noWrap>{
+                                            this.state.channelRouterSettings?.getDescription(this.state.jackConfiguration)??""}</Typography>
                                     </div>
                                 </ButtonBase>
 
 
+                                {/* Old Input and Output selection 
 
+                                    <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()}
+                                        disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
+                                        style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
 
-                                <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()}
-                                    disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
-                                    style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
-
-                                >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography display="block" variant="body2" noWrap>Input channels</Typography>
-                                        <Typography display="block" variant="caption" color="textSecondary" noWrap>{
-                                            this.state.jackSettings == null ? "" :
-                                                this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
-                                    </div>
-                                </ButtonBase>
-                                <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()}
-                                    disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
-                                    style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
-                                >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography display="block" variant="body2" noWrap>Output channels</Typography>
-                                        <Typography display="block" variant="caption" color="textSecondary" noWrap>{
-                                            this.state.jackSettings == null ? "" : 
-                                                this.state.jackSettings.getAudioOutputDisplayValue(this.state.jackConfiguration)}</Typography>
-                                    </div>
-                                </ButtonBase>
+                                    >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography display="block" variant="body2" noWrap>Input channels</Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary" noWrap>{
+                                                this.state.jackSettings == null ? "" :
+                                                    this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
+                                        </div>
+                                    </ButtonBase>
+                                    <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()}
+                                        disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
+                                        style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
+                                    >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography display="block" variant="body2" noWrap>Output channels</Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary" noWrap>{
+                                                this.state.jackSettings == null ? "" : 
+                                                    this.state.jackSettings.getAudioOutputDisplayValue(this.state.jackConfiguration)}</Typography>
+                                        </div>
+                                    </ButtonBase>
+                                    */}
                                 <Divider />
                                 <div >
                                     <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">MIDI</Typography>

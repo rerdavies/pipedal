@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <lilv/lilv.h>
 #include "AudioDriver.hpp"
 #include "JackServerSettings.hpp"
 

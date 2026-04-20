@@ -537,17 +537,24 @@ JSON_MAP_REFERENCE(SnapshotModifiedBody, snapshotIndex)
 JSON_MAP_REFERENCE(SnapshotModifiedBody, modified)
 JSON_MAP_END()
 
-class ChannelSelectionChangedBody
+class ChannelRouterSettingsChangedBody
 {
 public:
-    int64_t clientId_ = -1;
-    JackChannelSelection *jackChannelSelection_ = nullptr;
+    ChannelRouterSettingsChangedBody(
+        int64_t clientId, 
+        const ChannelRouterSettings &channelRouterSettings
+    ): clientId_(clientId), channelRouterSettings_(channelRouterSettings)
+    {
 
-    DECLARE_JSON_MAP(ChannelSelectionChangedBody);
+    }
+    int64_t clientId_ = -1;
+    ChannelRouterSettings channelRouterSettings_;
+
+    DECLARE_JSON_MAP(ChannelRouterSettingsChangedBody);
 };
-JSON_MAP_BEGIN(ChannelSelectionChangedBody)
-JSON_MAP_REFERENCE(ChannelSelectionChangedBody, clientId)
-JSON_MAP_REFERENCE(ChannelSelectionChangedBody, jackChannelSelection)
+JSON_MAP_BEGIN(ChannelRouterSettingsChangedBody)
+JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, clientId)
+JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, channelRouterSettings)
 JSON_MAP_END()
 
 class PresetsChangedBody
@@ -2000,11 +2007,9 @@ private:
         Send("onShowStatusMonitorChanged", show);
     }
 
-    virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection)
+    virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings)
     {
-        ChannelSelectionChangedBody body;
-        body.clientId_ = clientId;
-        body.jackChannelSelection_ = const_cast<JackChannelSelection *>(&channelSelection);
+        ChannelRouterSettingsChangedBody body(clientId, channelRouterSettings);
         Send("onChannelSelectionChanged", body);
     }
 

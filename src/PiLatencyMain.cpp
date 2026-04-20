@@ -34,6 +34,7 @@
 #include <chrono>
 #include <thread>
 #include <sched.h>
+#include "ChannelRouterSettings.hpp"
 
 using namespace pipedal;
 
@@ -169,19 +170,26 @@ public:
         delete[] inputBuffers;
         delete[] outputBuffers;
     }
-    std::vector<std::string> SelectChannels(const std::vector<std::string> &available, const std::vector<int> &selection)
+    std::vector<int64_t> SelectChannels(const std::vector<std::string> &available, const std::vector<int> &selection)
     {
+        std::vector<int64_t> result;
         if (selection.size() == 0)
-            return available;
+        {
+            result.resize(available.size());
+            for (size_t i = 0; i < result.size(); ++i)
+            {
+                result[i] = (int64_t)i;
+            }
+            return result;
+        }
 
-        std::vector<std::string> result;
         for (int sel : selection)
         {
             if (sel < 0 || sel >= available.size())
             {
                 throw PiPedalArgumentException(SS("Invalid channel: " + sel));
             }
-            result.push_back(available[sel]);
+            result.push_back(sel);
         }
         return result;
     }
@@ -199,22 +207,22 @@ public:
             auto &availableInputs = jackConfiguration.inputAudioPorts();
             auto &availableOutputs = jackConfiguration.outputAudioPorts();
 
-            std::vector<std::string> inputAudioPorts, outputAudioPorts;
+            std::vector<int64_t> inputAudioPorts, outputAudioPorts;
 
             inputAudioPorts = SelectChannels(availableInputs, this->inputChannels);
             outputAudioPorts = SelectChannels(availableOutputs, this->outputChannels);
 
-            JackChannelSelection channelSelection(
-                inputAudioPorts, outputAudioPorts,
-                std::vector<AlsaMidiDeviceInfo>());
+            ChannelSelection channelSelection;
+            channelSelection.mainInputChannels() = inputAudioPorts;
+            channelSelection.mainOutputChannels() = outputAudioPorts;
 
             audioDriver = CreateAlsaDriver(this);
 
             latencyMonitor.Init(jackConfiguration.sampleRate());
             audioDriver->Open(serverSettings, channelSelection);
 
-            inputBuffers = new float *[channelSelection.GetInputAudioPorts().size()];
-            outputBuffers = new float *[channelSelection.GetOutputAudioPorts().size()];
+            inputBuffers = new float *[channelSelection.mainInputChannels().size()];
+            outputBuffers = new float *[channelSelection.mainOutputChannels().size()];
 
             audioDriver->Activate();
 

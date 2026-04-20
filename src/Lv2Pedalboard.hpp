@@ -51,6 +51,7 @@ namespace pipedal
     class Lv2Pedalboard
     {
     private:
+        Pedalboard::PedalboardType pedalboardType;
         IHost *pHost = nullptr;
         size_t currentFrameOffset = 0;
         DbDezipper inputVolume;
@@ -127,6 +128,9 @@ namespace pipedal
 
         std::vector<IEffect *> &GetEffects() { return realtimeEffects; }
         std::vector<std::shared_ptr<IEffect>> &GetSharedEffectList() { return effects; }
+
+        size_t GetNumberOfAudioInputChannels() const;
+        size_t GetNumberOfAudioOutputChannels() const;
 
         int GetIndexOfInstanceId(uint64_t instanceId)
         {
