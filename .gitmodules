@@ -15,3 +15,6 @@
 [submodule "modules/libzip"]
 	path = modules/libzip
 	url = https://github.com/nih-at/libzip.git
+[submodule "modules/NeuralAmpModelerCore"]
+	path = modules/NeuralAmpModelerCore
+	url = https://github.com/sdatkinson/NeuralAmpModelerCore.git
