@@ -870,7 +870,9 @@ add_custom_target (
     DEPENDS ${REACT_NOTICES_FILE}
 )
 
-
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+    cmake_policy(SET CMP0177 NEW)
+endif()
 
 install (TARGETS pipedalconfig pipedal_kconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
    EXPORT pipedalTargets
