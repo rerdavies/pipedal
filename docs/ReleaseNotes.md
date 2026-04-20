@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 2.0.101 Internal
+
+- TooB Tone parameter tweaks.
+
 ## PiPedal 2.0.100 Internal
 
 - Tone3000 direct uploads to PiPedal server (Toob NAM and Toob CabIr)
