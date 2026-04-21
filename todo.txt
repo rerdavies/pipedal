@@ -1,3 +1,20 @@
+Benchmark Results:
+
+amd64 (Ubuntu 24.04)
+
+    NeuralAudio x64:      5.416s
+    Neural Modeler Core:  7.965s
+
+
+CPU: AMD Ryzen 7 7735HS with Radeon Graphics
+OS: Ubuntu 24.04 (amd64)
+
+/home/robin/Downloads/NAM Test/media/NeuralAmpModels/Fender Deluxe Reverb %2765 Reissue %7c Clean %7c SM57 %2b Royer R-121 %2b Room/
+    
+
+
+
+
 summaries for Mono audio adapaters.
 Check PWA on windows, edge and chrome.
 Make sure Pi 4 default audio device is still hidden when selecting devices!

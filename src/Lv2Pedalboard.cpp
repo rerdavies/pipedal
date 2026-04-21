@@ -546,6 +546,9 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
         float volume = outputVolume.Tick();
         for (size_t c = 0; c < this->pedalboardOutputBuffers.size(); ++c)
         {
+            if (outputBuffers[c] == nullptr) {
+                break;
+            }
             outputBuffers[c][i] = this->pedalboardOutputBuffers[c][i] * volume;
         }
     }

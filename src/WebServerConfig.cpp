@@ -18,6 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "WebServerConfig.hpp"
+#include "PresetBundle.hpp"
 #include "WebServer.hpp"
 #include <boost/system/error_code.hpp>
 #include <filesystem>
