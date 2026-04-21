@@ -9,20 +9,23 @@ Results
 
 amd64 (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
 
-    NeuralAudio x64:      5.416s
-    Neural Modeler Core:  7.965s
+    Neural Amp Modeler Core:  7.965s
+    NeuralAudio x64:          5.416s
 
     Compiler options /Ofast, MMX, SSE, SSE2, no AVX.
 
 aarch64 (Raspberry PI 4, ARM Cortex A72, Raspberry PI OS Bookworm)
-     Neural Modeler Core: 92.677s
-     Neural Modeler Core: 31.589s
+     Neural Amp Modeler Core: 92.677s
+     NeuralAudio:             31.589s
 
-     Compiler options: -Ofast -march=-mcpu=cortex-a72 -mtune=cortex-a72  -DEIGEN_DEFAULT_L1_CACHE_SIZE=32768
+     Compiler options: "-Ofast" "-mcpu=cortex-a72" "-march=armv8-a" "-mtune=cortex-a72" "-DEIGEN_DEFAULT_L1_CACHE_SIZE=32768"
 
 aarch64 (Raspberry PI 5, ARM Cortex A76, Rasperry PI OS Trixie)
 
-     Compiler options: -mcpu=cortex-a76 -mtune=cortex-a76 -DEIGEN_DEFAULT_L1_CACHE_SIZE=65536
+    Neural Amp Modeler Core: 16.212s
+    NeuralAudio: 10.824s
+
+    Compiler options: "-Ofast" "-mcpu=cortex-a76" "-march=armv8.2-a" "-mtune=cortex-a76" "-DEIGEN_DEFAULT_L1_CACHE_SIZE=65536"apt
 
 The Model: 
 
