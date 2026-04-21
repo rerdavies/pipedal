@@ -1,15 +1,40 @@
 Benchmark Results:
 
-amd64 (Ubuntu 24.04)
+The benchmark is to run TooB NAM with an A1 model to generate 100s of audio. Lower times are better.
+
+TooB NAM has a compile-time switch that uses either the NeuralAudio NAM implementation or
+the Neural Modeler Core NAM implementation.
+
+Results
+
+amd64 (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
 
     NeuralAudio x64:      5.416s
     Neural Modeler Core:  7.965s
 
+    Compiler options /Ofast, MMX, SSE, SSE2, no AVX.
 
-CPU: AMD Ryzen 7 7735HS with Radeon Graphics
-OS: Ubuntu 24.04 (amd64)
+aarch64 (Raspberry PI 4, ARM Cortex A72, Raspberry PI OS Bookworm)
+     Neural Modeler Core: 92.677s
+     Neural Modeler Core: 31.589s
 
-/home/robin/Downloads/NAM Test/media/NeuralAmpModels/Fender Deluxe Reverb %2765 Reissue %7c Clean %7c SM57 %2b Royer R-121 %2b Room/
+     Compiler options: -Ofast -march=-mcpu=cortex-a72 -mtune=cortex-a72  -DEIGEN_DEFAULT_L1_CACHE_SIZE=32768
+
+aarch64 (Raspberry PI 5, ARM Cortex A76, Rasperry PI OS Trixie)
+
+     Compiler options: -mcpu=cortex-a76 -mtune=cortex-a76 -DEIGEN_DEFAULT_L1_CACHE_SIZE=65536
+
+The Model: 
+
+Package: Fender Deluxe Reverb %2765 Reissue %7c Clean %7c SM57 %2b Royer R-121 %2b Room
+Model: Fender DRRI %7c Clean %7c Room Only %7c Full Rig
+Downloaded from Tone3000.
+
+The model file is attached.
+
+
+Compilation flags:
+
     
 
 
