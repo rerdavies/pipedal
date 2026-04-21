@@ -1,31 +1,49 @@
 Benchmark Results:
 
-The benchmark is to run TooB NAM with an A1 model to generate 100s of audio. Lower times are better.
+The benchmark is to run TooB Neural Amp Modeler with an A1 model to generate 100s of audio. Lower times are better.
 
 TooB NAM has a compile-time switch that uses either the NeuralAudio NAM implementation or
 the Neural Modeler Core NAM implementation.
 
 Results
 
-amd64 (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
-
-    Neural Amp Modeler Core:  7.965s
-    NeuralAudio x64:          5.416s
-
-    Compiler options /Ofast, MMX, SSE, SSE2, no AVX.
 
 aarch64 (Raspberry PI 4, ARM Cortex A72, Raspberry PI OS Bookworm)
-     Neural Amp Modeler Core: 92.677s
+
+     Neural Amp Modeler Core: 94.296s
      NeuralAudio:             31.589s
 
      Compiler options: "-Ofast" "-mcpu=cortex-a72" "-march=armv8-a" "-mtune=cortex-a72" "-DEIGEN_DEFAULT_L1_CACHE_SIZE=32768"
 
 aarch64 (Raspberry PI 5, ARM Cortex A76, Rasperry PI OS Trixie)
 
-    Neural Amp Modeler Core: 16.212s
-    NeuralAudio: 10.824s
+    Neural Amp Modeler Core: 16.084s
+    NeuralAudio: 10.766s
 
     Compiler options: "-Ofast" "-mcpu=cortex-a76" "-march=armv8.2-a" "-mtune=cortex-a76" "-DEIGEN_DEFAULT_L1_CACHE_SIZE=65536"apt
+
+
+
+amd64 Native (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
+
+    Neural Amp Modeler Core:  4.716s
+    NeuralAudio x64:          3.952s
+
+    Compiler options /Ofast, MMX, SSE, SSE2, no AVX.
+
+amd64 AVX+ (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
+
+    Neural Amp Modeler Core:  4.97s
+    NeuralAudio x64:          4.032s
+
+    Compiler options /Ofast, "-march=sandybridge" "-mtune=sandybridge"
+
+amd64 SSE2 (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
+
+    Neural Amp Modeler Core:  7.748s
+    NeuralAudio x64:          5.983s
+
+    Compiler options /Ofast (defaults to SSE2, no AVX)
 
 The Model: 
 
@@ -35,8 +53,6 @@ Downloaded from Tone3000.
 
 The model file is attached.
 
-
-Compilation flags:
 
     
 
