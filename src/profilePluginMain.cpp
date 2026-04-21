@@ -225,13 +225,12 @@ void profilePlugin(const ProfileOptions &profileOptions)
 
     lv2Pedalboard->Activate();
 
-    std::vector<float> inputBufferVector;
-    std::vector<float> outputBufferVector;
-    inputBufferVector.resize(nFrames);
-    outputBufferVector.resize(nFrames);
+    std::vector<float> inputBufferVectorL(nFrames);
+    std::vector<float> outputBufferVectorL(nFrames);
+    std::vector<float> outputBufferVectorR(nFrames);;
 
-    float *inputBuffers[2]{inputBufferVector.data(), nullptr};
-    float *outputBuffers[2] = {inputBufferVector.data(), nullptr};
+    float *inputBuffers[3]{inputBufferVectorL.data(), inputBufferVectorL.data(),nullptr};
+    float *outputBuffers[3] = {outputBufferVectorL.data(), outputBufferVectorR.data(),nullptr};
 
     WriterRingbuffer writerRingbuffer;
     RealtimeRingBufferWriter ringBufferWriter(&writerRingbuffer);
