@@ -83,7 +83,7 @@ static bool isJackServiceRunning()
     return std::filesystem::exists(path);
 }
 
-#if 0 &&  ENABLE_BACKTRACE
+#if 0 && ENABLE_BACKTRACE
 // void segvHandler(int sig)
 // {
 //     void *array[10];
@@ -107,12 +107,15 @@ static bool isJackServiceRunning()
 #endif
 
 #define ENABLE_SEGV_DEBUG 0
+#define ENABLE_SIGXCPU_DEBUG 1
+
 #if ENABLE_SEGV_DEBUG
 void debug_segvHandler(int sig)
 {
     // Print out all the frames to stderr
     const char *message = "Error: SEGV signal received.\n";
     auto _ = write(STDERR_FILENO, message, strlen(message));
+    flush(STD_ERR_FILENO);
 
     _exit(EXIT_FAILURE);
 }
@@ -126,6 +129,17 @@ static void EnableDebugSevHandler()
 
 #endif
 
+#if ENABLE_SIGXCPU_DEBUG
+
+void debug_XSigXcpuHandler(int sig)
+{
+}
+
+static void EnableSigXcpuHandler()
+{
+    signal(SIGXCPU, debug_XSigXcpuHandler);
+}
+#endif
 
 static bool TryGetLogLevel(const std::string &strLogLevel, LogLevel *result)
 {
@@ -152,7 +166,6 @@ static bool TryGetLogLevel(const std::string &strLogLevel, LogLevel *result)
     *result = LogLevel::Info;
     return false;
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -277,11 +290,13 @@ int main(int argc, char *argv[])
     const std::filesystem::path webTempDirectory = "/var/pipedal/web_temp";
     if (!webTempDirectory.empty())
     {
-        try {
+        try
+        {
             std::filesystem::remove_all(webTempDirectory); //// user must belong to the pipedald grop when debugging.
             std::filesystem::create_directories(webTempDirectory);
         }
-        catch (const std::exception e) {
+        catch (const std::exception e)
+        {
             Lv2Log::warning(e.what());
         }
     }
@@ -317,7 +332,6 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS; // indiate to systemd that we don't want a restart.
     }
 
-
     try
     {
         {
@@ -340,7 +354,7 @@ int main(int argc, char *argv[])
             sigset_t sigSet;
             int s;
             sigemptyset(&sigSet);
-            
+
             sigaddset(&sigSet, SIGINT);
             sigaddset(&sigSet, SIGTERM);
             sigaddset(&sigSet, SIGUSR1);
@@ -354,15 +368,18 @@ int main(int argc, char *argv[])
 
             // Clear any pending signals before waiting
             struct timespec timeout = {0, 0};
-            while (sigtimedwait(&sigSet, NULL, &timeout) > 0) {
+            while (sigtimedwait(&sigSet, NULL, &timeout) > 0)
+            {
                 // Consume any pending signals
             }
 #if ENABLE_SEGV_DEBUG
             EnableDebugSevHandler();
 #endif
+#if ENABLE_SIGXCPU_DEBUG
+            EnableSigXcpuHandler();
+#endif
 
             PiPedalModel model;
-
 
             model.SetNetworkChangedListener(
                 [&server]() mutable

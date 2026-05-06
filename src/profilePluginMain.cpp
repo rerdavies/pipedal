@@ -202,7 +202,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
                 reader.read(&bankFile);
                 if (bankFile.presets().size() != 1)
                 {
-                    throw new std::runtime_error(SS("Invalid preset file. Expection one preset, but " << bankFile.presets().size() << " presets were found."));
+                    throw new std::runtime_error(SS("Invalid preset file. Expecting one preset, but " << bankFile.presets().size() << " presets were found."));
                 }
                 Pedalboard pedalboard = (bankFile.presets()[0]->preset());
                 model.SetPedalboard(-1, pedalboard);
