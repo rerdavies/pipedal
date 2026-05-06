@@ -9,11 +9,11 @@
 <img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/>
 
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.5.99</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v1.5.100</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### NEW version 1.5.99 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. TooB NAM calibration, manipulation of i/r files in Toob Convolution Reverb, new Parametric EQ and 3 Band EQ plugins, and MORE!
+#### NEW version 1.5.100 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. TooB NAM calibration, manipulation of i/r files in Toob Convolution Reverb, new Parametric EQ and 3 Band EQ plugins, and MORE!
 
 &nbsp;
 
@@ -22,12 +22,13 @@ PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency au
 
 PiPedal will also run on Ubuntu 24.04,  24.10, or 25.04 (amd64/x64 or aarch64). Make sure you follow the [Ubuntu post-install instructions](https://rerdavies.github.io/pipedal/Configuring.html) to ensure that your Ubuntu OS is using a  realtime-capable kernel.
 
+PiPedal includes state-of-the-art AI-based guitar amp emulation plugins based on the famous open source Neural Amp Modeler (NAM) and ML libraries. A Raspberry Pi 4 provides almost four times more CPU power than commercial guitar stomp boxes costing a thousand dollars or more. Pi 5s and Intel N50 NUCs provide even more power! PiPedal uses that CPU power to run breakthrough Neural Amp emulation that not only sounds like the amps they are modelling, but also responds to your playing in a way that is indistinguishable from the real thing. PiPedal's NAM-based amp emulation plugins are the best-sounding guitar amp simulators available, and they run on a Raspberry Pi 4 with latency as low as 3ms. Thousands of amp models are available for free online, and you can even create your own amp models with the Neural Amp Modeler software, which is also free and open source. The [Tone3000](https://tone3000.com) website provides thousands of free NAM amp models, and also allows you to create models of your own amps by uploading recordings of your amps to their website.
+
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 
 Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi or via the PiPedal Wi-Fi hotspot. Or connect from PC or Laptop via a web browser. PiPedal provides a simple configuration tool that allows you to set up the PiPedal's Wi-Fi auto-hotspot access point on your Raspberry Pi.
 
 PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.  
-
 
 
 If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages.

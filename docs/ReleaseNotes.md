@@ -1,5 +1,11 @@
 # Release Notes
 
+## PiPedal 1.5.100 Beta
+
+### Bug Fixes
+- TooB Cab IR and TooB Convolution Reverb: Fixes for ALSA lockups on Ubuntu 24.04 when using buffers smaller than 64 samples.
+
+
 ## PiPedal 1.5.99 Beta
 
 ### Bug Fixes

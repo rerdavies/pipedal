@@ -20,7 +20,7 @@ instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure
 
 {% include gallery.html %}
 
-PiPedal includes state-of-the-art AI-based guitar amp emulation plugins based on the famous Neural Amp Modeler (NAM) and ML libraries which provide amp modelling that will blow your mind.
+PiPedal includes state-of-the-art AI-based guitar amp emulation plugins based on the famous open source Neural Amp Modeler (NAM) and ML libraries. A Raspberry Pi 4 provides almost four times more CPU power than commercial guitar stomp boxes costing a thousand dollars or more. Pi 5s and Intel N50 NUCs provide even more power! PiPedal uses that CPU power to run breakthrough Neural Amp emulation that not only sounds like the amps they are modelling, but also responds to your playing in a way that is indistinguishable from the real thing. PiPedal's NAM-based amp emulation plugins are the best-sounding guitar amp simulators available, and they run on a Raspberry Pi 4 with latency as low as 3ms. Thousands of amp models are available for free online, and you can even create your own amp models with the Neural Amp Modeler software, which is also free and open source. The [Tone3000](https://tone3000.com) website provides thousands of free NAM amp models, and also allows you to create models of your own amps by uploading recordings of your amps to their website.
 
 {% include demo.html %}
 
