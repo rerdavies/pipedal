@@ -5,7 +5,13 @@ import svgr from "vite-plugin-svgr"
 // https://vite.dev/config/
 export default defineConfig({
   build: {
-    chunkSizeWarningLimit: 2000
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        t3k_callback: 't3k_response.html',  // your alternate page
+      }
+    }
   },
   plugins: [react(),svgr()],
   server: {

@@ -1,0 +1,222 @@
+import { PiPedalModel, getErrorMessage, Tone3000PkceParams } from "./PiPedalModel";
+import Tone3000DownloadType from "./Tone3000DownloadType";
+import { PkceParams, buildPkceParams } from "./t3k/tone3000-client.ts";
+
+import { Platform } from "./t3k/types.ts";
+import { PUBLISHABLE_KEY } from './t3k/config.ts';
+
+
+import { startSelectFlowPopup} from "./t3k/tone3000-client.ts";
+
+
+// const  T3K_API = "https://www.tone3000.com";
+// used to check for online status.
+let TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
+
+
+export class Tone3000DownloadHandler {
+
+    // private async handleTone3000Download(
+    //     code: string, toneId: String, downloadType: Tone3000DownloadType): Promise<void> 
+    // {
+    //     const {access_token} = await exchangeCode(code);
+    //     try {
+    //         const xxx;
+    //         await this.model.downloadModelsFromTone3000(tone3000DownloadUrl, this.downloadPath, downloadType);
+    //         return;
+    //     } catch (e) {
+    //         this.handleTone3000DownloadError(getErrorMessage(e));
+    //         return;
+    //     }
+    // }
+
+    private messageEventListener: ((event: MessageEvent) => void) | null = null;
+
+    private model: PiPedalModel;
+    pkceParams: PkceParams | null = null;
+
+
+    public constructor(model: PiPedalModel) {
+        this.model = model;
+        let this_ = this;
+        this.messageEventListener = (event: MessageEvent) => {
+            if (event.data?.type === "t3k_response") {
+                let uri = event.data.uri;
+                this.handleTone3000DownloadComplete();
+                if (uri) {
+                    this_.handleT3kSelectResponse(uri)
+                    .then(() => { })
+                    .catch((error) => {
+                            ;
+                        });
+                }
+
+            }
+
+        };
+
+        window.addEventListener("message", this.messageEventListener);
+    }
+
+    public dispose(): void {
+        if (this.messageEventListener) {
+            window.removeEventListener("message", this.messageEventListener);
+            this.messageEventListener = null;
+        }
+    }
+
+    private async handleT3kSelectResponse(
+        uri: string,
+    ): Promise<void> {
+        if (this.pkceParams === null) {
+            this.model.showAlert("Invalid PKCE parameters. Please try again.");
+            return;
+
+        }
+        let tone3000PckceParams: Tone3000PkceParams = {
+            publishableKey: PUBLISHABLE_KEY,
+            redirectUrl: this.redirectUrl(),
+            codeChallenge: this.pkceParams.codeChallenge,
+            codeVerifier: this.pkceParams.codeVerifier,
+            state: this.pkceParams.state
+
+        };
+
+        this.model.DownloadModelsFromTone3000(uri, tone3000PckceParams, this.downloadPath, this.downloadType);
+    }
+
+    private popupWindow: Window | null = null;
+
+    private redirectUrl(): string {
+        let hostname = window.location.hostname;
+        let port = window.location.port;
+        let protocol = window.location.protocol;
+        let serverUrl: string;
+        if (protocol === "http:" && (port === "80" || port === "")) {
+            serverUrl = `${protocol}//${hostname}`;
+        } else if (protocol === "https:" && (port === "443" || port === "")) {
+            serverUrl = `${protocol}//${hostname}`;
+        } else {
+            serverUrl = `${protocol}//${hostname}:${port}`;
+        }
+        return `${serverUrl}/t3k_response.html`;
+    }
+
+
+
+    private handleTone3000DownloadComplete() {
+        if (this.popupWindow) {
+            if (!this.popupWindow.closed) {
+                this.popupWindow.close();
+            }
+            this.popupWindow = null;
+        }
+        this.model.hideTone3000DownloadStatus();
+
+    }
+    closeTone3000Popup() {
+        this.handleTone3000DownloadComplete();
+    }
+    private handleTone3000DownloadError(errorMessage: string) {
+        if (this.open) {
+            this.handleTone3000DownloadComplete();
+            this.model.showAlert(errorMessage);
+        }
+    }
+
+    private downloadPath: string = "";
+    private downloadType: Tone3000DownloadType = Tone3000DownloadType.Nam;
+    private open = false;
+
+    private launchInstance = 0;
+    public async launchTone3000Popup(
+        downloadType: Tone3000DownloadType,
+        downloadPath: string,
+
+    ): Promise<void> {
+        this.closeTone3000Dialog();
+        // online
+
+        this.downloadPath = downloadPath;
+        this.downloadType = downloadType;
+
+        let popupWidth = Math.floor(window.innerWidth * 0.8);
+        let popupHeight = Math.floor(window.innerHeight * 0.8);
+        if (window.innerWidth < 410) {
+            popupWidth = 400;
+        }
+
+        this.open = true;
+
+        this.model.showTone3000DownloadStatus();
+
+        let launchInstance = ++this.launchInstance;
+        let cancelled = () => {
+            return (launchInstance !== this.launchInstance) || this.popupWindow == null || this.popupWindow.closed;
+        }
+
+        try {
+
+            let pkceParams = await buildPkceParams();
+            this.pkceParams = pkceParams;
+            this.popupWindow = await startSelectFlowPopup(
+                pkceParams,
+                PUBLISHABLE_KEY,
+                this.redirectUrl(),
+                {
+                    architecture: downloadType === Tone3000DownloadType.CabIr ? undefined : 2,
+                    platform: downloadType === Tone3000DownloadType.CabIr ? Platform.Ir : Platform.Nam,
+                    menubar: true,
+                    width: popupWidth,
+                    height: popupHeight
+                },
+
+            );
+
+            if (!this.popupWindow) {
+                console.error("Failed to open TONE3000 dialog popup window.");
+                throw new Error("Cannot open popup window.");
+            }
+            // No procedure for detecting 404, so let's ping the server to see if it's reachable, and cancel if it's not.
+            try {
+                let response = await fetch(TONE3000_PING_URL, { method: "HEAD", cache: "no-cache" });
+                if (cancelled()) return;
+                if (!response.ok) {
+                    // offline
+                    throw new Error("Unable to connect to the TONE3000 server.");
+                }
+            } catch (error) {
+                throw new Error("Not online. Unable to connect to the TONE3000 server. Your client device must have access to the internet to use this feature..");
+            };
+
+            let pipedalServerCanReachTone3000 = false;
+
+            // check to see that the PiPedal server can reach TONE3000.
+            try {
+                pipedalServerCanReachTone3000 = await this.model.pingTone3000Server();
+                if (cancelled()) return;
+            } catch (error) {
+            }
+            if (!pipedalServerCanReachTone3000) {
+                throw new Error("The PiPedal server cannot reach a TONE3000 server. The PiPedal server must have access to the internet to use this feature.");
+            }
+            while (true) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (launchInstance != this.launchInstance) {
+                    // A new dialog launch has been initiated. Stop monitoring this one.
+                    return;
+                }
+                if (this.popupWindow == null || this.popupWindow.closed) {
+                    this.closeTone3000Dialog();
+                    return;
+                }
+            }
+        } catch (error) {
+            this.handleTone3000DownloadError(getErrorMessage(error));
+        }
+    }
+
+    public closeTone3000Dialog(): void {
+        this.handleTone3000DownloadComplete();
+    }
+}

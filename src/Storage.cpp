@@ -435,7 +435,6 @@ std::filesystem::path Storage::GetCurrentPresetPath() const
     return this->dataRoot / "currentPreset.json";
 }
 
-
 std::filesystem::path Storage::GetChannelSelectionFileName()
 {
     return this->dataRoot / "JackChannelSelection.json";
@@ -2083,26 +2082,29 @@ static bool ensureNoDotDot(const std::filesystem::path &path)
     return true;
 }
 
-static bool isInfoFile(const std::string &fileName)
+bool isInfoFile(const fs::path &path)
 {
-    if (strcasecmp(fileName.c_str(), "license.txt") == 0)
+    auto extension = path.extension();
+    if (extension == ".pdf")
     {
         return true;
     }
-    if (strcasecmp(fileName.c_str(), "license.md") == 0)
+    auto filename = path.filename();
+    if (filename == "LICENSE.txt" || filename == "README.txt")
     {
         return true;
     }
-    if (strcasecmp(fileName.c_str(), "readme.txt") == 0)
+    if (filename == "LICENSE.md" || filename == "README.md")
     {
         return true;
     }
-    if (strcasecmp(fileName.c_str(), "readme.md") == 0)
+    if (filename == "license.txt" || filename == "readme.txt")
     {
         return true;
     }
     return false;
 }
+
 static bool isInfoFile(const FileEntry &l)
 {
     return isInfoFile(l.displayName_);
@@ -2333,10 +2335,8 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
             {
                 rootModDirectory = modDirectoryInfo;
                 modDirectoryPath = uploadsDirectory / modDirectoryInfo->pipedalPath;
-                result.breadcrumbs_.push_back({
-                    modDirectoryPath.string(), 
-                    (modDirectoryInfo->displayName)}
-                );
+                result.breadcrumbs_.push_back({modDirectoryPath.string(),
+                                               (modDirectoryInfo->displayName)});
                 break;
             }
         }
@@ -2346,9 +2346,8 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         if (IsSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
         {
             modDirectoryPath = uploadsDirectory / fileProperty.directory();
-            result.breadcrumbs_.push_back({
-                modDirectoryPath.string(), 
-                SafeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
+            result.breadcrumbs_.push_back({modDirectoryPath.string(),
+                                           SafeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
         }
         else
         {
@@ -2991,8 +2990,6 @@ const PluginPresetIndex &Storage::GetPluginPresetIndex()
     return pluginPresetIndex;
 }
 
-
-
 std::filesystem::path Storage::FromAbstractPathString(const std::string &stringPath)
 {
     if (stringPath.empty())
@@ -3054,15 +3051,18 @@ ChannelRouterSettings::ptr Storage::LoadChannelRouterSettings()
         // See UpgradeChannelRouterSettings(), which will upgrade from old settings
         // or create a default instance.
         return nullptr; // will be upgraded later.
-    }   
-    try {
+    }
+    try
+    {
         std::ifstream is(path);
         json_reader reader(is);
         ChannelRouterSettings::ptr result;
         reader.read(&result);
         this->channelSelection = ChannelSelection(*result);
-    return result;
-    } catch (const std::exception &e) {
+        return result;
+    }
+    catch (const std::exception &e)
+    {
         Lv2Log::error("Failed to load Channel Router settings: %s", e.what());
         return std::make_shared<ChannelRouterSettings>();
     }
@@ -3071,55 +3071,62 @@ ChannelRouterSettings::ptr Storage::LoadChannelRouterSettings()
 static int64_t GetUpgradedPortIndex(const std::string &portName)
 {
     auto nPos = portName.find_last_of('_');
-    if (nPos != std::string::npos) 
+    if (nPos != std::string::npos)
     {
         std::string channelStr = portName.substr(nPos + 1);
-        try 
+        try
         {
             int64_t channelIndex = std::stoll(channelStr);
             return channelIndex;
-        } catch (const std::exception &) {
+        }
+        catch (const std::exception &)
+        {
             return -1;
         }
-    }   
+    }
     return -1;
-}   
-void Storage::UpgradeChannelRouterSettings() 
+}
+void Storage::UpgradeChannelRouterSettings()
 {
-    if (channelRouterSettings == nullptr) 
+    if (channelRouterSettings == nullptr)
     {
         channelRouterSettings = std::make_shared<ChannelRouterSettings>();
-        if (jackChannelSelection.isValid()) 
+        if (jackChannelSelection.isValid())
         {
             channelRouterSettings->configured(true);
             channelRouterSettings->mainInputChannels().resize(2);
-            const std::vector<std::string>& oldInputs = jackChannelSelection.GetInputAudioPorts();
-            std::vector<int64_t>& newInputs = channelRouterSettings->mainInputChannels();
+            const std::vector<std::string> &oldInputs = jackChannelSelection.GetInputAudioPorts();
+            std::vector<int64_t> &newInputs = channelRouterSettings->mainInputChannels();
 
-            if (oldInputs.size() ==1) 
+            if (oldInputs.size() == 1)
             {
                 int64_t leftIndex = GetUpgradedPortIndex(oldInputs[0]);
                 newInputs.resize(2);
                 newInputs[0] = leftIndex;
                 newInputs[1] = leftIndex;
-            } else if (oldInputs.size() == 2) {
+            }
+            else if (oldInputs.size() == 2)
+            {
                 newInputs.resize(2);
-                for (size_t i = 0; i < std::min(oldInputs.size(), newInputs.size()); ++i) 
+                for (size_t i = 0; i < std::min(oldInputs.size(), newInputs.size()); ++i)
                 {
                     int64_t portIndex = GetUpgradedPortIndex(oldInputs[i]);
                     newInputs[i] = portIndex;
                 }
             }
-            const std::vector<std::string>& oldOutputs = jackChannelSelection.GetOutputAudioPorts();
+            const std::vector<std::string> &oldOutputs = jackChannelSelection.GetOutputAudioPorts();
             auto &newMainOutputs = channelRouterSettings->mainOutputChannels();
-            if (oldOutputs.size() == 1) {
+            if (oldOutputs.size() == 1)
+            {
                 int64_t leftIndex = GetUpgradedPortIndex(oldOutputs[0]);
                 newMainOutputs.resize(2);
                 newMainOutputs[0] = leftIndex;
                 newMainOutputs[1] = leftIndex;
-            } else if (oldOutputs.size() == 2) {
+            }
+            else if (oldOutputs.size() == 2)
+            {
                 newMainOutputs.resize(2);
-                for (size_t i = 0; i < std::min(oldOutputs.size(), newMainOutputs.size()); ++i) 
+                for (size_t i = 0; i < std::min(oldOutputs.size(), newMainOutputs.size()); ++i)
                 {
                     int64_t portIndex = GetUpgradedPortIndex(oldOutputs[i]);
                     newMainOutputs[i] = portIndex;
@@ -3135,15 +3142,15 @@ void Storage::UpgradeChannelRouterSettings()
             newAuxOutputs[0] = -1;
             newAuxOutputs[1] = -1;
             SaveChannelRouterSettings(channelRouterSettings);
-        }   
+        }
         channelSelection = ChannelSelection(*channelRouterSettings);
     }
 }
 
-const ChannelSelection& Storage::GetChannelSelection() const {
+const ChannelSelection &Storage::GetChannelSelection() const
+{
     return channelSelection;
 }
-
 
 JSON_MAP_BEGIN(UserSettings)
 JSON_MAP_REFERENCE(UserSettings, governor)

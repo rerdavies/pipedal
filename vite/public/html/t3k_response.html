@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>T3K Response</title>
+        <script>
+      window.opener.postMessage(
+            {
+                type: "t3k_response",
+                uri: window.location.href,
+                storedState: sessionStorage.getItem('t3k_state'),
+                codeVerifier: sessionStorage.getItem('t3k_code_verifier')   
+            }, '*'
+        );            
+        function returnResponse() {
+            window.opener.postMessage(
+                {
+                    type: "t3k_response",
+                    uri: window.location.href,
+                    storedState: sessionStorage.getItem('t3k_state'),
+                    codeVerifier: sessionStorage.getItem('t3k_code_verifier')
+                }, '*'
+            );
+        }
+        </script>
+    </head>
+    <body style="background: #000000" onload="returnResponse()"></body>
+</html>

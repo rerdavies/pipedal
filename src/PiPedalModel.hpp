@@ -43,6 +43,7 @@
 #include "ChannelRouterSettings.hpp"
 #include <unordered_map>
 #include "Tone3000Downloader.hpp"
+#include "Uri.hpp"
 
 namespace pipedal
 {
@@ -310,10 +311,11 @@ namespace pipedal
         void PreviousPreset() { NextPreset(Direction::Decrease); }
 
         int64_t DownloadModelsFromTone3000(
-            int64_t clientId,
-            Tone3000DownloadType downloadType,
+            const std::string&responseuri,
+            const Tone3000PkceParams& pkce,
             const std::string &downloadPath,
-            const std::string &tone3000Url);
+            Tone3000DownloadType downloadType
+        );
 
         void CancelTone3000Download(
             int64_t clientId,

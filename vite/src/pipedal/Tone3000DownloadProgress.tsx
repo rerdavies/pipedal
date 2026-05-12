@@ -22,9 +22,22 @@
  */
 
 
-export default interface Tone3000DownloadProgress {
-    handle: number;
-    title: string;
-    progress: number;
-    total: number;
+export default class Tone3000DownloadProgress {
+
+    clone() {
+        let copy = new Tone3000DownloadProgress();
+        copy.handle = this.handle;
+        copy.title = this.title;
+        copy.progress = this.progress;
+        copy.total = this.total;
+        copy.cancelled = this.cancelled;
+        copy.transferring = this.transferring;
+        return copy;
+    }
+    handle: number = 0;
+    title: string = ""
+    progress: number = 0;
+    total: number = 0;
+    cancelled: boolean = false;
+    transferring: boolean = false;
 };

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tone3000 Download Received</title>
+</head>
+
+<body style="background: black;">
+    <script>
+        async function handleOAuthCallback(
+            publishableKey,
+            redirectUri
+        ) {
+            const params = new URLSearchParams(window.location.search);
+
+
+            alert("Debug me"); // xxx
+
+            const code = params.get('code');
+            const error = params.get('error');
+            const returnedState = params.get('state');
+            const toneId = params.get('tone_id') ?? undefined;
+            const modelId = params.get('model_id') ?? undefined;
+            const canceled = params.get('canceled') === 'true';
+
+            const storedState = sessionStorage.getItem('t3k_state');
+            const codeVerifier = sessionStorage.getItem('t3k_code_verifier');
+
+            // Clean up PKCE state regardless of outcome
+            sessionStorage.removeItem('t3k_state');
+            sessionStorage.removeItem('t3k_code_verifier');
+
+            // Verify state to prevent CSRF
+            if (returnedState !== storedState) {
+                return { ok: false, error: 'state_mismatch' };
+            }
+
+            // User closed without signing in — no code to exchange
+            if (canceled && !code) {
+                return { ok: false, error: 'canceled' };
+            }
+
+            // Access denied — e.g. model is private and user clicked "Back"
+            if (error) {
+                return { ok: false, error };
+            }
+
+            if (!code || !codeVerifier) {
+                return { ok: false, error: 'missing_code' };
+            }
+
+            const res = await fetch(`${T3K_API}/api/v1/oauth/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code,
+                    code_verifier: codeVerifier,
+                    redirect_uri: redirectUri,
+                    client_id: publishableKey,
+                }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                return { ok: false, error: (err).error ?? 'token_exchange_failed' };
+            }
+
+            const data = await res.json();
+            const tokens = {
+                access_token: data.access_token,
+                refresh_token: data.refresh_token,
+                expires_at: Date.now() + data.expires_in * 1000,
+            };
+
+            return { ok: true, tokens, toneId, modelId, ...(canceled ? { canceled: true } : {}) };
+        }
+
+
+        handleOAuthCallback().then(result => {
+            if (window.opener) {
+
+
+                window.opener.postMessage({
+                    type: 'tone3000DownloadCallback',
+                    ...result,
+                }, '*');
+            } else {
+                alert("No opener window found.");
+            }
+            window.close();
+        }).catch(e => {
+            alert(`Error handling OAuth callback: ${e.message}`);
+            window.close();
+        });
+        // // Parse URL parameters
+        // const urlParams = new URLSearchParams(window.location.search);
+
+        // alert(urlParams.toString());
+
+        // const code = urlParams.get('code');
+        // const error = urlParams.get('error');
+        // const state = urlParams.get('state');
+        // const toneId = urlParams.get('tone_id');
+        // const modelId = urlParams.get('model_id');
+        // const canceled = urlParams.get('canceled') === 'true';
+
+        // if (state !== sessionStorage.getItem('t3k_state')) {
+        //     alert('State mismatch. Possible CSRF attack.');
+        // }
+
+        // if (canceled) {
+        //     // User exited without selecting a tone.
+        //     // If code is present, you can still exchange it for tokens.
+        //     // If code is absent, the user closed before signing in.
+        //     window.close();
+        // } else {
+        //         const toneUrl = urlParams.get('tone_url');
+
+
+        //         var popupWindow = null;;
+        //         try {
+        //             // Send the data back to the opener window
+        //             if (window.opener) {
+        //                 popupWindow =
+        //                     window.opener.postMessage({
+        //                         type: 'tone3000Download',
+        //                         code: code,
+        //                         error: error,
+        //                         state: state,
+        //                         tone_id: toneId,
+        //                         toneId: toneId
+        //                     }, '*');
+        //             } else {
+        //                 alert("No opener window found.");
+        //             }
+        //         }
+        //         catch (e) {
+        //             alert(e.message);
+        //         }
+        //         window.close();
+        //     }
+    </script>
+</body>
+
+</html>

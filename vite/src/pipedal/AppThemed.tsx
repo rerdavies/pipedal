@@ -58,7 +58,6 @@ import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo, wantsReloa
 import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import ListSubheader from '@mui/material/ListSubheader';
 import { BankIndex, BankIndexEntry } from './Banks';
@@ -1086,13 +1085,11 @@ export
                     aria-describedby="alert-dialog-description"
                 >
                     <DialogContent>
-                        <DialogContentText id="alert-dialog-description">
-                            <Typography variant="body2">
-                                {
-                                    this.state.alertDialogMessage
-                                }
-                            </Typography>
-                        </DialogContentText>
+                        <Typography variant="body2" id="alert-dialog-description">
+                            {
+                                this.state.alertDialogMessage
+                            }
+                        </Typography>
                     </DialogContent>
                     <DialogActions>
                         <Button variant="dialogPrimary" onClick={this.handleCloseAlert} color="primary" autoFocus>

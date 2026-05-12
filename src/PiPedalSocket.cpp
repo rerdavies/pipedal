@@ -35,6 +35,7 @@
 #include "Ipv6Helpers.hpp"
 #include "Promise.hpp"
 #include <mutex>
+#include "Tone3000Downloader.hpp"
 
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
@@ -44,26 +45,14 @@
 #include "PiPedalAlsa.hpp"
 #include <filesystem>
 #include "FileEntry.hpp"
+#include "Tone3000Downloader.hpp"
 
 using namespace std;
 using namespace pipedal;
 
-class DownloadModelsFromTone3000Body {
+class CopyPresetsToBankBody
+{
 public:
-    std::string downloadPath_;
-    std::string tone3000Url_;
-    std::string downloadType_;
-    DECLARE_JSON_MAP(DownloadModelsFromTone3000Body);
-};
-JSON_MAP_BEGIN(DownloadModelsFromTone3000Body)
-JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadPath)
-JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, tone3000Url)
-JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadType)
-JSON_MAP_END()
-
-
-class CopyPresetsToBankBody {
-    public: 
     int64_t bankInstanceId_;
     std::vector<int64_t> presets_;
     DECLARE_JSON_MAP(CopyPresetsToBankBody);
@@ -71,11 +60,32 @@ class CopyPresetsToBankBody {
 JSON_MAP_BEGIN(CopyPresetsToBankBody)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, presets)
-JSON_MAP_END()
+JSON_MAP_END();
 
+class DownloadModelsFromTone3000Body
+{
+public:
+    std::string responseUri_;
+    Tone3000PkceParams tone3000PckceParams_;
+    std::string downloadPath_;
+    int64_t downloadType_ = -1;
 
-class ImportPresetsFromBankBody {
-    public: 
+    Tone3000DownloadType downloadType() const { return (Tone3000DownloadType)downloadType_; }
+    void downloadType(Tone3000DownloadType value) { downloadType_ = (int64_t)value; }
+
+    DECLARE_JSON_MAP(DownloadModelsFromTone3000Body);
+};
+
+JSON_MAP_BEGIN(DownloadModelsFromTone3000Body)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, responseUri)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, tone3000PckceParams)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadPath)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadType)
+JSON_MAP_END();
+
+class ImportPresetsFromBankBody
+{
+public:
     int64_t bankInstanceId_;
     std::vector<int64_t> presets_;
     DECLARE_JSON_MAP(ImportPresetsFromBankBody);
@@ -85,7 +95,8 @@ JSON_MAP_REFERENCE(ImportPresetsFromBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(ImportPresetsFromBankBody, presets)
 JSON_MAP_END()
 
-class RequestBankPresetsBody {
+class RequestBankPresetsBody
+{
 public:
     int64_t bankInstanceId_;
     DECLARE_JSON_MAP(RequestBankPresetsBody);
@@ -94,21 +105,8 @@ JSON_MAP_BEGIN(RequestBankPresetsBody)
 JSON_MAP_REFERENCE(RequestBankPresetsBody, bankInstanceId)
 JSON_MAP_END()
 
-
-class DownloadTone3000Body {
-public:
-    int64_t handle_;
-    std::string tone3000DownloadUrl_;
-
-    DECLARE_JSON_MAP(DownloadTone3000Body);
-};
-
-JSON_MAP_BEGIN(DownloadTone3000Body)
-JSON_MAP_REFERENCE(DownloadTone3000Body, handle)
-JSON_MAP_REFERENCE(DownloadTone3000Body, tone3000DownloadUrl)
-JSON_MAP_END()
-
-class Tone3000DownloadStartedBody {
+class Tone3000DownloadStartedBody
+{
 public:
     int64_t handle_;
     std::string title_;
@@ -121,7 +119,8 @@ JSON_MAP_REFERENCE(Tone3000DownloadStartedBody, handle)
 JSON_MAP_REFERENCE(Tone3000DownloadStartedBody, title)
 JSON_MAP_END()
 
-class Tone3000DownloadErrorBody {
+class Tone3000DownloadErrorBody
+{
 public:
     int64_t handle_;
     std::string errorMessage_;
@@ -133,7 +132,6 @@ JSON_MAP_BEGIN(Tone3000DownloadErrorBody)
 JSON_MAP_REFERENCE(Tone3000DownloadErrorBody, handle)
 JSON_MAP_REFERENCE(Tone3000DownloadErrorBody, errorMessage)
 JSON_MAP_END()
-
 
 class PathPatchPropertyChangedBody
 {
@@ -233,7 +231,7 @@ public:
 JSON_MAP_BEGIN(GetFilePropertyDirectoryTreeArgs)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, fileProperty)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, selectedPath)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class Lv2StateChangedBody
 {
@@ -246,7 +244,7 @@ public:
 JSON_MAP_BEGIN(Lv2StateChangedBody)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, instanceId)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, state)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class SetPatchPropertyBody
 {
@@ -277,9 +275,6 @@ JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, colorKey)
 JSON_MAP_END()
-
-
-
 
 class NotifyMidiListenerBody
 {
@@ -312,7 +307,7 @@ JSON_MAP_REFERENCE(NotifyAtomOutputBody, clientHandle)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, instanceId)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, propertyUri)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, atomJson)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class ListenForMidiEventBody
 {
@@ -463,7 +458,6 @@ JSON_MAP_REFERENCE(RenameBankBody, bankId)
 JSON_MAP_REFERENCE(RenameBankBody, newName)
 JSON_MAP_END()
 
-
 class RenamePresetBody
 {
 public:
@@ -537,7 +531,6 @@ JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, instanceId)
 JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, useModUi)
 JSON_MAP_END()
 
-
 class UpdateCurrentPedalboardBody
 {
 public:
@@ -580,7 +573,6 @@ JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, clientId)
 JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, pluginInstanceId)
 JSON_MAP_END()
 
-
 class SnapshotModifiedBody
 {
 public:
@@ -599,11 +591,9 @@ class ChannelRouterSettingsChangedBody
 {
 public:
     ChannelRouterSettingsChangedBody(
-        int64_t clientId, 
-        const ChannelRouterSettings &channelRouterSettings
-    ): clientId_(clientId), channelRouterSettings_(channelRouterSettings)
+        int64_t clientId,
+        const ChannelRouterSettings &channelRouterSettings) : clientId_(clientId), channelRouterSettings_(channelRouterSettings)
     {
-
     }
     int64_t clientId_ = -1;
     ChannelRouterSettings channelRouterSettings_;
@@ -684,11 +674,11 @@ JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
 JSON_MAP_END()
 
 class PiPedalSocketHandler;
-namespace {
+namespace
+{
     using PfnMessageHandler = void (PiPedalSocketHandler::*)(int replyTo, json_reader *pReader);
 
     inline static unordered_map<std::string, PfnMessageHandler> socket_messageHandlers;
-
 
 }
 
@@ -1171,176 +1161,179 @@ public:
 
     /***********************/
 
-    class  MessageRegistration {
+    class MessageRegistration
+    {
     public:
-        MessageRegistration(const std::string&messageName,PfnMessageHandler pfnMessageHandler ) {
+        MessageRegistration(const std::string &messageName, PfnMessageHandler pfnMessageHandler)
+        {
             socket_messageHandlers[messageName] = pfnMessageHandler;
         }
     };
 
-    #define REGISTER_MESSAGE_HANDLER(MESSAGE_NAME) \
-        static inline MessageRegistration r_##MESSAGE_NAME{#MESSAGE_NAME,&PiPedalSocketHandler::handle_##MESSAGE_NAME};
+#define REGISTER_MESSAGE_HANDLER(MESSAGE_NAME) \
+    static inline MessageRegistration r_##MESSAGE_NAME{#MESSAGE_NAME, &PiPedalSocketHandler::handle_##MESSAGE_NAME};
 
-    void handle_setControl(int replyTo, json_reader*pReader) {
+    void handle_setControl(int replyTo, json_reader *pReader)
+    {
         ControlChangedBody message;
         pReader->read(&message);
         this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-
     }
     REGISTER_MESSAGE_HANDLER(setControl)
 
-    void handle_previewControl(int replyTo, json_reader*pReader) {
+    void handle_previewControl(int replyTo, json_reader *pReader)
+    {
         ControlChangedBody message;
         pReader->read(&message);
         this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-
     }
     REGISTER_MESSAGE_HANDLER(previewControl)
 
-    void handle_setInputVolume(int replyTo, json_reader*pReader) {
+    void handle_setInputVolume(int replyTo, json_reader *pReader)
+    {
         float value;
         pReader->read(&value);
         this->model.SetInputVolume(value);
-
     }
     REGISTER_MESSAGE_HANDLER(setInputVolume)
 
-    void handle_setOutputVolume(int replyTo, json_reader*pReader) {
+    void handle_setOutputVolume(int replyTo, json_reader *pReader)
+    {
         float value;
         pReader->read(&value);
         this->model.SetOutputVolume(value);
-
     }
     REGISTER_MESSAGE_HANDLER(setOutputVolume)
 
-    void handle_previewInputVolume(int replyTo, json_reader*pReader) {
+    void handle_previewInputVolume(int replyTo, json_reader *pReader)
+    {
         float value;
         pReader->read(&value);
         this->model.PreviewInputVolume(value);
-
     }
     REGISTER_MESSAGE_HANDLER(previewInputVolume)
 
-    void handle_previewOutputVolume(int replyTo, json_reader*pReader) {
+    void handle_previewOutputVolume(int replyTo, json_reader *pReader)
+    {
         float value;
         pReader->read(&value);
         this->model.PreviewOutputVolume(value);
-
     }
     REGISTER_MESSAGE_HANDLER(previewOutputVolume)
 
-    void handle_listenForMidiEvent(int replyTo, json_reader*pReader) {
+    void handle_listenForMidiEvent(int replyTo, json_reader *pReader)
+    {
         ListenForMidiEventBody body;
         pReader->read(&body);
         this->model.ListenForMidiEvent(this->clientId, body.handle_);
-
     }
     REGISTER_MESSAGE_HANDLER(listenForMidiEvent)
 
-    void handle_cancelListenForMidiEvent(int replyTo, json_reader*pReader) {
+    void handle_cancelListenForMidiEvent(int replyTo, json_reader *pReader)
+    {
         uint64_t handle;
         pReader->read(&handle);
         this->model.CancelListenForMidiEvent(this->clientId, handle);
-
     }
     REGISTER_MESSAGE_HANDLER(cancelListenForMidiEvent)
 
-    void handle_monitorPatchProperty(int replyTo, json_reader*pReader) {
+    void handle_monitorPatchProperty(int replyTo, json_reader *pReader)
+    {
         MonitorPatchPropertyBody body;
         pReader->read(&body);
         this->model.MonitorPatchProperty(this->clientId, body.clientHandle_, body.instanceId_, body.propertyUri_);
-
     }
     REGISTER_MESSAGE_HANDLER(monitorPatchProperty)
 
-    void handle_cancelMonitorPatchProperty(int replyTo, json_reader*pReader) {
+    void handle_cancelMonitorPatchProperty(int replyTo, json_reader *pReader)
+    {
         int64_t handle;
         pReader->read(&handle);
         this->model.CancelMonitorPatchProperty(this->clientId, handle);
-
     }
     REGISTER_MESSAGE_HANDLER(cancelMonitorPatchProperty)
 
-    void handle_getUpdateStatus(int replyTo, json_reader*pReader) {
+    void handle_getUpdateStatus(int replyTo, json_reader *pReader)
+    {
         UpdateStatus updateStatus = model.GetUpdateStatus();
         this->Reply(replyTo, "getUpdateStatus", updateStatus);
-
     }
     REGISTER_MESSAGE_HANDLER(getUpdateStatus)
 
-    void handle_getHasWifi(int replyTo, json_reader*pReader) {
+    void handle_getHasWifi(int replyTo, json_reader *pReader)
+    {
         bool result = model.GetHasWifi();
         this->Reply(replyTo, "getHasWifi", result);
-
     }
     REGISTER_MESSAGE_HANDLER(getHasWifi)
 
-    void handle_updateNow(int replyTo, json_reader*pReader) {
+    void handle_updateNow(int replyTo, json_reader *pReader)
+    {
         std::string updateUrl;
         pReader->read(&updateUrl);
         model.UpdateNow(updateUrl);
         bool result = true;
         this->Reply(replyTo, "updateNow", result);
-
     }
     REGISTER_MESSAGE_HANDLER(updateNow)
 
-    void handle_getJackStatus(int replyTo, json_reader*pReader) {
+    void handle_getJackStatus(int replyTo, json_reader *pReader)
+    {
         JackHostStatus status = model.GetJackStatus();
         this->Reply(replyTo, "getJackStatus", status);
-
     }
     REGISTER_MESSAGE_HANDLER(getJackStatus)
 
-    void handle_getAlsaDevices(int replyTo, json_reader*pReader) {
+    void handle_getAlsaDevices(int replyTo, json_reader *pReader)
+    {
         std::vector<AlsaDeviceInfo> devices = model.GetAlsaDevices();
         this->Reply(replyTo, "getAlsaDevices", devices);
-
     }
     REGISTER_MESSAGE_HANDLER(getAlsaDevices)
 
-    void handle_getKnownWifiNetworks(int replyTo, json_reader*pReader) {
+    void handle_getKnownWifiNetworks(int replyTo, json_reader *pReader)
+    {
         std::vector<std::string> channels = this->model.GetKnownWifiNetworks();
         this->Reply(replyTo, "getWifiChannels", channels);
-
     }
     REGISTER_MESSAGE_HANDLER(getKnownWifiNetworks)
 
-    void handle_getWifiChannels(int replyTo, json_reader*pReader) {
+    void handle_getWifiChannels(int replyTo, json_reader *pReader)
+    {
         std::string country;
         pReader->read(&country);
         std::vector<WifiChannelSelector> channels = pipedal::getWifiChannelSelectors(country.c_str());
         this->Reply(replyTo, "getWifiChannels", channels);
-
     }
     REGISTER_MESSAGE_HANDLER(getWifiChannels)
 
-    void handle_getPluginPresets(int replyTo, json_reader*pReader) {
+    void handle_getPluginPresets(int replyTo, json_reader *pReader)
+    {
         std::string uri;
         pReader->read(&uri);
         this->Reply(replyTo, "getPluginPresets", this->model.GetPluginUiPresets(uri));
-
     }
     REGISTER_MESSAGE_HANDLER(getPluginPresets)
 
-    void handle_loadPluginPreset(int replyTo, json_reader*pReader) {
+    void handle_loadPluginPreset(int replyTo, json_reader *pReader)
+    {
         LoadPluginPresetBody body;
         pReader->read(&body);
         this->model.LoadPluginPreset(body.pluginInstanceId_, body.presetInstanceId_);
-
     }
     REGISTER_MESSAGE_HANDLER(loadPluginPreset)
 
-    void handle_setJackServerSettings(int replyTo, json_reader*pReader) {
+    void handle_setJackServerSettings(int replyTo, json_reader *pReader)
+    {
         JackServerSettings jackServerSettings;
         pReader->read(&jackServerSettings);
         this->model.SetJackServerSettings(jackServerSettings);
         this->Reply(replyTo, "setJackserverSettings");
-
     }
     REGISTER_MESSAGE_HANDLER(setJackServerSettings)
 
-    void handle_setGovernorSettings(int replyTo, json_reader*pReader) {
+    void handle_setGovernorSettings(int replyTo, json_reader *pReader)
+    {
         std::string governor;
         pReader->read(&governor);
         std::string fromAddress = this->getFromAddress();
@@ -1350,11 +1343,11 @@ public:
         // }
         this->model.SetGovernorSettings(governor);
         this->Reply(replyTo, "setGovernorSettings");
-
     }
     REGISTER_MESSAGE_HANDLER(setGovernorSettings)
 
-    void handle_setWifiConfigSettings(int replyTo, json_reader*pReader) {
+    void handle_setWifiConfigSettings(int replyTo, json_reader *pReader)
+    {
         WifiConfigSettings wifiConfigSettings;
         pReader->read(&wifiConfigSettings);
         if (!GetAdminClient().CanUseAdminClient())
@@ -1369,17 +1362,17 @@ public:
 
         this->model.SetWifiConfigSettings(wifiConfigSettings);
         this->Reply(replyTo, "setWifiConfigSettings");
-
     }
     REGISTER_MESSAGE_HANDLER(setWifiConfigSettings)
 
-    void handle_getWifiConfigSettings(int replyTo, json_reader*pReader) {
+    void handle_getWifiConfigSettings(int replyTo, json_reader *pReader)
+    {
         this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
-
     }
     REGISTER_MESSAGE_HANDLER(getWifiConfigSettings)
 
-    void handle_setWifiDirectConfigSettings(int replyTo, json_reader*pReader) {
+    void handle_setWifiDirectConfigSettings(int replyTo, json_reader *pReader)
+    {
         WifiDirectConfigSettings wifiDirectConfigSettings;
         pReader->read(&wifiDirectConfigSettings);
         if (!GetAdminClient().CanUseAdminClient())
@@ -1394,248 +1387,248 @@ public:
 
         this->model.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
         this->Reply(replyTo, "setWifiDirectConfigSettings");
-
     }
     REGISTER_MESSAGE_HANDLER(setWifiDirectConfigSettings)
 
-    void handle_getWifiDirectConfigSettings(int replyTo, json_reader*pReader) {
+    void handle_getWifiDirectConfigSettings(int replyTo, json_reader *pReader)
+    {
         this->Reply(replyTo, "getWifiDirectConfigSettings", model.GetWifiDirectConfigSettings());
-
     }
     REGISTER_MESSAGE_HANDLER(getWifiDirectConfigSettings)
 
-    void handle_getGovernorSettings(int replyTo, json_reader*pReader) {
+    void handle_getGovernorSettings(int replyTo, json_reader *pReader)
+    {
         this->Reply(replyTo, "getGovernorSettings", model.GetGovernorSettings());
-
     }
     REGISTER_MESSAGE_HANDLER(getGovernorSettings)
 
-    void handle_getJackServerSettings(int replyTo, json_reader*pReader) {
+    void handle_getJackServerSettings(int replyTo, json_reader *pReader)
+    {
         this->Reply(replyTo, "getJackServerSettings", model.GetJackServerSettings());
-
     }
     REGISTER_MESSAGE_HANDLER(getJackServerSettings)
 
-    void handle_getBankIndex(int replyTo, json_reader*pReader) {
+    void handle_getBankIndex(int replyTo, json_reader *pReader)
+    {
         BankIndex bankIndex = model.GetBankIndex();
         this->Reply(replyTo, "getBankIndex", bankIndex);
-
     }
     REGISTER_MESSAGE_HANDLER(getBankIndex)
 
-    void handle_getJackConfiguration(int replyTo, json_reader*pReader) {
+    void handle_getJackConfiguration(int replyTo, json_reader *pReader)
+    {
         JackConfiguration configuration = this->model.GetJackConfiguration();
         this->Reply(replyTo, "getJackConfiguration", configuration);
-
     }
     REGISTER_MESSAGE_HANDLER(getJackConfiguration)
 
-    void handle_getJackSettings(int replyTo, json_reader*pReader) {
+    void handle_getJackSettings(int replyTo, json_reader *pReader)
+    {
         JackChannelSelection selection = this->model.GetJackChannelSelection();
         this->Reply(replyTo, "getJackSettings", selection);
-
     }
     REGISTER_MESSAGE_HANDLER(getJackSettings)
 
-    void handle_saveCurrentPreset(int replyTo, json_reader*pReader) {
+    void handle_saveCurrentPreset(int replyTo, json_reader *pReader)
+    {
         this->model.SaveCurrentPreset(this->clientId);
-
     }
     REGISTER_MESSAGE_HANDLER(saveCurrentPreset)
 
-    void handle_saveCurrentPresetAs(int replyTo, json_reader*pReader) {
+    void handle_saveCurrentPresetAs(int replyTo, json_reader *pReader)
+    {
         SaveCurrentPresetAsBody body;
         pReader->read(&body);
-        int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_,body.name_, body.saveAfterInstanceId_);
+        int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_, body.name_, body.saveAfterInstanceId_);
         Reply(replyTo, "saveCurrentPresetsAs", result);
-
     }
     REGISTER_MESSAGE_HANDLER(saveCurrentPresetAs)
 
-    void handle_setSelectedPedalboardPlugin(int replyTo, json_reader*pReader) {
+    void handle_setSelectedPedalboardPlugin(int replyTo, json_reader *pReader)
+    {
         SetSelectedPedalboardPluginBody body;
         pReader->read(&body);
-        this->model.SetSelectedPedalboardPlugin(body.clientId_,body.pluginInstanceId_);
-
+        this->model.SetSelectedPedalboardPlugin(body.clientId_, body.pluginInstanceId_);
     }
     REGISTER_MESSAGE_HANDLER(setSelectedPedalboardPlugin)
 
-    void handle_savePluginPresetAs(int replyTo, json_reader*pReader) {
+    void handle_savePluginPresetAs(int replyTo, json_reader *pReader)
+    {
         SavePluginPresetAsBody body;
         pReader->read(&body);
         int64_t result = this->model.SavePluginPresetAs(body.instanceId_, body.name_);
         Reply(replyTo, "saveCurrentPresetsAs", result);
-
     }
     REGISTER_MESSAGE_HANDLER(savePluginPresetAs)
 
-    void handle_getPresets(int replyTo, json_reader*pReader) {
+    void handle_getPresets(int replyTo, json_reader *pReader)
+    {
         PresetIndex presets;
         this->model.GetPresets(&presets);
         Reply(replyTo, "getPresets", presets);
-
     }
     REGISTER_MESSAGE_HANDLER(getPresets)
 
-    void handle_setPedalboardItemEnable(int replyTo, json_reader*pReader) {
+    void handle_setPedalboardItemEnable(int replyTo, json_reader *pReader)
+    {
         PedalboardItemEnabledBody body;
         pReader->read(&body);
         model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
-
     }
     REGISTER_MESSAGE_HANDLER(setPedalboardItemEnable)
 
-    void handle_setPedalboardItemUseModUi(int replyTo, json_reader*pReader) {
+    void handle_setPedalboardItemUseModUi(int replyTo, json_reader *pReader)
+    {
         PedalboardItemUseModGuiBody body;
         pReader->read(&body);
         model.SetPedalboardItemUseModUi(body.clientId_, body.instanceId_, body.useModUi_);
-
     }
     REGISTER_MESSAGE_HANDLER(setPedalboardItemUseModUi)
 
-    void handle_updateCurrentPedalboard(int replyTo, json_reader*pReader) {
+    void handle_updateCurrentPedalboard(int replyTo, json_reader *pReader)
+    {
         UpdateCurrentPedalboardBody body;
 
         pReader->read(&body);
         this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboard_);
-
     }
     REGISTER_MESSAGE_HANDLER(updateCurrentPedalboard)
 
-    void handle_setSnapshot(int replyTo, json_reader*pReader) {
+    void handle_setSnapshot(int replyTo, json_reader *pReader)
+    {
         int64_t snapshotIndex = -1;
         pReader->read(&snapshotIndex);
         this->model.SetSnapshot(snapshotIndex);
-
     }
     REGISTER_MESSAGE_HANDLER(setSnapshot)
 
-    void handle_setSnapshots(int replyTo, json_reader*pReader) {
+    void handle_setSnapshots(int replyTo, json_reader *pReader)
+    {
         SetSnapshotsBody body;
         pReader->read(&body);
         this->model.SetSnapshots(body.snapshots_, body.selectedSnapshot_);
-
     }
     REGISTER_MESSAGE_HANDLER(setSnapshots)
 
-    void handle_currentPedalboard(int replyTo, json_reader*pReader) {
+    void handle_currentPedalboard(int replyTo, json_reader *pReader)
+    {
         auto pedalboard = model.GetCurrentPedalboardCopy();
         Reply(replyTo, "currentPedalboard", pedalboard);
-
     }
     REGISTER_MESSAGE_HANDLER(currentPedalboard)
 
-    void handle_plugins(int replyTo, json_reader*pReader) {
+    void handle_plugins(int replyTo, json_reader *pReader)
+    {
         auto ui_plugins = model.GetPluginHost().GetUiPlugins();
         Reply(replyTo, "plugins", ui_plugins);
-
     }
     REGISTER_MESSAGE_HANDLER(plugins)
 
-    void handle_pluginClasses(int replyTo, json_reader*pReader) {
+    void handle_pluginClasses(int replyTo, json_reader *pReader)
+    {
         auto classes = model.GetPluginHost().GetLv2PluginClass();
         Reply(replyTo, "pluginClasses", classes);
-
     }
     REGISTER_MESSAGE_HANDLER(pluginClasses)
 
-    void handle_hello(int replyTo, json_reader*pReader) {
+    void handle_hello(int replyTo, json_reader *pReader)
+    {
         this->model.AddNotificationSubscription(shared_from_this());
         Reply(replyTo, "ehlo", clientId);
-
     }
     REGISTER_MESSAGE_HANDLER(hello)
 
-    void handle_setShowStatusMonitor(int replyTo, json_reader*pReader) {
+    void handle_setShowStatusMonitor(int replyTo, json_reader *pReader)
+    {
         bool showStatusMonitor;
         pReader->read(&showStatusMonitor);
         this->model.SetShowStatusMonitor(showStatusMonitor);
-
     }
     REGISTER_MESSAGE_HANDLER(setShowStatusMonitor)
 
-    void handle_getShowStatusMonitor(int replyTo, json_reader*pReader) {
+    void handle_getShowStatusMonitor(int replyTo, json_reader *pReader)
+    {
         Reply(replyTo, "getShowStatusMonitor", this->model.GetShowStatusMonitor());
-
     }
     REGISTER_MESSAGE_HANDLER(getShowStatusMonitor)
 
-    void handle_version(int replyTo, json_reader*pReader) {
+    void handle_version(int replyTo, json_reader *pReader)
+    {
         PiPedalVersion version(this->model);
 
         Reply(replyTo, "version", version);
-
     }
     REGISTER_MESSAGE_HANDLER(version)
 
-    void handle_loadPreset(int replyTo, json_reader*pReader) {
+    void handle_loadPreset(int replyTo, json_reader *pReader)
+    {
         int64_t instanceId = 0;
         pReader->read(&instanceId);
         model.LoadPreset(this->clientId, instanceId);
-
     }
     REGISTER_MESSAGE_HANDLER(loadPreset)
 
-    void handle_updatePresets(int replyTo, json_reader*pReader) {
+    void handle_updatePresets(int replyTo, json_reader *pReader)
+    {
         PresetIndex newIndex;
         pReader->read(&newIndex);
         bool result = model.UpdatePresets(this->clientId, newIndex);
         this->Reply(replyTo, "updatePresets", result);
-
     }
     REGISTER_MESSAGE_HANDLER(updatePresets)
 
-    void handle_updatePluginPresets(int replyTo, json_reader*pReader) {
+    void handle_updatePluginPresets(int replyTo, json_reader *pReader)
+    {
         PluginUiPresets pluginPresets;
         pReader->read(&pluginPresets);
         model.UpdatePluginPresets(pluginPresets);
         this->Reply(replyTo, "updatePluginPresets", true);
-
     }
     REGISTER_MESSAGE_HANDLER(updatePluginPresets)
 
-    void handle_moveBank(int replyTo, json_reader*pReader) {
+    void handle_moveBank(int replyTo, json_reader *pReader)
+    {
         FromToBody body;
         pReader->read(&body);
         model.MoveBank(this->clientId, body.from_, body.to_);
         this->Reply(replyTo, "moveBank");
-
     }
     REGISTER_MESSAGE_HANDLER(moveBank)
 
-    void handle_shutdown(int replyTo, json_reader*pReader) {
+    void handle_shutdown(int replyTo, json_reader *pReader)
+    {
         model.RequestShutdown(false);
         this->Reply(replyTo, "shutdown");
-
     }
     REGISTER_MESSAGE_HANDLER(shutdown)
 
-    void handle_restart(int replyTo, json_reader*pReader) {
+    void handle_restart(int replyTo, json_reader *pReader)
+    {
         model.RequestShutdown(true);
         this->Reply(replyTo, "restart");
-
     }
     REGISTER_MESSAGE_HANDLER(restart)
 
-    void handle_deletePresetItems(int replyTo, json_reader*pReader) {
+    void handle_deletePresetItems(int replyTo, json_reader *pReader)
+    {
         std::vector<int64_t> items;
         pReader->read(&items);
         int64_t result = model.DeletePresets(this->clientId, items);
         this->Reply(replyTo, "deletePresetItems", result);
-
     }
     REGISTER_MESSAGE_HANDLER(deletePresetItems)
 
-    void handle_deleteBankItem(int replyTo, json_reader*pReader) {
+    void handle_deleteBankItem(int replyTo, json_reader *pReader)
+    {
         int64_t instanceId = 0;
         pReader->read(&instanceId);
         uint64_t result = model.DeleteBank(this->clientId, instanceId);
         this->Reply(replyTo, "deleteBankItem", result);
-
     }
     REGISTER_MESSAGE_HANDLER(deleteBankItem)
 
-    void handle_renameBank(int replyTo, json_reader*pReader) {
+    void handle_renameBank(int replyTo, json_reader *pReader)
+    {
         RenameBankBody body;
         pReader->read(&body);
 
@@ -1659,11 +1652,11 @@ public:
         {
             this->SendError(replyTo, std::string(e.what()));
         }
-
     }
     REGISTER_MESSAGE_HANDLER(renameBank)
 
-    void handle_openBank(int replyTo, json_reader*pReader) {
+    void handle_openBank(int replyTo, json_reader *pReader)
+    {
         int64_t bankId = -1;
         pReader->read(&bankId);
         try
@@ -1676,11 +1669,11 @@ public:
         {
             this->SendError(replyTo, std::string(e.what()));
         }
-
     }
     REGISTER_MESSAGE_HANDLER(openBank)
 
-    void handle_saveBankAs(int replyTo, json_reader*pReader) {
+    void handle_saveBankAs(int replyTo, json_reader *pReader)
+    {
         RenameBankBody body;
         pReader->read(&body);
         try
@@ -1692,81 +1685,81 @@ public:
         {
             this->SendError(replyTo, std::string(e.what()));
         }
-
     }
     REGISTER_MESSAGE_HANDLER(saveBankAs)
 
-    void handle_nextBank(int replyTo, json_reader*pReader) {
+    void handle_nextBank(int replyTo, json_reader *pReader)
+    {
         model.NextBank();
-
     }
     REGISTER_MESSAGE_HANDLER(nextBank)
 
-    void handle_previousBank(int replyTo, json_reader*pReader) {
+    void handle_previousBank(int replyTo, json_reader *pReader)
+    {
         model.PreviousBank();
-
     }
     REGISTER_MESSAGE_HANDLER(previousBank)
 
-    void handle_nextPreset(int replyTo, json_reader*pReader) {
+    void handle_nextPreset(int replyTo, json_reader *pReader)
+    {
         model.NextPreset();
-
     }
     REGISTER_MESSAGE_HANDLER(nextPreset)
 
-    void handle_previousPreset(int replyTo, json_reader*pReader) {
+    void handle_previousPreset(int replyTo, json_reader *pReader)
+    {
         model.PreviousPreset();
-
     }
     REGISTER_MESSAGE_HANDLER(previousPreset)
 
-    void handle_renamePresetItem(int replyTo, json_reader*pReader) {
+    void handle_renamePresetItem(int replyTo, json_reader *pReader)
+    {
         RenamePresetBody body;
         pReader->read(&body);
 
         bool result = model.RenamePreset(body.clientId_, body.instanceId_, body.name_);
         this->Reply(replyTo, "renamePresetItem", result);
-
     }
     REGISTER_MESSAGE_HANDLER(renamePresetItem)
 
-    void handle_copyPreset(int replyTo, json_reader*pReader) {
+    void handle_copyPreset(int replyTo, json_reader *pReader)
+    {
         CopyPresetBody body;
         pReader->read(&body);
         int64_t result = model.CopyPreset(body.clientId_, body.fromId_, body.toId_);
         this->Reply(replyTo, "copyPreset", result);
-
     }
     REGISTER_MESSAGE_HANDLER(copyPreset)
 
-    void handle_copyPluginPreset(int replyTo, json_reader*pReader) {
+    void handle_copyPluginPreset(int replyTo, json_reader *pReader)
+    {
         CopyPluginPresetBody body;
         pReader->read(&body);
         uint64_t result = model.CopyPluginPreset(body.pluginUri_, body.instanceId_);
         this->Reply(replyTo, "copyPluginPreset", result);
-
     }
     REGISTER_MESSAGE_HANDLER(copyPluginPreset)
 
-    void handle_setPatchProperty(int replyTo, json_reader*pReader) {
+    void handle_setPatchProperty(int replyTo, json_reader *pReader)
+    {
         SetPatchPropertyBody body;
         pReader->read(&body);
         model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
                                    { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
                                    { this->SendError(replyTo, error.c_str()); });
-
     }
     REGISTER_MESSAGE_HANDLER(setPatchProperty)
 
-    void handle_setPedalboardItemTitle(int replyTo, json_reader*pReader) {
+    void handle_setPedalboardItemTitle(int replyTo, json_reader *pReader)
+    {
         SetPedalboardItemTitleBody body;
         pReader->read(&body);
         model.SetPedalboardItemTitle(body.instanceId_, body.title_, body.colorKey_);
-
     }
     REGISTER_MESSAGE_HANDLER(setPedalboardItemTitle)
 
-    void handle_getPatchProperty(int replyTo, json_reader*pReader) {
+    void handle_getPatchProperty(int replyTo, json_reader *pReader)
+    {
         GetPatchPropertyBody body;
         pReader->read(&body);
 
@@ -1782,20 +1775,20 @@ public:
             {
                 this->SendError(replyTo, error.c_str());
             });
-
     }
     REGISTER_MESSAGE_HANDLER(getPatchProperty)
 
-    void handle_monitorPort(int replyTo, json_reader*pReader) {
+    void handle_monitorPort(int replyTo, json_reader *pReader)
+    {
         MonitorPortBody body;
         pReader->read(&body);
 
         MonitorPort(replyTo, body);
-
     }
     REGISTER_MESSAGE_HANDLER(monitorPort)
 
-    void handle_unmonitorPort(int replyTo, json_reader*pReader) {
+    void handle_unmonitorPort(int replyTo, json_reader *pReader)
+    {
         int64_t subscriptionHandle;
         pReader->read(&subscriptionHandle);
         {
@@ -1815,11 +1808,11 @@ public:
             }
             model.UnmonitorPort(subscriptionHandle);
         }
-
     }
     REGISTER_MESSAGE_HANDLER(unmonitorPort)
 
-    void handle_addVuSubscription(int replyTo, json_reader*pReader) {
+    void handle_addVuSubscription(int replyTo, json_reader *pReader)
+    {
         int64_t instanceId = -1;
 
         pReader->read(&instanceId);
@@ -1831,11 +1824,11 @@ public:
             activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, instanceId});
         }
         this->Reply(replyTo, "addVuSubscription", subscriptionHandle);
-
     }
     REGISTER_MESSAGE_HANDLER(addVuSubscription)
 
-    void handle_removeVuSubscription(int replyTo, json_reader*pReader) {
+    void handle_removeVuSubscription(int replyTo, json_reader *pReader)
+    {
         int64_t subscriptionHandle = -1;
         pReader->read(&subscriptionHandle);
         {
@@ -1851,124 +1844,124 @@ public:
             }
         }
         model.RemoveVuSubscription(subscriptionHandle);
-
     }
     REGISTER_MESSAGE_HANDLER(removeVuSubscription)
 
-    void handle_imageList(int replyTo, json_reader*pReader) {
+    void handle_imageList(int replyTo, json_reader *pReader)
+    {
         this->Reply(replyTo, "imageList", imageList);
-
     }
     REGISTER_MESSAGE_HANDLER(imageList)
 
-    void handle_getFavorites(int replyTo, json_reader*pReader) {
+    void handle_getFavorites(int replyTo, json_reader *pReader)
+    {
         std::map<std::string, bool> favorites = this->model.GetFavorites();
         this->Reply(replyTo, "getFavorites", favorites);
-
     }
     REGISTER_MESSAGE_HANDLER(getFavorites)
 
-    void handle_setFavorites(int replyTo, json_reader*pReader) {
+    void handle_setFavorites(int replyTo, json_reader *pReader)
+    {
         std::map<std::string, bool> favorites;
         pReader->read(&favorites);
         this->model.SetFavorites(favorites);
-
     }
     REGISTER_MESSAGE_HANDLER(setFavorites)
 
-    void handle_setUpdatePolicy(int replyTo, json_reader*pReader) {
+    void handle_setUpdatePolicy(int replyTo, json_reader *pReader)
+    {
         int iPolicy;
         pReader->read(&iPolicy);
 
         this->model.SetUpdatePolicy((UpdatePolicyT)iPolicy);
-
     }
     REGISTER_MESSAGE_HANDLER(setUpdatePolicy)
 
-    void handle_forceUpdateCheck(int replyTo, json_reader*pReader) {
+    void handle_forceUpdateCheck(int replyTo, json_reader *pReader)
+    {
         this->model.ForceUpdateCheck();
-
     }
     REGISTER_MESSAGE_HANDLER(forceUpdateCheck)
 
-    void handle_setSystemMidiBindings(int replyTo, json_reader*pReader) {
+    void handle_setSystemMidiBindings(int replyTo, json_reader *pReader)
+    {
         std::vector<MidiBinding> bindings;
         pReader->read(&bindings);
         this->model.SetSystemMidiBindings(bindings);
-
     }
     REGISTER_MESSAGE_HANDLER(setSystemMidiBindings)
 
-    void handle_getSystemMidiBindings(int replyTo, json_reader*pReader) {
+    void handle_getSystemMidiBindings(int replyTo, json_reader *pReader)
+    {
         std::vector<MidiBinding> bindings = this->model.GetSystemMidiBidings();
         this->Reply(replyTo, "getSystemMidiBindings", bindings);
-
     }
     REGISTER_MESSAGE_HANDLER(getSystemMidiBindings)
 
-    void handle_requestFileList(int replyTo, json_reader*pReader) {
+    void handle_requestFileList(int replyTo, json_reader *pReader)
+    {
         throw std::runtime_error("No longer implemented.");
-
     }
     REGISTER_MESSAGE_HANDLER(requestFileList)
 
-    void handle_requestFileList2(int replyTo, json_reader*pReader) {
+    void handle_requestFileList2(int replyTo, json_reader *pReader)
+    {
         FileRequestArgs requestArgs;
         pReader->read(&requestArgs);
         FileRequestResult result = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
         this->Reply(replyTo, "requestFileList2", result);
-
     }
     REGISTER_MESSAGE_HANDLER(requestFileList2)
 
-    void handle_newPreset(int replyTo, json_reader*pReader) {
+    void handle_newPreset(int replyTo, json_reader *pReader)
+    {
         int64_t presetId = this->model.CreateNewPreset();
         this->Reply(replyTo, "newPreset", presetId);
-
     }
     REGISTER_MESSAGE_HANDLER(newPreset)
 
-    void handle_deleteUserFile(int replyTo, json_reader*pReader) {
+    void handle_deleteUserFile(int replyTo, json_reader *pReader)
+    {
         std::string fileName;
         pReader->read(&fileName);
 
         this->model.DeleteSampleFile(fileName);
         this->Reply(replyTo, "deleteUserFile", true);
-
     }
     REGISTER_MESSAGE_HANDLER(deleteUserFile)
 
-    void handle_createNewSampleDirectory(int replyTo, json_reader*pReader) {
+    void handle_createNewSampleDirectory(int replyTo, json_reader *pReader)
+    {
         CreateNewSampleDirectoryArgs args;
         pReader->read(&args);
 
         std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_, args.uiFileProperty_);
         this->Reply(replyTo, "createNewSampleDirectory", newFileName);
-
     }
     REGISTER_MESSAGE_HANDLER(createNewSampleDirectory)
 
-    void handle_renameFilePropertyFile(int replyTo, json_reader*pReader) {
+    void handle_renameFilePropertyFile(int replyTo, json_reader *pReader)
+    {
         RenameSampleFileArgs args;
         pReader->read(&args);
 
         std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_);
         this->Reply(replyTo, "renameFilePropertyFile", newFileName);
-
     }
     REGISTER_MESSAGE_HANDLER(renameFilePropertyFile)
 
-    void handle_copyFilePropertyFile(int replyTo, json_reader*pReader) {
+    void handle_copyFilePropertyFile(int replyTo, json_reader *pReader)
+    {
         CopySampleFileArgs args;
         pReader->read(&args);
 
         std::string newFileName = this->model.CopyFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_, args.overwrite_);
         this->Reply(replyTo, "copyFilePropertyFile", newFileName);
-
     }
     REGISTER_MESSAGE_HANDLER(copyFilePropertyFile)
 
-    void handle_getFilePropertyDirectoryTree(int replyTo, json_reader*pReader) {
+    void handle_getFilePropertyDirectoryTree(int replyTo, json_reader *pReader)
+    {
         GetFilePropertyDirectoryTreeArgs args;
         pReader->read(&args);
         FilePropertyDirectoryTree::ptr result =
@@ -1976,132 +1969,131 @@ public:
                 args.fileProperty_,
                 args.selectedPath_);
         this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
-
     }
     REGISTER_MESSAGE_HANDLER(getFilePropertyDirectoryTree)
 
-    void handle_moveAudioFile(int replyTo, json_reader*pReader) {
+    void handle_moveAudioFile(int replyTo, json_reader *pReader)
+    {
         MoveAudioFileArgs args;
         pReader->read(&args);
         this->model.MoveAudioFile(args.path_, args.from_, args.to_);
         bool result = true;
-        this->Reply(replyTo,"moveAudioFile", result);
-
+        this->Reply(replyTo, "moveAudioFile", result);
     }
     REGISTER_MESSAGE_HANDLER(moveAudioFile)
 
-    void handle_setOnboarding(int replyTo, json_reader*pReader) {
+    void handle_setOnboarding(int replyTo, json_reader *pReader)
+    {
         bool value;
         pReader->read(&value);
         this->model.SetOnboarding(value);
-
     }
     REGISTER_MESSAGE_HANDLER(setOnboarding)
 
-    void handle_getWifiRegulatoryDomains(int replyTo, json_reader*pReader) {
+    void handle_getWifiRegulatoryDomains(int replyTo, json_reader *pReader)
+    {
         auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
         this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
-
     }
     REGISTER_MESSAGE_HANDLER(getWifiRegulatoryDomains)
 
-    void handle_setAlsaSequencerConfiguration(int replyTo, json_reader*pReader) {
+    void handle_setAlsaSequencerConfiguration(int replyTo, json_reader *pReader)
+    {
         AlsaSequencerConfiguration config;
         pReader->read(&config);
         this->model.SetAlsaSequencerConfiguration(config);
         this->Reply(replyTo, "setAlsaSequencerConfiguration");
-
     }
     REGISTER_MESSAGE_HANDLER(setAlsaSequencerConfiguration)
 
-    void handle_getAlsaSequencerConfiguration(int replyTo, json_reader*pReader) {
+    void handle_getAlsaSequencerConfiguration(int replyTo, json_reader *pReader)
+    {
         AlsaSequencerConfiguration config = this->model.GetAlsaSequencerConfiguration();
         this->Reply(replyTo, "getAlsaSequencerConfiguration", config);
-
     }
     REGISTER_MESSAGE_HANDLER(getAlsaSequencerConfiguration)
 
-    void handle_getAlsaSequencerPorts(int replyTo, json_reader*pReader) {
+    void handle_getAlsaSequencerPorts(int replyTo, json_reader *pReader)
+    {
         std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
-        this->Reply(replyTo,"getAlsaSequencerPorts", result);
-
+        this->Reply(replyTo, "getAlsaSequencerPorts", result);
     }
     REGISTER_MESSAGE_HANDLER(getAlsaSequencerPorts)
 
-    void handle_requestBankPresets(int replyTo, json_reader*pReader) {
-        RequestBankPresetsBody    args;
+    void handle_requestBankPresets(int replyTo, json_reader *pReader)
+    {
+        RequestBankPresetsBody args;
         pReader->read(&args);
         auto result = this->model.RequestBankPresets(args.bankInstanceId_);
-        this->Reply(replyTo,"requestBankPresets",result);
-
+        this->Reply(replyTo, "requestBankPresets", result);
     }
     REGISTER_MESSAGE_HANDLER(requestBankPresets)
 
-    void handle_importPresetsFromBank(int replyTo, json_reader*pReader) {
+    void handle_importPresetsFromBank(int replyTo, json_reader *pReader)
+    {
         ImportPresetsFromBankBody args;
         pReader->read(&args);
         auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
-        this->Reply(replyTo,"importPresetsFromBank",result);
-
+        this->Reply(replyTo, "importPresetsFromBank", result);
     }
     REGISTER_MESSAGE_HANDLER(importPresetsFromBank)
 
-    void handle_copyPresetsToBank(int replyTo, json_reader*pReader) {
+    void handle_copyPresetsToBank(int replyTo, json_reader *pReader)
+    {
         CopyPresetsToBankBody args;
         pReader->read(&args);
         auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
-        this->Reply(replyTo,"copyPresetsToBank",result);
-
+        this->Reply(replyTo, "copyPresetsToBank", result);
     }
     REGISTER_MESSAGE_HANDLER(copyPresetsToBank)
 
-    void handle_getChannelRouterSettings(int replyTo, json_reader*pReader) {
+    void handle_getChannelRouterSettings(int replyTo, json_reader *pReader)
+    {
         ChannelRouterSettings::ptr result = this->model.GetChannelRouterSettings();
         this->Reply(replyTo, "getChannelRouterSettings", result);
-
     }
     REGISTER_MESSAGE_HANDLER(getChannelRouterSettings)
 
-    void handle_setChannelRouterSettings(int replyTo, json_reader*pReader) {
+    void handle_setChannelRouterSettings(int replyTo, json_reader *pReader)
+    {
         ChannelRouterSettings::ptr args;
         pReader->read(&args);
         this->model.SetChannelRouterSettings(this->clientId, args);
-
     }
     REGISTER_MESSAGE_HANDLER(setChannelRouterSettings)
 
-    void handle_downloadModelsFromTone3000(int replyTo, json_reader*pReader) {
-        DownloadModelsFromTone3000Body args;
-        pReader->read(&args);
+    void handle_DownloadModelsFromTone3000(int replyTo, json_reader *pReader)
+    {
+
+        DownloadModelsFromTone3000Body body;
+        pReader->read(&body);
         auto result = this->model.DownloadModelsFromTone3000(
-            this->clientId,
-            StringToTone3000DownloadType(args.downloadType_),
-            args.downloadPath_,
-            args.tone3000Url_
-        );
-        this->Reply(replyTo,"downloadModelsFromTone3000",result);
+            body.responseUri_,
+            body.tone3000PckceParams_,
+            body.downloadPath_,
+            body.downloadType());
 
+        this->Reply(replyTo, "downloadModelsFromTone3000", result);
     }
-    REGISTER_MESSAGE_HANDLER(downloadModelsFromTone3000)
+    REGISTER_MESSAGE_HANDLER(DownloadModelsFromTone3000)
 
-    void handle_cancelTone3000Download(int replyTo, json_reader*pReader) {
+    void handle_cancelTone3000Download(int replyTo, json_reader *pReader)
+    {
         int64_t handle = -1;
         pReader->read(&handle);
-        model.CancelTone3000Download(clientId,handle);
-
+        model.CancelTone3000Download(clientId, handle);
     }
     REGISTER_MESSAGE_HANDLER(cancelTone3000Download)
 
-    void handle_pingTone3000Server(int replyTo, json_reader*pReader) {
+    void handle_pingTone3000Server(int replyTo, json_reader *pReader)
+    {
         std::shared_ptr<PiPedalSocketHandler> this_ = shared_from_this();
-        model.Post([this_, replyTo] () {
+        model.Post([this_, replyTo]()
+                   {
             bool result = this_->PingTone3000Server();
-            this_->Reply(replyTo,"pingTone3000Server",result);
-        });
-
+            this_->Reply(replyTo,"pingTone3000Server",result); });
     }
     REGISTER_MESSAGE_HANDLER(pingTone3000Server)
-
 
     void handleMessage(int reply, int replyTo, const std::string &message, json_reader *pReader)
     {
@@ -2145,9 +2137,9 @@ public:
         }
 
         auto ffHandler = socket_messageHandlers.find(message);
-        if (ffHandler != socket_messageHandlers.end()) 
+        if (ffHandler != socket_messageHandlers.end())
         {
-            (this->*(ffHandler->second))(replyTo,pReader);
+            (this->*(ffHandler->second))(replyTo, pReader);
             return;
         }
         Lv2Log::error("Unknown message received: %s", message.c_str());
@@ -2268,7 +2260,7 @@ private:
     {
         Send("onErrorMessage", message);
     }
-    
+
     virtual void OnTone3000DownloadStarted(int64_t handle, const std::string &title) override
     {
         Tone3000DownloadStartedBody body;
@@ -2276,17 +2268,17 @@ private:
         body.title_ = title;
         Send("onTone3000DownloadStarted", body);
     }
-    
+
     virtual void OnTone3000DownloadProgress(const Tone3000DownloadProgress &progress) override
     {
         Send("onTone3000DownloadProgress", progress);
     }
-    
+
     virtual void OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath) override
     {
         Send("onTone3000DownloadComplete", resultPath);
     }
-    
+
     virtual void OnTone3000DownloadError(int64_t handle, const std::string &errorMessage) override
     {
         Tone3000DownloadErrorBody body;
@@ -2294,7 +2286,7 @@ private:
         body.errorMessage_ = errorMessage;
         Send("onTone3000DownloadError", body);
     }
-    
+
     // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
     // {
     //     PatchPropertyChangedBody body;
@@ -2646,7 +2638,6 @@ private:
         body.enabled_ = enabled;
         Send("onUseItemModUiChanged", body);
     }
-
 };
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;
@@ -2683,18 +2674,19 @@ std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &
     return std::make_shared<PiPedalSocketFactory>(model);
 }
 
-
 bool PiPedalSocketHandler::PingTone3000Server()
 {
-    constexpr const char* TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
+    constexpr const char *TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
     std::vector<std::string> output;
     std::vector<std::string> headers;
-    try {
+    try
+    {
         int result = CurlGet(TONE3000_PING_URL, output, &headers);
         return result == 200;
-    } catch(const std::exception&e)
+    }
+    catch (const std::exception &e)
     {
-        Lv2Log::error("PingTone3000Server: %s",e.what());
+        Lv2Log::error("PingTone3000Server: %s", e.what());
         return false;
     }
 }

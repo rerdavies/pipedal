@@ -24,47 +24,75 @@
 #include <chrono>
 #include <filesystem>
 
-namespace pipedal {
+namespace pipedal
+{
 
-class HtmlHelper {
-
-public:
-
-    static std::string timeToHttpDate();
-    static std::string timeToHttpDate(time_t time);
-    static std::string timeToHttpDate(std::filesystem::file_time_type time);
-
-
-    static std::string encode_url_segment(const char*pStart, const char*pEnd, bool isQuerySegment = false);
-    static std::string encode_url_segment(const std::string &segment, bool isQuerySegment = false) {
-        return encode_url_segment(segment.c_str(), segment.c_str() + segment.length(), isQuerySegment);
-    }
-    static void encode_url_segment(std::ostream&os, const char*pStart, const char *pEnd, bool isQuerySegment = false);
-    static void encode_url_segment(std::ostream&os, const std::string&segment, bool isQuerySegment = false)
+    class HtmlHelper
     {
-        const char*p = segment.c_str();
-        encode_url_segment(os,p, p + segment.length(),isQuerySegment);
-    }
 
+    public:
+        static std::string timeToHttpDate();
+        static std::string timeToHttpDate(time_t time);
+        static std::string timeToHttpDate(std::filesystem::file_time_type time);
 
-    static std::string decode_url_segment(const char*pStart, const char*pEnd, bool isQuerySegment = false);
+        static std::string encode_url_segment(const char *pStart, const char *pEnd, bool isQuerySegment = false);
+        static std::string encode_url_segment(const std::string &segment, bool isQuerySegment = false)
+        {
+            return encode_url_segment(segment.c_str(), segment.c_str() + segment.length(), isQuerySegment);
+        }
+        static void encode_url_segment(std::ostream &os, const char *pStart, const char *pEnd, bool isQuerySegment = false);
+        static void encode_url_segment(std::ostream &os, const std::string &segment, bool isQuerySegment = false)
+        {
+            const char *p = segment.c_str();
+            encode_url_segment(os, p, p + segment.length(), isQuerySegment);
+        }
 
-    static std::string decode_url_segment(const char*text, bool isQuerySegment = false);
+        static std::string decode_url_segment(const char *pStart, const char *pEnd, bool isQuerySegment = false);
 
-    static void utf32_to_utf8_stream(std::ostream &s, uint32_t uc);
+        static std::string decode_url_segment(const char *text, bool isQuerySegment = false);
 
-    static std::string Rfc5987EncodeFileName(const std::string&name);
+        static void utf32_to_utf8_stream(std::ostream &s, uint32_t uc);
 
-    static std::string SafeFileName(const std::string &name);
-    static std::string HtmlEncode(const std::string& text);
+        static std::string Rfc5987EncodeFileName(const std::string &name);
 
-    static uint64_t crc64(uint8_t *data, size_t length,uint64_t crc = 0);
-    static uint64_t crc64(const std::string&value, uint64_t crc = 0);
+        static std::string SafeFileName(const std::string &name);
+        static bool IsSafeFileName(const std::filesystem::path &path);
+        static std::string HtmlEncode(const std::string &text);
 
-    static std::string generateEtag(const std::filesystem::path &path);
+        static uint64_t crc64(uint8_t *data, size_t length, uint64_t crc = 0);
+        static uint64_t crc64(const std::string &value, uint64_t crc = 0);
 
-    static std::string httpErrorString(int errorCode);
+        static std::string generateEtag(const std::filesystem::path &path);
 
-};
+        static std::string httpErrorString(int errorCode);
+    };
+
+    class HtmlFormBuilder
+    {
+
+    public:
+        class FormEntry
+        {
+        public:
+            FormEntry() = default;
+            FormEntry(const std::string &key) : key_(key) {}
+            FormEntry(const std::string &key, const std::string &value) : key_(key), value_(value) {}
+
+            const std::string&key() const { return key_; }
+            const std::optional<std::string>&value() const { return value_; }
+        private:
+            std::string key_;
+            std::optional<std::string> value_;
+        };
+        HtmlFormBuilder() = default;
+        HtmlFormBuilder(const std::vector<FormEntry> &&entries) : entries_(std::move(entries)) {}
+        void Add(const std::string &key) { entries_.push_back(FormEntry(key)); }
+        void Add(const std::string &key, const std::string &value) { entries_.push_back(FormEntry(key, value)); }
+
+        std::string build();
+
+    private:
+        std::vector<FormEntry> entries_;
+    };
 
 } // namespace.

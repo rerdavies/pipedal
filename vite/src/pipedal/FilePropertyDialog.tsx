@@ -724,7 +724,7 @@ export default withStyles(
             if (this.state.previousSelection == selectedItem) {
                 return;
             }
-            if (!this.isTextFile(selectedItem) && !this.isFolderArtwork(selectedItem)) {
+            if (!this.isTextFile(selectedItem) && !this.isFolderArtwork(selectedItem) && !this.isPdfFile(selectedItem)) {
                 this.props.onApply(fileProperty, selectedItem);
             }
             this.setState({ previousSelection: selectedItem });
@@ -1812,6 +1812,19 @@ export default withStyles(
             return false;
 
         }
+        isPdfFile(fileName: string) {
+            let extension = pathExtension(fileName);
+            if (extension === ".pdf") {
+                return true;
+            }
+            return false;
+
+        }
+        handleShowPdfFile(fileName: string) {
+            // open pdf in new tab
+            this.model.displayMediaFile(fileName);
+        }
+        
         handleShowTextFile(fileName: string) {
             this.setState({ textFileName: fileName });
         }
@@ -1827,7 +1840,9 @@ export default withStyles(
                 this.requestFiles(this.state.selectedFile);
                 this.setState({ navDirectory: this.state.selectedFile });
             } else {
-                if (this.isTextFile(this.state.selectedFile)) {
+                if (this.isPdfFile(this.state.selectedFile)) {
+                    this.handleShowPdfFile(this.state.selectedFile);
+                } else if (this.isTextFile(this.state.selectedFile)) {
                     this.handleShowTextFile(this.state.selectedFile);
                 } else {
                     this.props.onOk(this.props.fileProperty, this.state.selectedFile);

@@ -89,6 +89,7 @@ public:
     std::istream &get_body_input_stream();
 
     const std::filesystem::path &get_body_input_file();
+    void detach_body_input_file();
     size_t content_length() const { return m_content_length; }
 
     /// Returns the full raw request (including the body)
@@ -162,6 +163,13 @@ const std::filesystem::path &request_with_file_upload::get_body_input_file()
     if (!this->m_temporaryFile)
         throw std::runtime_error("Request does not have a body.");
     return this->m_temporaryFile->Path();
+}
+void request_with_file_upload::detach_body_input_file() 
+{
+    if (this->m_temporaryFile)
+    {
+        this->m_temporaryFile->Detach();
+    }
 }
 std::istream &request_with_file_upload::get_body_input_stream()
 {
@@ -709,6 +717,10 @@ namespace pipedal
             virtual const std::filesystem::path &get_body_temporary_file() override
             {
                 return m_request.get_body_input_file();
+            }
+
+            virtual void detach_body_temporary_file() override {
+                return m_request.detach_body_input_file();
             }
 
             virtual size_t content_length() const { return m_request.content_length(); }

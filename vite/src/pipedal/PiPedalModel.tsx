@@ -27,7 +27,7 @@ import { Pedalboard, PedalboardItem, ControlValue, Snapshot } from './Pedalboard
 import PluginClass from './PluginClass';
 import ScreenOrientation from './ScreenOrientation';
 import PiPedalSocket, { PiPedalMessageHeader } from './PiPedalSocket';
-import {Tone3000DownloadHandler} from './Tone3000Dialog';
+import { Tone3000DownloadHandler } from './Tone3000Downloader';
 import Tone3000DownloadType from './Tone3000DownloadType';
 import { nullCast } from './Utility'
 import { JackConfiguration, JackChannelSelection } from './Jack';
@@ -51,6 +51,7 @@ import { getDefaultModGuiPreference } from './ModGuiHost';
 import ChannelRouterSettings from './ChannelRouterSettings';
 import Tone3000DownloadProgress from './Tone3000DownloadProgress';
 
+
 export enum State {
     Loading,
     Ready,
@@ -63,6 +64,15 @@ export enum State {
     InstallingUpdate,
     HotspotChanging,
 };
+
+export interface Tone3000PkceParams {
+    publishableKey: string;
+    redirectUrl: string;
+    codeVerifier: string;
+    codeChallenge: string;
+    state: string;
+}
+
 
 export function getErrorMessage(error: any) {
     if (error instanceof Error) {
@@ -85,6 +95,38 @@ export enum ReconnectReason {
     ReloadingPlugins,
     Updating,
     HotspotChanging
+};
+
+export interface Tone3000ModelInfo {
+    url: string;
+    name: string;
+};
+
+export interface Tone3000DownloadRequest {
+
+    downloadType: Tone3000DownloadType;
+    downloadPath: string;
+
+    appId: string;
+    state: string;
+    codeChallenge: string;
+    codeVerifier: string;
+
+    authToken: string;
+
+    id: number,
+    title: string;
+    description: string;
+    imageUrl: string;
+    models: Tone3000ModelInfo[];
+
+    updated_at: string;
+    user: string;
+    sizes: string[];
+    platform: string;
+    gear: string;
+    license: string;
+    links: string[];
 };
 
 export class HostVersion {
@@ -488,6 +530,7 @@ export class PiPedalModel //implements PiPedalModel
     serverVersion?: PiPedalVersion;
     countryCodes: { [Name: string]: string } = {};
 
+    serverUrl: string = "";
     socketServerUrl: string = "";
     varServerUrl: string = "";
     modResourcesUrl: string = "";
@@ -557,8 +600,8 @@ export class PiPedalModel //implements PiPedalModel
         );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
-    tone3000Downloading : ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
-    tone3000DownloadProgress : ObservableProperty<Tone3000DownloadProgress | null> = new ObservableProperty<Tone3000DownloadProgress | null>(null);
+    tone3000Downloading: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+    tone3000DownloadProgress: ObservableProperty<Tone3000DownloadProgress | null> = new ObservableProperty<Tone3000DownloadProgress | null>(null);
 
     uiPluginsByUri: Map<string, UiPlugin> = new Map<string, UiPlugin>();
 
@@ -664,7 +707,7 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    async pingTone3000Server() : Promise<boolean> {
+    async pingTone3000Server(): Promise<boolean> {
         if (this.webSocket === undefined) {
             return false;
 
@@ -677,41 +720,39 @@ export class PiPedalModel //implements PiPedalModel
             return false;
         }
     }
+
     async downloadModelsFromTone3000(
-        tone3000DownloadUrl: string,
-        downloadPath: string,
-        downloadType: Tone3000DownloadType
+        downloadRequest: Tone3000DownloadRequest
     ): Promise<void> {
         try {
             if (!this.webSocket) {
                 return;
             }
-            this.webSocket.send("downloadModelsFromTone3000",
-                {
-                    downloadPath: downloadPath, 
-                    tone3000Url: tone3000DownloadUrl,
-                    downloadType: downloadType
-                });
-        } catch (error) {   
+            this.webSocket.send("downloadModelsFromTone3000", downloadRequest);
+        } catch (error) {
             this.showAlert(getErrorMessage(error));
         }
     }
     private cancelTone3000Download(): void {
         let downloadProgress = this.tone3000DownloadProgress.get();
         if (downloadProgress !== null) {
-            if (downloadProgress.handle !== -1) {
-                if (!this.webSocket) {
-                    this.tone3000DownloadProgress.set(null);
-                    this.tone3000Downloading.set(false);
-                    return;
-                }
-                this.webSocket.send("cancelTone3000Download",downloadProgress.handle);
+            if (this.tone3000DownloadHandler) {
+
+                this.tone3000DownloadHandler.cancelDownload(this.tone3000DownloadProgress.get()?.handle ?? -1);
             }
+            // if (downloadProgress.handle !== -1) {
+            //     if (!this.webSocket) {
+            //         this.tone3000DownloadProgress.set(null);
+            //         this.tone3000Downloading.set(false);
+            //         return;
+            //     }
+            //     this.webSocket.send("cancelTone3000Download", downloadProgress.handle);
+            // }
         }
     }
 
     showTone3000DownloadPopup(
-        downloadType: Tone3000DownloadType,         
+        downloadType: Tone3000DownloadType,
         downloadPath: string
     ): void {
         if (this.tone3000DownloadHandler === null) {
@@ -1084,34 +1125,34 @@ export class PiPedalModel //implements PiPedalModel
         // this.webSocket?.reconnect(); // let the server do it for us.
 
     }
-    
+
     // TONE3000 download notification handlers (stub implementations)
-    private onTone3000DownloadStarted(handle: number, title: string): void {
+    onTone3000DownloadStarted(handle: number, title: string): void {
         this.tone3000Downloading.set(true);
     }
 
-    private onTone3000DownloadProgress(progress: Tone3000DownloadProgress): void {
+    onTone3000DownloadProgress(progress: Tone3000DownloadProgress): void {
         this.tone3000Downloading.set(true);
         this.tone3000DownloadProgress.set(progress);
     }
 
-    private onTone3000DownloadComplete(resultPath: string): void {
+    onTone3000DownloadComplete(resultPath: string): void {
         this.tone3000Downloading.set(false);
         this.tone3000DownloadProgress.set(null);
         this.onTone3000DownloadCompleteEvent.fire(resultPath);
     }
 
-    private onTone3000DownloadError(handle: number, errorMessage: string): void {
+    onTone3000DownloadError(handle: number, errorMessage: string): void {
         console.error(`TONE3000 download error: handle=${handle}, error=${errorMessage}`);
         this.tone3000Downloading.set(false);
         this.tone3000DownloadProgress.set(null);
         this.onTone3000DownloadCompleteEvent.fire("");
-        
+
         setTimeout(() => {
             this.showAlert(errorMessage);
         }, 100);
     }
-    
+
     setError(message: string): void {
         this.errorMessage.set(message);
         this.setState(State.Error);
@@ -1220,7 +1261,9 @@ export class PiPedalModel //implements PiPedalModel
     }
     private makeVarServerUrl(protocol: string, hostName: string, port: number): string {
         return protocol + "://" + hostName + ":" + port + "/var/";
-
+    }
+    private makeServerUrl(protocol: string, hostName: string, port: number): string {
+        return protocol + "://" + hostName + ":" + port;
     }
     private makeModResourceUrl(protocol: string, hostName: string, port: number): string {
         return protocol + "://" + hostName + ":" + port + "/resources/";
@@ -1303,6 +1346,7 @@ export class PiPedalModel //implements PiPedalModel
 
             this.socketServerUrl = socket_server;
             this.varServerUrl = var_server_url;
+            this.serverUrl = this.makeServerUrl("http", socket_server_address, socket_server_port);
             this.maxFileUploadSize = parseInt(max_upload_size);
         } catch (error: any) {
             this.setError("Can't connect to server. " + getErrorMessage(error));
@@ -2511,7 +2555,7 @@ export class PiPedalModel //implements PiPedalModel
                     }
                 }).catch((error) => {
                     // failed to subscribe.
-                    this.vuSubscriptions[instanceId] = undefined; 
+                    this.vuSubscriptions[instanceId] = undefined;
                 });
 
             this.vuSubscriptions[instanceId] = newTarget;
@@ -2866,6 +2910,10 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
     }
 
+    displayMediaFile(filePath: string) {
+        let url = this.varServerUrl + "displayMediaFile?path=" + encodeURIComponent(filePath);
+        window.open(url, "_blank");
+    }
     downloadAudioFile(filePath: string) {
         let downloadUrl = this.varServerUrl + "downloadMediaFile?path=" + encodeURIComponent(filePath);
 
@@ -3801,6 +3849,21 @@ export class PiPedalModel //implements PiPedalModel
         this.channelRouterSettings.set(settings);
         if (this.webSocket) {
             this.webSocket.send("setChannelRouterSettings", settings);
+        }
+    }
+    DownloadModelsFromTone3000(
+        responseUri: string,
+        tone3000PckceParams: Tone3000PkceParams,
+        downloadPath: string,
+        downloadType: Tone3000DownloadType
+    ): void {
+        if (this.webSocket) {
+            this.webSocket.send("DownloadModelsFromTone3000", { 
+                responseUri: responseUri, 
+                tone3000PckceParams: tone3000PckceParams,
+                downloadPath: downloadPath,
+                downloadType: downloadType === Tone3000DownloadType.Nam ? 0: 1
+             });
         }
     }
 

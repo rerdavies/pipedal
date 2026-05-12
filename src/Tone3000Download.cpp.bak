@@ -618,7 +618,7 @@ static void writeReadme(const fs::path &path, const Tone3000Download &download)
     }
 }
 
-std::string pipedal::tone3000::DownloadTone3000Bundle(
+std::string pipedal::tone3000::DownloadTone3000File(
     const std::filesystem::path &destinationFolder,
     const std::string &downloadUrl,
     int64_t handle,

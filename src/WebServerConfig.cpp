@@ -81,6 +81,17 @@ static std::string GetMimeType(const std::filesystem::path &path)
     return result;
 }
 
+static bool IsSafeMediaPath(const fs::path path)
+{
+    if (!HtmlHelper::IsSafeFileName(path)) {
+        return false;
+    }
+    if (!(path.string().starts_with("/var/pipedal/audio_uploads")))
+    {
+        return false;
+    }
+    return true;
+}
 int32_t ConvertThumbnailSize(const std::string &param)
 {
     if (param.empty())
@@ -128,8 +139,8 @@ private:
     std::vector<std::string> extensions;
 };
 
-
-static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, const std::string & id) {
+static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, const std::string &id)
+{
     std::string stem = id;
     // find a file in thumbnailDirectory which has a filename of {stem}.*.
     if (!fs::exists(thumbnailDirectory) || !fs::is_directory(thumbnailDirectory))
@@ -150,8 +161,7 @@ static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, con
         }
     }
     return {};
-
-}                 
+}
 
 class DownloadIntercept : public RequestHandler
 {
@@ -172,6 +182,14 @@ public:
         }
         std::string segment = request_uri.segment(1);
 
+        if (segment == "t3k_uploadAsset")
+        {
+            return true;
+        }
+        if (segment == "t3k_response.html")
+        {
+            return true;
+        }
         if (segment == "tone3000_thumbnail")
         {
             return true;
@@ -181,6 +199,11 @@ public:
         {
             return true;
         }
+        if (segment == "displayMediaFile")
+        {
+            return true;
+        }
+
         if (segment == "uploadPluginPresets")
         {
             return true;
@@ -330,7 +353,20 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "tone3000_thumbnail") 
+            if (segment == "t3k_uploadAsset")
+            {
+                res.set(HttpField::content_length, "0");
+                return;
+            }
+            if (segment == "t3k_response.html")
+            {
+                std::string mimeType = GetMimeType("x.html");
+                auto text = T3kResponse();
+                res.set(HttpField::content_type, mimeType);
+                res.set(HttpField::content_length, SS(text.size()));
+                return;
+            }
+            else if (segment == "tone3000_thumbnail")
             {
                 std::string id = request_uri.query("id");
                 if (id == "")
@@ -338,7 +374,7 @@ public:
                     throw PiPedalException("Invalid request.");
                 }
                 fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
-                if (!fs::exists(path)) 
+                if (!fs::exists(path))
                 {
                     throw PiPedalException("File not found.");
                 }
@@ -353,7 +389,7 @@ public:
                 return;
             }
 
-            if (segment == "downloadMediaFile")
+            if (segment == "downloadMediaFile" || segment == "displayMediaFile")
             {
                 fs::path path = request_uri.query("path");
 
@@ -375,8 +411,11 @@ public:
                 }
                 res.set(HttpField::content_type, mimeType);
                 res.set(HttpField::cache_control, "no-cache");
-                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
-                res.set(HttpField::content_disposition, disposition);
+                if (segment == "downloadMediaFile")
+                {
+                    std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
+                    res.set(HttpField::content_disposition, disposition);
+                }
                 size_t contentLength = std::filesystem::file_size(path);
                 res.setContentLength(contentLength);
                 return;
@@ -465,18 +504,41 @@ public:
     bool isInfoFile(const fs::path &path)
     {
         auto extension = path.extension();
-        if (extension == ".md" || extension == ".txt")
+        if (extension == ".pdf")
         {
             return true;
         }
-        auto filename = path.stem();
-        if (filename == "LICENSE" || filename == "README")
+        auto filename = path.filename();
+        if (filename == "LICENSE.txt" || filename == "README.txt")
+        {
+            return true;
+        }
+        if (filename == "LICENSE.md" || filename == "README.md")
+        {
+            return true;
+        }
+        if (filename == "license.txt" || filename == "readme.txt")
         {
             return true;
         }
         return false;
     }
+    std::string T3kResponse()
+    {
+        return "<html>\n"
+               "<head>\n"
+               "<script>\n"
+               "   window.close();"
+               "</script>\n"
+               "</head>\n"
+               "<body>\n"
+               "</body>\n"
+               "</html>\n";
+    }
 
+    void DownloadTone3000Tone(const uri &requestUri)
+    {
+    }
     virtual void get_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -487,11 +549,15 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
-            if (segment == "tone3000_thumbnail") 
+            if (segment == "t3k_response.html")
+            {
+                throw std::runtime_error("Not implemented.");
+            }
+            if (segment == "tone3000_thumbnail")
             {
                 std::string id = request_uri.query("id");
                 fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
-                if (!fs::exists(path)) 
+                if (!fs::exists(path))
                 {
                     throw PiPedalException("File not found.");
                 }
@@ -505,8 +571,8 @@ public:
                 res.setContentLength(contentLength);
                 res.setBodyFile(path, false);
                 return;
-                
-            } else if (segment == "downloadMediaFile")
+            }
+            else if (segment == "downloadMediaFile" || segment == "displayMediaFile")
             {
                 fs::path path = request_uri.query("path");
 
@@ -528,8 +594,11 @@ public:
                 }
                 res.set(HttpField::content_type, mimeType);
                 res.set(HttpField::cache_control, "no-cache");
-                std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
-                res.set(HttpField::content_disposition, disposition);
+                if (segment == "downloadMediaFile")
+                {
+                    std::string disposition = GetContentDispositionHeader(path.stem().string(), path.extension().string());
+                    res.set(HttpField::content_disposition, disposition);
+                }
                 size_t contentLength = std::filesystem::file_size(path);
                 res.setContentLength(contentLength);
                 res.setBodyFile(path, false);
@@ -826,6 +895,75 @@ public:
         return true;
     }
 
+    void UploadEmbeddedZipFile(
+        PiPedalModel *model,
+        pipedal::zip_file_input_stream &si,
+        const std::string &inputFileName,
+        fs::path directory,
+        ExtensionChecker &extensionChecker,
+        int64_t instanceId,
+        const std::string &patchProperty)
+    {
+        TemporaryFile tempFile{WEB_TEMP_DIR};
+        // Extract the zip_file_input_stream to the temporary file.
+        {
+            std::ofstream out(tempFile.Path(), std::ios::binary);
+            if (!out)
+            {
+                throw std::runtime_error("Failed to open temporary file for writing.");
+            }
+            constexpr std::size_t bufferSize = 16384;
+            char buffer[bufferSize];
+            while (si)
+            {
+                si.read(buffer, bufferSize);
+                std::streamsize bytesRead = si.gcount();
+                if (bytesRead > 0)
+                {
+                    out.write(buffer, bytesRead);
+                }
+            }
+            out.close();
+        }
+
+        // determine toplevel directory path.
+        auto zipFile = ZipFileReader::Create(tempFile.Path());
+        std::vector<std::string> files = zipFile->GetFiles();
+        bool hasSingleRootDirectory = HasSingleRootDirectory(*zipFile);
+        directory = directory / fs::path(inputFileName).parent_path();
+        if (!hasSingleRootDirectory)
+        {
+            directory = (fs::path(directory) / fs::path(inputFileName).filename().stem()).string();
+        }
+        for (const auto &inputFile : files)
+        {
+            if (!inputFile.ends_with("/")) // don't process directory entries.
+            {
+                fs::path inputPath{inputFile};
+                std::string extension = inputPath.extension();
+                if (extensionChecker.IsValidExtension(extension) || isInfoFile(inputFile))
+                {
+                    auto si = zipFile->GetFileInputStream(inputFile);
+                    std::string path = this->model->UploadUserFile(directory, instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
+                }
+                else if (extension == ".zip")
+                {
+                    // recursively included zip file. :-/
+                    auto si = zipFile->GetFileInputStream(inputFile);
+
+                    UploadEmbeddedZipFile(
+                        this->model,
+                        si,
+                        inputPath,
+                        directory,
+                        extensionChecker,
+                        instanceId,
+                        patchProperty);
+                }
+            }
+        }
+    }
+
     virtual void post_response(
         const uri &request_uri,
         HttpRequest &req,
@@ -836,6 +974,65 @@ public:
         {
             std::string segment = request_uri.segment(1);
 
+            if (segment == "t3k_uploadAsset")
+            {
+                std::string responseText;
+                try
+                {
+                    fs::path targetPath = request_uri.query("path");
+                    if (targetPath.empty())
+                    {
+                        throw std::runtime_error("Invalid path");
+                    }
+                    if (!IsSafeMediaPath(targetPath))
+                    {
+                        throw std::runtime_error("Unsafe path.");
+                    }
+                    fs::path filePath = req.get_body_temporary_file();
+                    if (filePath.empty())
+                    {
+                        throw std::runtime_error("Unexpected.");
+                    }
+
+                    try {
+                        fs::create_directories(targetPath.parent_path());
+                        // try moving into place.
+                        if (fs::exists(targetPath))
+                        {
+                            fs::remove(targetPath);
+                        }
+                        fs::rename(req.get_body_temporary_file(), targetPath);
+                        req.detach_body_temporary_file();
+
+                    } catch (const std::exception &e) {
+                        // ok Copy into place instead.
+                        fs::copy(req.get_body_temporary_file(), targetPath);
+                    }
+                    // set target permissions to "pipedal_d:pipedald -rw-rw-r-- if we can.
+                    try {
+                        fs::permissions(targetPath, fs::perms::owner_read | fs::perms::owner_write | 
+                                        fs::perms::group_read | fs::perms::group_write | 
+                                        fs::perms::others_read,
+                                        fs::perm_options::replace);
+                    } catch (const std::exception&)
+                    {
+                        // ignore.
+                    }
+
+                    responseText = "{\"ok\": true}";
+                }
+                catch (const std::exception &e)
+                {
+                    std::string jsonString = json_writer::encode_string(e.what());
+                    std::ostringstream os;
+                    os << "{\"ok\": false, \"error\": " << jsonString << "}";
+                    responseText = os.str();
+                }
+                res.set(HttpField::content_length, SS(responseText.size()));
+                res.set(HttpField::content_type, "text/json");
+                res.setBody(responseText);
+                return;
+            }
             if (segment == "uploadPluginPresets")
             {
                 PluginPresets presets;
@@ -1012,6 +1209,20 @@ public:
                                     {
                                         auto si = zipFile->GetFileInputStream(inputFile);
                                         std::string path = this->model->UploadUserFile(directory, instanceId, patchProperty, inputFile, si, zipFile->GetFileSize(inputFile));
+                                    }
+                                    else if (extension == ".zip")
+                                    {
+                                        // recursively included zip file. :-/
+                                        auto si = zipFile->GetFileInputStream(inputFile);
+
+                                        UploadEmbeddedZipFile(
+                                            this->model,
+                                            si,
+                                            inputPath,
+                                            directory,
+                                            extensionChecker,
+                                            instanceId,
+                                            patchProperty);
                                     }
                                 }
                             }

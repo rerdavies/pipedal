@@ -247,8 +247,30 @@ std::string HtmlHelper::Rfc5987EncodeFileName(const std::string &name)
 
 #define MAX_FILE_NAME_LENGHT 96
 
-const std::string SF_SPECIALS = " <>@;:\"\'/[]?=+";
+const std::string SF_SPECIALS = "<>@;:\"\'/[]?=";
+const std::string ISF_SPECIALS = "\\:";
 
+
+bool HtmlHelper::IsSafeFileName(const std::filesystem::path &path)
+{
+    for (const auto&segment: path)
+    {
+        if (segment.string() == "..")
+        {
+            return false;
+        }
+        for (char c: segment.string())
+        {
+            unsigned char uc = (unsigned char)c;
+            if (uc < 0x20 || uc >= 0x80 || ISF_SPECIALS.find(c) != std::string::npos)
+            {
+                return false;
+            }
+
+        }
+    }
+    return true;
+}
 std::string HtmlHelper::SafeFileName(const std::string &name)
 {
     std::stringstream s;
@@ -456,8 +478,30 @@ std::string HtmlHelper::httpErrorString(int errorCode)
     auto ff = httpErrorStrings.find(errorCode);
     if (ff != httpErrorStrings.end())
     {
-        return SS(errorCode << " " << ff->second);
+        return SS(errorCode << ": " << ff->second);
     }
-    return SS(errorCode << " Unknown error");
+    return SS(errorCode << ": Unknown error");
 
+}
+
+std::string HtmlFormBuilder::build()
+{
+    std::ostringstream ss;
+    bool firstTime = true;
+    for (const auto &entry: entries_)
+    {
+        if (!firstTime) 
+        {
+            ss << "&";
+        }
+        ss << entry.key();
+        if (entry.value().has_value()) 
+        {
+
+            ss << "=" << HtmlHelper::encode_url_segment(entry.value().value(),true);
+        }
+        firstTime = false;
+
+    }
+    return ss.str();
 }

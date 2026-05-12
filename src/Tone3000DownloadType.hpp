@@ -26,8 +26,8 @@
 
 namespace pipedal {
     enum class Tone3000DownloadType {
-        Nam,
-        CabIr
+        Nam = 0,
+        CabIr = 1
     };
 
     Tone3000DownloadType StringToTone3000DownloadType(const std::string &value);

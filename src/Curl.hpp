@@ -34,17 +34,21 @@ namespace pipedal {
     extern int CurlGet(
         const std::string &url,
         const std::filesystem::path&outputFile,
-        std::vector<std::string> *headersOpt = nullptr
+        std::vector<std::string> *outputHeadersOpt = nullptr,
+        const std::vector<std::string> *inputHeadersOpt = nullptr
     );
     extern int CurlGet(
         const std::string &url,
         std::vector<uint8_t> &output,
-        std::vector<std::string> *headersOpt = nullptr
+        std::vector<std::string> *outputHeadersOpt = nullptr,
+        const std::vector<std::string> *inputHeadersOpt = nullptr
+
     );
     extern int CurlGet(
         const std::string&url,
         std::vector<std::string> &output,
-        std::vector<std::string> *headersOpt = nullptr
+        std::vector<std::string> *outputHeadersOpt = nullptr,
+        const std::vector<std::string> *inputHeadersOpt = nullptr
     );
 
     struct CurlDownloadRequest{
@@ -54,7 +58,24 @@ namespace pipedal {
     extern int CurlGet(
         const std::vector<CurlDownloadRequest> &request, 
         const std::function<void(size_t completed, size_t total)> &progressCallback,
-        std::vector<std::string>*headersOpt
+        std::vector<std::string>*outputHeadersOpt
     );
+
+
+    extern int CurlPostFile(
+        const std::string &url,
+        const std::filesystem::path&inputFile,
+        const std::filesystem::path&outputFile,
+        std::vector<std::string> *outputHeadersOpt = nullptr,
+        std::vector<std::string> *inputHeadersOpt = nullptr
+    );
+    extern int CurlPostStrings(
+        const std::string &url,
+        const std::string&body,
+        std::string&responseBody,
+        std::vector<std::string> *outputHeadersOpt = nullptr,
+        std::vector<std::string> *inputHeadersOpt = nullptr
+    );
+
 
 }

@@ -29,55 +29,61 @@ std::string uri::segment(int index) const
     const char *p = path_start;
     int segment = 0;
 
-    if (p != path_end && *p == '/') ++p;
+    if (p != path_end && *p == '/')
+        ++p;
 
     while (p != path_end && *p != '?' && *p != '#')
     {
         if (segment == index)
         {
-            const char*segmentStart = p;
-            while(p != path_end && *p != '/' && *p != '?' && *p != '#')
+            const char *segmentStart = p;
+            while (p != path_end && *p != '/' && *p != '?' && *p != '#')
             {
                 ++p;
             }
-            return HtmlHelper::decode_url_segment(segmentStart,p);
-        } else {
-            while(p != path_end && *p != '/' && *p != '?' && *p != '#')
+            return HtmlHelper::decode_url_segment(segmentStart, p);
+        }
+        else
+        {
+            while (p != path_end && *p != '/' && *p != '?' && *p != '#')
             {
                 ++p;
             }
         }
-        if (p != path_end && *p == '/') ++p;
+        if (p != path_end && *p == '/')
+            ++p;
         ++segment;
     }
     throw std::invalid_argument("Invalid segement number.");
 };
 
-
-int uri::segment_count() const { 
+int uri::segment_count() const
+{
     const char *p = path_start;
     int segment = 0;
 
-    if (p != path_end && *p == '/') ++p;
+    if (p != path_end && *p == '/')
+        ++p;
 
     while (p != path_end && *p != '?' && *p != '#')
     {
-        while(p != path_end && *p != '/' && *p != '?' && *p != '#')
+        while (p != path_end && *p != '/' && *p != '?' && *p != '#')
         {
             ++p;
         }
-        if (p != path_end && *p == '/') ++p;
+        if (p != path_end && *p == '/')
+            ++p;
         ++segment;
     }
     return segment;
 }
 
-void uri::set(const char*start, const char*end)
+void uri::set(const char *start, const char *end)
 {
-    this->text = std::string(start,end);
+    this->text = std::string(start, end);
     set_();
 }
-void uri::set(const char*text)
+void uri::set(const char *text)
 {
     this->text = text;
     set_();
@@ -85,10 +91,10 @@ void uri::set(const char*text)
 
 void uri::set_()
 {
-    const char*start = this->text.c_str();
-    const char*end = start+this->text.size();
+    const char *start = this->text.c_str();
+    const char *end = start + this->text.size();
 
-    const char* p = start;
+    const char *p = start;
 
     this->isRelative = true;
 
@@ -96,7 +102,8 @@ void uri::set_()
     while (p != end)
     {
         char c = *p;
-        if (c == ':') {
+        if (c == ':')
+        {
             hasScheme = true;
             break;
         }
@@ -111,12 +118,14 @@ void uri::set_()
         scheme_start = start;
         scheme_end = p;
         ++p;
-    } else {
+    }
+    else
+    {
         scheme_start = start;
         scheme_end = start;
         p = start;
     }
-    if (p[0] == '/' && p[1] == '/') 
+    if (p[0] == '/' && p[1] == '/')
     {
         this->isRelative = false;
         // authority.
@@ -127,20 +136,22 @@ void uri::set_()
         authority_start = p;
         authority_end = nullptr;
 
-        const char*port_start = nullptr;
+        const char *port_start = nullptr;
         while (p != end)
         {
             char c = *p;
             if (c == '@')
             {
                 user_end = p;
-                authority_start = p+1;
+                authority_start = p + 1;
                 port_start = nullptr;
-            } else if (c == ':')
+            }
+            else if (c == ':')
             {
                 authority_end = p;
-                port_start = p+1;
-            } else if (c == ']') // ignore colon inside ipv6 address.
+                port_start = p + 1;
+            }
+            else if (c == ']') // ignore colon inside ipv6 address.
             {
                 port_start = nullptr;
             }
@@ -150,16 +161,22 @@ void uri::set_()
             }
             ++p;
         }
-        if (authority_end == nullptr) authority_end = p;
+        if (authority_end == nullptr)
+            authority_end = p;
         if (port_start != nullptr)
         {
-            char*intEnd;
-            port_ = (int)std::strtol(port_start,&intEnd,10);
-            if (intEnd != p) throwInvalid();
-        } else {
+            char *intEnd;
+            port_ = (int)std::strtol(port_start, &intEnd, 10);
+            if (intEnd != p)
+                throwInvalid();
+        }
+        else
+        {
             port_ = -1;
         }
-    } else {
+    }
+    else
+    {
         user_start = p;
         user_end = p;
         authority_start = p;
@@ -168,7 +185,8 @@ void uri::set_()
     }
 
     path_start = p;
-    if (p != end && *p == '/') this->isRelative = false;
+    if (p != end && *p == '/')
+        this->isRelative = false;
 
     while (p != end && *p != '?' && *p != '#')
     {
@@ -185,7 +203,9 @@ void uri::set_()
             ++p;
         }
         query_end = p;
-    } else {
+    }
+    else
+    {
         query_start = query_end = p;
     }
     if (p != end && *p == '#')
@@ -193,62 +213,64 @@ void uri::set_()
         ++p;
         fragment_start = p;
         fragment_end = end;
-
-    } else {
+    }
+    else
+    {
         fragment_start = fragment_end = p;
     }
 }
 
-void uri::throwInvalid() {
+void uri::throwInvalid()
+{
     throw std::invalid_argument("Invalid uri.");
-
 }
 
-static bool compare_name(const char*start, const char*end, const char*szName)
+static bool compare_name(const char *start, const char *end, const char *szName)
 {
     while (start != end)
     {
-        if (*start != *szName) return false;
-        ++start; ++szName;
+        if (*start != *szName)
+            return false;
+        ++start;
+        ++szName;
     }
     return *szName == 0;
 }
 
-int  uri::query_count() const
+int uri::query_count() const
 {
     int count = 0;
-    const char*p = query_start;
+    const char *p = query_start;
     while (p != query_end && *p != '#')
     {
-        const char*nameStart = p;
+        const char *nameStart = p;
         while (p != query_end && *p != '&' && *p != '#')
         {
             ++p;
         }
-        if (p != query_end && *p == '&') ++p;
+        if (p != query_end && *p == '&')
+            ++p;
         ++count;
         if (p == query_end || *p == '#')
         {
             break;
-
         }
     }
     return count;
-
 }
 
-bool  uri::has_query(const char*name) const
+bool uri::has_query(const char *name) const
 {
-    const char*p = query_start;
+    const char *p = query_start;
     while (p != query_end && *p != '#')
     {
-        const char*nameStart = p;
+        const char *nameStart = p;
         while (p != query_end && *p != '&' && *p != '=' && *p != '#')
         {
             ++p;
         }
         // compare names.
-        if (compare_name(nameStart,p,name))
+        if (compare_name(nameStart, p, name))
         {
             return true;
         }
@@ -256,111 +278,128 @@ bool  uri::has_query(const char*name) const
         {
             ++p;
         }
-        if (p != query_end && *p == '&') ++p;
+        if (p != query_end && *p == '&')
+            ++p;
     }
     return false;
-
 }
 
 query_segment uri::query(int index) const
 {
-    const char*p = query_start;
+    const char *p = query_start;
     int ix = 0;
     while (p != query_end && *p != '#')
     {
-        const char*nameStart = p;
+        const char *nameStart = p;
         while (p != query_end && *p != '&' && *p != '=' && *p != '#')
         {
             ++p;
         }
         // compare names.
 
-        //if (compare_name(nameStart,p,name))
+        // if (compare_name(nameStart,p,name))
         if (ix == index)
         {
             const char *nameEnd = p;
             if (p != query_end && *p == '=')
             {
                 ++p;
-                const char*value_start = p;
-                while(p != query_end && *p != '&' && *p != '#')
+                const char *value_start = p;
+                while (p != query_end && *p != '&' && *p != '#')
                 {
                     ++p;
                 }
                 return query_segment(
-                    std::string(nameStart,nameEnd),
-                    std::string(value_start,p)
-                );
-                
-            } else {
+                    std::string(nameStart, nameEnd),
+                    std::string(value_start, p));
+            }
+            else
+            {
                 return query_segment(
-                    std::string(nameStart,nameEnd),
-                    ""
-                );
+                    std::string(nameStart, nameEnd),
+                    "");
             }
         }
         while (p != query_end && *p != '&' && *p != '#')
         {
             ++p;
         }
-        if (p != query_end && *p == '&') 
+        if (p != query_end && *p == '&')
         {
             ++p;
         }
         ++ix;
-
     }
     throw PiPedalArgumentException("Index out of range.");
 }
 
-std::string uri::query(const char*name) const
+std::optional<std::string> uri::optionalQuery(const char *name) const
 {
-    const char*p = query_start;
+    const char *p = query_start;
     while (p != query_end && *p != '#')
     {
-        const char*nameStart = p;
+        const char *nameStart = p;
         while (p != query_end && *p != '&' && *p != '=' && *p != '#')
         {
             ++p;
         }
         // compare names.
-        if (compare_name(nameStart,p,name))
+        if (compare_name(nameStart, p, name))
         {
             if (p != query_end && *p == '=')
             {
                 ++p;
-                const char*value_start = p;
-                while(p != query_end && *p != '&' && *p != '#')
+                const char *value_start = p;
+                while (p != query_end && *p != '&' && *p != '#')
                 {
                     ++p;
                 }
-                return HtmlHelper::decode_url_segment(value_start,p);
-            } else {
-                return "";
+                return HtmlHelper::decode_url_segment(value_start, p);
+            }
+            else
+            {
+                return std::optional<std::string>();
             }
         }
         while (p != query_end && *p != '&' && *p != '#')
         {
             ++p;
         }
-        if (p != query_end && *p == '&') 
+        if (p != query_end && *p == '&')
         {
             ++p;
         }
-
+    }
+    return std::optional<std::string>();
+}
+std::string uri::query(const char *name) const
+{
+    auto result = optionalQuery(name);
+    if (result.has_value())
+    {
+        return result.value();
     }
     return "";
+}
+std::string uri::requiredQuery(const char *name) const
+{
+    auto result = optionalQuery(name);
+    if (result.has_value())
+    {
+        return result.value();
+    }
+    throw std::runtime_error("Invalid url.");
 }
 
 query_segment uri::query(int index)
 {
-    const char*p = query_start;
+    const char *p = query_start;
     int count = 0;
     while (p != query_end && *p != '#')
     {
         if (count == index)
         {
-            const char*nameStart = p;
+            const char *nameStart = p;
             while (p != query_end && *p != '&' && *p != '=' && *p != '#')
             {
                 ++p;
@@ -368,28 +407,32 @@ query_segment uri::query(int index)
             const char *nameEnd = p;
             const char *valueStart, *valueEnd;
 
-            if(p == query_end || *p != '=')
+            if (p == query_end || *p != '=')
             {
                 valueStart = valueEnd = p;
-            } else {
+            }
+            else
+            {
                 ++p;
                 valueStart = p;
 
-                while(p != query_end && *p != '&' && *p != '#')
+                while (p != query_end && *p != '&' && *p != '#')
                 {
                     ++p;
                 }
                 valueEnd = p;
             }
-            return query_segment(std::string(nameStart,nameEnd), HtmlHelper::decode_url_segment(valueStart,valueEnd));
-        } else {
+            return query_segment(std::string(nameStart, nameEnd), HtmlHelper::decode_url_segment(valueStart, valueEnd));
+        }
+        else
+        {
             while (p != query_end && *p != '&' && *p != '#')
             {
                 ++p;
             }
-
         }
-        if (p != query_end && *p == '&') ++p;
+        if (p != query_end && *p == '&')
+            ++p;
         ++count;
     }
     throw std::invalid_argument("Argument out of range.");
@@ -407,66 +450,76 @@ std::vector<std::string> uri::segments()
 
 std::string uri::get_extension() const
 {
-    const char*p = this->path_end;
+    const char *p = this->path_end;
     while (p != this->path_start)
     {
-         char c = p[-1];
-         if (c == '/') return "";
-         if (c == '.') {
-             --p;
-             return std::string(p,this->path_end-p);
-         }
-         --p;
+        char c = p[-1];
+        if (c == '/')
+            return "";
+        if (c == '.')
+        {
+            --p;
+            return std::string(p, this->path_end - p);
+        }
+        --p;
     }
     return "";
 }
 
-std::string uri::to_canonical_form() const {
+std::string uri::to_canonical_form() const
+{
     uri_builder builder(*this);
     return builder.str();
 }
 
-std::string uri_builder::str() const {
+std::string uri_builder::str() const
+{
     std::stringstream s;
     if (scheme_.length() != 0)
     {
         s << scheme_ << ':';
     }
-    if (authority_.length() != 0) {
+    if (authority_.length() != 0)
+    {
         s << "//";
-        if (user_.length() != 0) 
+        if (user_.length() != 0)
         {
             s << user_ << '@';
         }
         s << authority_;
-        if (port_ != -1) {
+        if (port_ != -1)
+        {
             s << ':' << (uint16_t)port_;
         }
     }
-    if ( authority_.length() != 0 || !isRelative_) { // canonical root form is http://xyz/ not httP://xyz
-        
+    if (authority_.length() != 0 || !isRelative_)
+    { // canonical root form is http://xyz/ not httP://xyz
+
         s << '/';
     }
     for (size_t i = 0; i < segments_.size(); ++i)
     {
-        if (i != 0) s << '/';
-        HtmlHelper::encode_url_segment(s,segments_[i],false);
+        if (i != 0)
+            s << '/';
+        HtmlHelper::encode_url_segment(s, segments_[i], false);
     }
     for (size_t i = 0; i < queries_.size(); ++i)
     {
-        if (i == 0) 
+        if (i == 0)
         {
             s << '?';
-        } else {
+        }
+        else
+        {
             s << '&';
         }
         s << queries_[i].key << "=";
-        HtmlHelper::encode_url_segment(s,queries_[i].value,true);
+        HtmlHelper::encode_url_segment(s, queries_[i].value, true);
     }
     if (fragment_.length() != 0)
     {
         s << "#" << fragment_;
     }
     return s.str();
-
 }
+

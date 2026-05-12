@@ -238,16 +238,17 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
 }
 
 int64_t PiPedalModel::DownloadModelsFromTone3000(
-    int64_t clientId,
-    Tone3000DownloadType downloadType,
+    const std::string &uri,
+    const Tone3000PkceParams&pckeParams,
     const std::string &downloadPath,
-    const std::string &tone3000Url)
+    Tone3000DownloadType downloadType
+)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
     // Validate the download path
     std::filesystem::path path{downloadPath};
-    if (!IsInUploadsDirectory(downloadPath))
+    if (!IsInUploadsDirectory(path))
     {
         throw PiPedalException("Invalid path: not in uploads directory.");
     }
@@ -266,10 +267,12 @@ int64_t PiPedalModel::DownloadModelsFromTone3000(
         tone3000Downloader = Tone3000Downloader::Create();
         tone3000Downloader->SetListener(this);
     }
-    return tone3000Downloader->RequestDownload(
-        downloadType,
+    return tone3000Downloader->RequestTone3000Download(
+        uri,
+        pckeParams,
         downloadPath,
-        tone3000Url);
+        downloadType
+    );
 }
 
 void PiPedalModel::CancelTone3000Download(
@@ -3447,3 +3450,5 @@ std::string PiPedalModel::Tone3000ThumbnailDirectory()
 {
     return "/var/pipedal/tone3000_thumbnails";
 }
+
+

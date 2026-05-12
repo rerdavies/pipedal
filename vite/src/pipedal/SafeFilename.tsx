@@ -68,6 +68,7 @@ export function safeFilenameEncode(filename: string): string {
     let result = "";
     
     for (let i = 0; i < filename.length; i++) {
+        let c = filename[i];
         let charCode = filename.charCodeAt(i);
         
         // Handle UTF-16 surrogate pairs
@@ -98,7 +99,8 @@ export function safeFilenameEncode(filename: string): string {
         }
         
         // Handle control characters (< 0x20)
-        if (charCode < 0x20) {
+        if (charCode < 0x20 || c === '/' || c === '\\' || c === ':')
+        {
             result += '%' + charCode.toString(16).padStart(2, '0');
         }
         // Handle ASCII printable characters (0x20-0x7F), space is NOT encoded
