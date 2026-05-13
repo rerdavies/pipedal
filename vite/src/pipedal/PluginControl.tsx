@@ -154,6 +154,66 @@ export type PluginControlState = {
     previewValue?: string;
 };
 
+export interface CustomPluginControlProps extends WithStyles<typeof pluginControlStyles> {
+    title: string;
+    isSelect?: boolean;
+    isButton?: boolean;
+    item_width?: number;
+    mainControl: React.ReactNode;
+    editControl?: React.ReactNode;
+};
+export interface CustomPluginControlState {
+
+};
+const CustomPluginControl =
+    withStyles(
+        class extends Component<CustomPluginControlProps, CustomPluginControlState> {
+            constructor(props: CustomPluginControlProps) {
+                super(props);
+            }
+            render() {
+                let classes = withStyles.getClasses(this.props);
+                return (
+                    <div 
+                        className={classes.controlFrame}
+                        style={{ width: this.props.item_width }}
+                    >
+                        {/* TITLE SECTION */}
+                        <div className={classes.titleSection}
+                            style={
+                                {
+                                    alignSelf: "stretch", marginBottom: 8, marginLeft: this.props.isSelect ? 8 : 0, marginRight: 0
+
+                                }}>
+                            <Typography variant="caption" display="block" noWrap style={{
+                                width: "100%",
+                                textAlign: this.props.isSelect ? "left" : "center"
+                            }}> {this.props.isButton ? "\u00A0" : this.props.title}</Typography>
+                        </div>
+                        {/* CONTROL SECTION */}
+
+                        <div className={classes.midSection}>
+                            {this.props.mainControl}
+                        </div>
+
+                        {/* LABEL/EDIT SECTION*/}
+                        <div className={classes.editSection} >
+                            {this.props.editControl}
+                        </div>
+
+                    </div>
+                );
+                return (<div />);
+            }
+
+        },
+
+        pluginControlStyles
+    );
+
+export { CustomPluginControl };
+
+
 const PluginControl =
     withTheme(withStyles(
         class extends Component<PluginControlProps, PluginControlState> {
@@ -490,7 +550,7 @@ const PluginControl =
                 let tapTime = e.timeStamp;
                 let dT = tapTime - this.lastTapMs;
 
-                
+
                 this.lastTapMs = tapTime;
 
                 if (dT < 500) {
@@ -521,7 +581,7 @@ const PluginControl =
                         let ms = e.timeStamp - this.tapStartMs;
                         if (ms < 200) {
                             this.onPointerTap(e);
-                        } 
+                        }
                     }
                     // prevent click from firing on other elements 
                     // when the pointer goes up0.
@@ -619,7 +679,7 @@ const PluginControl =
                             break;
                     }
                 }
-                this.setState({ previewValue: undefined});
+                this.setState({ previewValue: undefined });
             }
             previewInputValue(value: number, commitValue: boolean) {
                 let range = this.valueToRange(value);
@@ -688,7 +748,7 @@ const PluginControl =
                         this.setState({ previewValue: undefined });
                     } else {
                         this.setState({ previewValue: v });
-                    }   
+                    }
                 }
                 let selectElement = this.selectRef.current;
                 if (selectElement) {
@@ -890,7 +950,7 @@ const PluginControl =
 
             private defaultStep(min: number, max: number): number {
                 let range = Math.abs(max - min);
-                if (range <= 1) return 0.01;    
+                if (range <= 1) return 0.01;
                 if (range <= 10) return 0.1;
                 if (range <= 100) return 1;
                 if (range <= 1000) return 10;
@@ -1056,7 +1116,7 @@ const PluginControl =
                                 )
                                     : (isGraphicEq) ? (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            
+
                                             <ControlTooltip uiControl={control} valueTooltip={this.state.previewValue}>
                                                 <GraphicEqCtl
                                                     imgRef={this.imgRef}
@@ -1076,7 +1136,7 @@ const PluginControl =
                                         </div>
                                     ) : (
                                         <div style={{ flex: "0 1 auto" }}>
-                                            <ControlTooltip uiControl={control} 
+                                            <ControlTooltip uiControl={control}
                                                 valueTooltip={this.state.previewValue}>
                                                 <DialIcon ref={this.imgRef}
                                                     style={{
@@ -1110,7 +1170,7 @@ const PluginControl =
                                                 error={this.state.error}
                                                 inputProps={{
                                                     className: "scrollMod",
-                                                    type: isMobileDevice()? "text": "number",
+                                                    type: isMobileDevice() ? "text" : "number",
                                                     inputMode: "numeric",
 
                                                     min: this.props.uiControl?.min_value,

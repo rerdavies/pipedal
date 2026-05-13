@@ -6,5 +6,7 @@
     "fakeAndroid": false,
     "ui_plugins": [],
     "enable_auto_update": true,
-    "has_wifi_device": false
+    "has_wifi_device": false,
+    "tone3000_A2_models": true,
+    "end": true
 }

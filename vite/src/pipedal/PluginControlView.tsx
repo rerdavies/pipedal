@@ -38,9 +38,9 @@ import { UiPlugin, UiControl, UiFileProperty, UiFrequencyPlot, ScalePoint } from
 import {
     Pedalboard, PedalboardItem, ControlValue
 } from './Pedalboard';
-import PluginControl from './PluginControl';
+import PluginControl, {CustomPluginControl} from './PluginControl';
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
-import SideChainSelectControl, {SideChainSelectDialog} from './SideChainSelectControl';
+import SideChainSelectControl, { SideChainSelectDialog } from './SideChainSelectControl';
 import VuMeter from './VuMeter';
 import { nullCast } from './Utility'
 import { PiPedalStateError } from './PiPedalError';
@@ -66,6 +66,7 @@ const LANDSCAPE_HEIGHT_BREAK = 500;
 
 export interface ICustomizationHost {
     makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode;
+    makeCustomControl(title: string, mainControl: ReactNode, editControl?: ReactNode): ReactNode;
     renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode;
     isLandscapeGrid(): boolean;
 }
@@ -379,6 +380,7 @@ type PluginControlViewState = {
     sidechainDialogOpen: boolean
 };
 
+
 const PluginControlView =
     withTheme(withStyles(
         class extends ResizeResponsiveComponent<PluginControlViewProps, PluginControlViewState> {
@@ -494,6 +496,7 @@ const PluginControlView =
                 ));
             }
             private ixKey: number = 1;
+
 
             makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
                 let symbol = uiControl.symbol;
@@ -882,7 +885,7 @@ const PluginControlView =
             }
 
             handleSelectSidechainInput() {
-                this.setState({sidechainDialogOpen: true});
+                this.setState({ sidechainDialogOpen: true });
             }
 
             handleModGuiFileProperty(instanceId: number, filePropertyUri: string, selectedFile: string) {
@@ -963,7 +966,9 @@ const PluginControlView =
 
                 )
             }
-
+            makeCustomControl(title: string, mainControl: ReactNode, editControl?: ReactNode): ReactNode {
+                return (<CustomPluginControl title={title} mainControl={mainControl} editControl={editControl} />);
+            }
             renderPiPedalControl(pedalboardItem?: PedalboardItem): ReactNode {
                 this.controlKeyIndex = 0;
 
@@ -1115,12 +1120,12 @@ const PluginControlView =
                         )}
                         {this.state.sidechainDialogOpen && (
                             <SideChainSelectDialog open={this.state.sidechainDialogOpen}
-                                onClose={()=>{ this.setState({sidechainDialogOpen: false});}}
-                            selectItems={this.getSidechainSelectItems()}
-                            selectedInstanceId={this.props.item.sideChainInputId}
-                            onChanged={(instanceId: number) => {
-                                this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
-                            }}
+                                onClose={() => { this.setState({ sidechainDialogOpen: false }); }}
+                                selectItems={this.getSidechainSelectItems()}
+                                selectedInstanceId={this.props.item.sideChainInputId}
+                                onChanged={(instanceId: number) => {
+                                    this.model.setPedalboardSideChainInput(this.props.item.instanceId, instanceId);
+                                }}
                             />
                         )}
                         {/* xxx: I don't think we need this anyore. */}
@@ -1141,4 +1146,6 @@ const PluginControlView =
     ));
 
 export default PluginControlView;
+
+
 

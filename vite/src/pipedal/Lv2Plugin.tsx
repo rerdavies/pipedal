@@ -949,7 +949,7 @@ export class UiControl implements Deserializable<UiControl> {
                     return scale_point.label;
                 }
             }
-            return "#invalid";
+            return value.toString();
         } else if (this.integer_property) {
             return value.toFixed(0);
         } else {

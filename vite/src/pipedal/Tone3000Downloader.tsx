@@ -28,7 +28,6 @@ const THROTTLING_TRIGGGER_LEVEL = Math.floor(ALLOWED_DOWNLOADS_PER_MINUTE/2);
 
 class DownloadThrottler {
 
-    private throttleActive: boolean = false;
     private fifo: number[] = [];
     private downloadCount: number = 0;
 
@@ -39,11 +38,7 @@ class DownloadThrottler {
             this.fifo.shift();
         }
 
-        if (this.fifo.length > THROTTLING_TRIGGGER_LEVEL) {
-            this.throttleActive = true;
-        } else {
-            this.throttleActive = false;
-        }
+        this.downloadCount = this.fifo.length;
     }
     getThrottleDelay(now : number = Date.now()): number {
         while (this.fifo.length > 0 && this.fifo[0] + 60000 <= now) {
@@ -264,7 +259,7 @@ export class Tone3000DownloadHandler {
             let models: Model[] = [];
             let architectureFilter: number | undefined = undefined;
             // Take A2 models only for NAM downloads, and only if the tone actually has A2 models.
-            if (downloadType === Tone3000DownloadType.Nam && !!tone.a2_models_count) {
+            if (downloadType === Tone3000DownloadType.Nam && !!tone.a2_models_count && this.model.tone3000_A2_models) {
                 architectureFilter = 2; // NAM models only
             }
 

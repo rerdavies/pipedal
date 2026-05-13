@@ -364,6 +364,8 @@ namespace pipedal
 
         void Init(const PiPedalConfiguration &configuration);
 
+        const PiPedalConfiguration &Configuration() const { return configuration; }
+
         void LoadLv2PluginInfo();
         void Load();
 

@@ -1,4 +1,17 @@
-Benchmark Results:
+A2 Questions
+
+Does A2 support Callibration?
+input_level_dbu, output_level_dbu accessors on NeuralAmpModelerCore DSP
+slimmable_weights accessors on NeuralAmpModelerCore DSP
+standard values for slimmable_weights? 
+
+Implement NAM Model Weight selection UI
+
+NAM INput VU is f*ed up.
+
+File Player Underrun is NOT CPU use related. There's an underrun somewhere.
+
+Update Pi 4 Benchmark Results:
 
 The benchmark is to run TooB Neural Amp Modeler with an A1 model to generate 100s of audio. Lower times are better.
 

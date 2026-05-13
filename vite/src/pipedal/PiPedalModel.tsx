@@ -1316,6 +1316,7 @@ export class PiPedalModel //implements PiPedalModel
     maxFileUploadSize: number = 512 * 1024 * 1024;
     maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
+    tone3000_A2_models: boolean = true;
     enableAutoUpdate: boolean = false;
 
 
@@ -1326,6 +1327,7 @@ export class PiPedalModel //implements PiPedalModel
             let response: Response = await fetch(myRequest);
             let data = await response.json();
 
+            this.tone3000_A2_models = data.tone3000_A2_models ?? true;
             this.enableAutoUpdate = !!data.enable_auto_update;
             this.hasWifiDevice.set(!!data.has_wifi_device);
             if (data.max_upload_size) {

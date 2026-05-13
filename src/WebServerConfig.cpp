@@ -1315,12 +1315,14 @@ static std::string StripPortNumber(const std::string &fromAddress)
 class InterceptConfig : public RequestHandler
 {
 private:
+    PiPedalModel&model;
     uint64_t maxUploadSize;
     int portNumber;
 
 public:
-    InterceptConfig(int portNumber, uint64_t maxUploadSize)
+    InterceptConfig(PiPedalModel&model,int portNumber, uint64_t maxUploadSize)
         : RequestHandler("/var/config.json"),
+          model(model),
           maxUploadSize(maxUploadSize),
           portNumber(portNumber)
     {
@@ -1337,6 +1339,7 @@ public:
           << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
           << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
           << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")
+          << ", \"tone3000_A2_models\": " << (model.Configuration().GetTone3000A2Models() ? " true" : "false")
           << " }";
 
         return s.str();
@@ -1396,7 +1399,7 @@ void pipedal::ConfigureWebServer(
     int port,
     size_t maxUploadSize)
 {
-    std::shared_ptr<RequestHandler> interceptConfig{new InterceptConfig(port, maxUploadSize)};
+    std::shared_ptr<RequestHandler> interceptConfig{new InterceptConfig(model,port, maxUploadSize)};
     server.AddRequestHandler(interceptConfig);
 
     std::shared_ptr<DownloadIntercept> downloadIntercept = std::make_shared<DownloadIntercept>(&model);
