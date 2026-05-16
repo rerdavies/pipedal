@@ -337,7 +337,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [   
                 "--no-profile",
-                "--preset-file", "/home/robin/Downloads/NAM Profiling.piPreset",
+                "--preset-file", "/home/robin/Downloads/A1 Profiling.piPreset",
                 "--seconds", "100",
                 "-w"
              ],

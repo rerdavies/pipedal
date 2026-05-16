@@ -46,13 +46,21 @@ export default class JackStatusView extends React.Component<JackStatusViewProps,
         this.tick = this.tick.bind(this);
     }
 
+    private waitingForTick: boolean = false;
     tick() {
         if (this.model.state.get() === State.Ready) {
+            if (this.waitingForTick) return;
+            this.waitingForTick = true;
             this.model.getJackStatus()
                 .then(jackStatus => {
+                    this.waitingForTick = false;
                     this.setState({jackStatus: jackStatus});
                 })
-                .catch(error => { /* ignore*/ });
+                .catch(error => { 
+                    this.waitingForTick = false;
+                });
+        } else {
+            this.waitingForTick = false;
         }
     }
 

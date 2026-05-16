@@ -7,6 +7,6 @@
     "ui_plugins": [],
     "enable_auto_update": true,
     "has_wifi_device": false,
-    "tone3000_A2_models": true,
+    "tone3000_A2_models": false,
     "end": true
 }

@@ -587,6 +587,7 @@ export
     }
 
     private beforeUnloadListener(e: Event) {
+        alert("BeforeUnload");
         this.model_.close();
         return undefined;
     }
@@ -601,7 +602,6 @@ export
 
         super.componentDidMount();
         window.addEventListener("beforeunload", this.beforeUnloadListener);
-        window.addEventListener("unload", this.unloadListener);
 
         this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.addOnChangedHandler(this.stateChangeHandler_);

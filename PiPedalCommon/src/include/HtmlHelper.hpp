@@ -20,9 +20,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <cstdint>
 #include <chrono>
 #include <filesystem>
+#include <optional>
 
 namespace pipedal
 {

@@ -33,14 +33,19 @@
 namespace pipedal
 {
 
-    class Tone3000PkceParams {
+    class Tone3000PkceParams
+    {
     private:
         std::string publishableKey_;
         std::string redirectUrl_;
         std::string codeVerifier_;
         std::string codeChallenge_;
         std::string state_;
+
     public:
+        Tone3000PkceParams() = default;
+        Tone3000PkceParams(const std::string &redirectUrl);
+
         JSON_GETTER_SETTER_REF(publishableKey);
         JSON_GETTER_SETTER_REF(redirectUrl);
         JSON_GETTER_SETTER_REF(codeVerifier);
@@ -62,6 +67,8 @@ namespace pipedal
         DECLARE_JSON_MAP(Tone3000ModelInfo);
     };
 
+    std::string Sha256Base64Url(const std::string&input);
+    
     // class Tone3000DownloadRequest
     // {
     // private:
@@ -108,7 +115,6 @@ namespace pipedal
     //     JSON_GETTER_SETTER_REF(license);
     //     JSON_GETTER_SETTER_REF(links);
 
-
     //     DECLARE_JSON_MAP(Tone3000DownloadRequest);
     // };
 
@@ -144,9 +150,7 @@ namespace pipedal
         using self = Tone3000Downloader;
         static std::shared_ptr<self> Create();
 
-
         virtual void SetListener(Listener *listener) = 0;
-
 
         virtual void CancelDownload(
             handle_t handle) = 0;
@@ -155,12 +159,9 @@ namespace pipedal
             const uri &uri,
             const Tone3000PkceParams &pkceParams,
             const std::string &downloadPath,
-            Tone3000DownloadType downloadType) 
-         = 0;
+            Tone3000DownloadType downloadType) = 0;
 
         virtual void Close() = 0;
         virtual Tone3000DownloadProgress GetDownloadStatus() = 0;
-
-
     };
 }
