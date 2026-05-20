@@ -119,6 +119,7 @@ namespace pipedal
         using NetworkChangedListener = std::function<void(void)>;
 
     private:
+        bool updaterEnabled = true;
         PedalboardItem *GetPedalboardItemForFileProperty(const UiFileProperty &fileProperty);
 
         // Tone3000Downloader::Listener implementation
@@ -296,7 +297,7 @@ namespace pipedal
             Decrease
         };
 
-
+        void EnableUpdater(bool enable);
 
         Storage &GetStorage() { return storage; }
 

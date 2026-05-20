@@ -80,7 +80,6 @@ PiPedalModel::PiPedalModel()
       atomConverter(pluginHost.GetMapFeature())
 {
     this->updater = Updater::Create();
-    this->updater->Start();
     this->currentUpdateStatus = updater->GetCurrentStatus();
     this->pedalboard = Pedalboard::MakeDefault();
 
@@ -211,6 +210,10 @@ PiPedalModel::~PiPedalModel()
 void PiPedalModel::Init(const PiPedalConfiguration &configuration)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex); // prevent callbacks while we're initializing.
+    if (updaterEnabled) 
+    {
+        this->updater->Start();
+    }
 
     this->configuration = configuration;
     pluginHost.SetConfiguration(configuration);
@@ -3451,4 +3454,9 @@ std::string PiPedalModel::Tone3000ThumbnailDirectory()
     return "/var/pipedal/tone3000_thumbnails";
 }
 
+
+void PiPedalModel::EnableUpdater(bool enable)
+{
+    this->updaterEnabled = enable;
+}
 
