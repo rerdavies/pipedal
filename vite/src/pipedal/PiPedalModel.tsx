@@ -707,6 +707,25 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
+    async makeTone3000Pkce(redirectUrl: string) : Promise<Tone3000PkceParams>
+    {
+        if (this.webSocket === undefined)
+        {
+            throw new Error("Server disconnected.");
+        }
+        return await this.webSocket.request<Tone3000PkceParams>(
+            "makeTone3000Pkce", redirectUrl);
+    }
+
+    async sha256Base64url(intput: string) : Promise<string> {
+        if (this.webSocket === undefined)
+        {
+            throw new Error("Server disconnected.");
+        }
+        return this.webSocket.request<string>(
+            "sha256Base64url", intput);
+
+    }
     async pingTone3000Server(): Promise<boolean> {
         if (this.webSocket === undefined) {
             return false;

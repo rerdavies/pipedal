@@ -28,9 +28,12 @@
 #include <functional>
 #include "HtmlHelper.hpp"
 #include "Curl.hpp"
+#include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <charconv>
 #include <limits>
 #include <type_traits>
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include "TemporaryFile.hpp"
@@ -38,6 +41,102 @@
 
 using namespace pipedal;
 namespace fs = std::filesystem;
+
+
+// Pulls in the define for T3kConfig.h
+
+#define PIPEDAL_T3K_PUBLISHABLE_KEY "t3k_pub_bHrH8btdwXXTtxz5ryEU8sNLF-2TGRT9"
+
+
+
+namespace {
+    std::string Base64UrlEncode(const unsigned char* data, size_t size)
+    {
+        static constexpr char base64Table[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+        std::string result;
+        result.reserve(((size + 2) / 3) * 4);
+
+        for (size_t i = 0; i + 3 <= size; i += 3)
+        {
+            uint32_t value = (static_cast<uint32_t>(data[i]) << 16)
+                | (static_cast<uint32_t>(data[i + 1]) << 8)
+                | static_cast<uint32_t>(data[i + 2]);
+            result.push_back(base64Table[(value >> 18) & 0x3F]);
+            result.push_back(base64Table[(value >> 12) & 0x3F]);
+            result.push_back(base64Table[(value >> 6) & 0x3F]);
+            result.push_back(base64Table[value & 0x3F]);
+        }
+
+        size_t remainder = size % 3;
+        if (remainder == 1)
+        {
+            uint32_t value = static_cast<uint32_t>(data[size - 1]) << 16;
+            result.push_back(base64Table[(value >> 18) & 0x3F]);
+            result.push_back(base64Table[(value >> 12) & 0x3F]);
+            result.push_back('=');
+            result.push_back('=');
+        }
+        else if (remainder == 2)
+        {
+            uint32_t value = (static_cast<uint32_t>(data[size - 2]) << 16)
+                | (static_cast<uint32_t>(data[size - 1]) << 8);
+            result.push_back(base64Table[(value >> 18) & 0x3F]);
+            result.push_back(base64Table[(value >> 12) & 0x3F]);
+            result.push_back(base64Table[(value >> 6) & 0x3F]);
+            result.push_back('=');
+        }
+
+        for (char &ch : result)
+        {
+            if (ch == '+')
+            {
+                ch = '-';
+            }
+            else if (ch == '/')
+            {
+                ch = '_';
+            }
+        }
+        while (!result.empty() && result.back() == '=')
+        {
+            result.pop_back();
+        }
+        return result;
+    }
+
+    std::string RandomBase64Url(size_t size)
+    {
+        std::string bytes(size, '\0');
+        if (RAND_bytes(reinterpret_cast<unsigned char*>(bytes.data()), static_cast<int>(bytes.size())) != 1)
+        {
+            throw std::runtime_error("RAND_bytes failed.");
+        }
+        return Base64UrlEncode(reinterpret_cast<const unsigned char*>(bytes.data()), bytes.size());
+    }
+
+}
+
+
+std::string pipedal::Sha256Base64Url(const std::string &text)
+{
+    std::array<unsigned char, EVP_MAX_MD_SIZE> digest{};
+    size_t digestLength = 0;
+    if (EVP_Q_digest(
+            nullptr,
+            "SHA256",
+            nullptr,
+            reinterpret_cast<const unsigned char *>(text.data()),
+            text.size(),
+            digest.data(),
+            &digestLength)
+        != 1)
+    {
+        throw std::runtime_error("EVP_Q_digest(SHA256) failed.");
+    }
+    return Base64UrlEncode(digest.data(), digestLength);
+}
 
 static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
 static const std::filesystem::path TONE3000_THUMBNAIL_PATH{"/var/pipedal/tone3000_thumbnails"};
@@ -1167,6 +1266,23 @@ std::shared_ptr<Tone3000Download> Tone3000DownloaderImpl::GetTone3000Tone(
     
     return tone;
 }
+
+Tone3000PkceParams::Tone3000PkceParams(
+    const std::string &redirectUrl)
+{
+
+    this->publishableKey_ = PIPEDAL_T3K_PUBLISHABLE_KEY;
+    this->redirectUrl_ = redirectUrl;
+    this->codeVerifier_ = RandomBase64Url(32);
+    this->codeChallenge_ = Sha256Base64Url(this->codeVerifier_);
+    this->state_ = RandomBase64Url(16);
+}
+
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////////
 

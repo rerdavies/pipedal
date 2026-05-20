@@ -456,7 +456,7 @@ public:
 JSON_MAP_BEGIN(RenameBankBody)
 JSON_MAP_REFERENCE(RenameBankBody, bankId)
 JSON_MAP_REFERENCE(RenameBankBody, newName)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class RenamePresetBody
 {
@@ -1180,6 +1180,29 @@ public:
         this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
     }
     REGISTER_MESSAGE_HANDLER(setControl)
+
+
+    void handle_makeTone3000Pkce(int replyTo, json_reader *pReader)
+    {
+        std::string redirectUrl;
+        pReader->read(&redirectUrl);
+
+        Tone3000PkceParams result {redirectUrl};
+        this->Reply(replyTo, "makeTone3000Pkce", result);
+         
+    }
+    REGISTER_MESSAGE_HANDLER(makeTone3000Pkce);
+
+    void handle_sha256Base64url(int replyTo, json_reader *pReader)
+    {
+        std::string input;
+        pReader->read(&input);
+
+        std::string result = Sha256Base64Url(input);
+        this->Reply(replyTo, "sha256Base64url", result);
+         
+    }
+    REGISTER_MESSAGE_HANDLER(sha256Base64url);
 
     void handle_previewControl(int replyTo, json_reader *pReader)
     {

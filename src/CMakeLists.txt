@@ -1,6 +1,13 @@
 set(VERBOSE true)
 cmake_minimum_required(VERSION 3.16.0)
 
+configure_file(config.hpp.in config.hpp)
+file(GENERATE
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/T3kConfig.h"
+    CONTENT "#define PIPEDAL_T3K_PUBLISHABLE_KEY \"${PIPEDAL_T3K_PUBLISHABLE_KEY}\"\n")
+
+
+
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
 set (USE_PCH 1)
@@ -10,18 +17,12 @@ set (ENABLE_BACKTRACE 0)
 set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
 
+
 set(CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(PipeWire REQUIRED libpipewire-0.3)
-
-
-message(STATUS "PipeWire_INCLUDE_DIRS: ${PipeWire_INCLUDE_DIRS}"
-    "PipeWire_LIBRARIES: ${PipeWire_LIBRARIES}"
-    "PipeWire_CFLAGS: ${PipeWire_CFLAGS}"
-    "PipeWire_DEFINES: ${PipeWire_DEFINES}"
-    "PipeWire_VERSION: ${PipeWire_VERSION}")
 
 include(FetchContent)
 
@@ -57,6 +58,8 @@ include(FindPkgConfig)
 
 
 
+
+find_package(OpenSSL REQUIRED)
 
 find_package(ICU REQUIRED COMPONENTS uc i18n)
 message(STATUS "ICU_LIBRARIES: ${ICU_LIBRARIES}")
@@ -204,6 +207,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    AesDigest.cpp AesDigest.hpp
     ChannelRouterSettings.cpp ChannelRouterSettings.hpp
     Curl.cpp Curl.hpp
     Tone3000DownloadType.cpp Tone3000DownloadType.hpp
@@ -324,7 +328,7 @@ set (PIPEDAL_SOURCES
 )
 
 
-configure_file(config.hpp.in config.hpp)
+    
 include_directories( 
     ${pipedald_SOURCE_DIR}/.
     ../build/src
@@ -364,6 +368,7 @@ target_link_libraries(libpipedald
    PiPedalCommon
    PRIVATE
    SQLiteCpp
+    OpenSSL::Crypto
    ${PipeWire_LIBRARIES}
    )
 

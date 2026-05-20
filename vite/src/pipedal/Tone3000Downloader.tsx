@@ -1,12 +1,12 @@
 import { PiPedalModel, getErrorMessage, Tone3000PkceParams } from "./PiPedalModel";
 import Tone3000DownloadType from "./Tone3000DownloadType";
-import { PkceParams, buildPkceParams, handleOAuthCallback } from "./t3k/tone3000-client.ts";
+import { T3K_DEBUG, PkceParams, setServerPkceParams, handleOAuthCallback } from "./t3k/tone3000-client.ts";
 
 import { Model, PaginatedResponse, Platform, Tone } from "./t3k/types.ts";
 import { PUBLISHABLE_KEY } from './t3k/config.ts';
 
 
-import { startSelectFlowPopup, T3KClient } from "./t3k/tone3000-client.ts";
+import { startSelectFlowPopup, buildPkceParams,T3KClient } from "./t3k/tone3000-client.ts";
 import Tone3000DownloadProgress from './Tone3000DownloadProgress';
 import { safeFilenameEncode } from "./SafeFilename";
 
@@ -19,6 +19,8 @@ let TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
 async function asyncSleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+const USE_SERVER_PCKE=true;
 
 
 const RUN_THROTTLER_TEST = true;
@@ -119,6 +121,7 @@ export class Tone3000DownloadHandler {
                 let uri = event.data.uri;
                 this.handleTone3000DownloadComplete();
                 if (uri) {
+
                     this_.handleT3kSelectResponse(uri, event.data.storedState, event.data.codeVerifier)
                         .then(() => { })
                         .catch((error) => {
@@ -171,17 +174,18 @@ export class Tone3000DownloadHandler {
 
     private progress: Tone3000DownloadProgress = new Tone3000DownloadProgress();
 
-    private async throttleRequests(): Promise<void> {
+    private async throttleRequests(): Promise<boolean> {
         let now = Date.now();
         let delay = this.throttler.getThrottleDelay(now);
         while (delay > 0) {
             await asyncSleep(250);
             if (this.checkForCancel())
             {
-                return;
+                return false;
             }
             delay -= 250;
         }
+        return true;
     }
 
     private onTone3000DownloadStarted() {
@@ -214,6 +218,10 @@ export class Tone3000DownloadHandler {
         downloadType: Tone3000DownloadType
     ): Promise<void> {
         try {
+
+            if (T3K_DEBUG) {
+                console.debug("PiPedal responseUri: " + responseUri);
+            }
             this.onTone3000DownloadStarted();
             this.progress.title = "Authenticating..."
             this.onTone3000DownloadProgress(this.progress);
@@ -221,13 +229,13 @@ export class Tone3000DownloadHandler {
                 return;
             }
 
-            await this.throttleRequests();
+            if (!await this.throttleRequests()) return;
             let tokenResponse = await handleOAuthCallback(
                 PUBLISHABLE_KEY,
                 this.redirectUrl(),
                 responseUri);
+
             if (!tokenResponse.ok) {
-                ;
                 throw new Error(tokenResponse.error);
             }
             if (this.checkForCancel()) {
@@ -245,7 +253,7 @@ export class Tone3000DownloadHandler {
             this.onTone3000DownloadProgress(this.progress);
 
 
-            await this.throttleRequests();
+             if (!await this.throttleRequests()) return;
             let tone: Tone = await this.t3kClient.getTone(tokenResponse.toneId);
 
             if (this.checkForCancel()) {
@@ -264,7 +272,7 @@ export class Tone3000DownloadHandler {
             }
 
             while (true) {
-                await this.throttleRequests();
+                 if (!await this.throttleRequests()) return;
                 if (this.checkForCancel()) {
                     return;
                 }
@@ -308,7 +316,7 @@ export class Tone3000DownloadHandler {
                     lastUpdateTime = Date.now();
                 }
 
-                await this.throttleRequests();
+                 if (!await this.throttleRequests()) return;
 
                 if (!model.model_url) {
                     throw new Error("Model " + model.name + " does not have a model URL.");
@@ -463,18 +471,45 @@ export class Tone3000DownloadHandler {
 
         try {
 
-            let pkceParams = await buildPkceParams();
+            let t3kPceParams: Tone3000PkceParams;
+            let pkceParams: PkceParams;
+            if (USE_SERVER_PCKE) {
+                t3kPceParams = await this.model.makeTone3000Pkce(this.redirectUrl());
+                pkceParams = {
+                    codeChallenge: t3kPceParams.codeChallenge,
+                    codeVerifier: t3kPceParams.codeVerifier,
+                    state: t3kPceParams.state
+                }
+                setServerPkceParams(pkceParams)
+
+            } else {   
+                pkceParams = await buildPkceParams();
+                t3kPceParams = {
+                    codeChallenge: pkceParams.codeChallenge,
+                    codeVerifier: pkceParams.codeVerifier,
+                    state: pkceParams.state,
+                    publishableKey: PUBLISHABLE_KEY,
+                    redirectUrl: this.redirectUrl()
+                };
+                // verify that the server matches.
+                let testcodeChallenge = await this.model.sha256Base64url(pkceParams.codeVerifier);
+                if (testcodeChallenge !== pkceParams.codeChallenge) {
+                    throw new Error("model.sha256Base64url produces incorrect results. ");
+                }
+
+            }
+
             this.pkceParams = pkceParams;
             this.popupWindow = await startSelectFlowPopup(
                 pkceParams,
                 PUBLISHABLE_KEY,
                 this.redirectUrl(),
                 {
-                    architecture: downloadType === Tone3000DownloadType.CabIr ? undefined : 2,
+                    architecture: (downloadType === Tone3000DownloadType.Nam && this.model.tone3000_A2_models) ? 2: undefined,
                     platform: downloadType === Tone3000DownloadType.CabIr ? Platform.Ir : Platform.Nam,
                     menubar: true,
                     width: popupWidth,
-                    height: popupHeight
+                    height: popupHeight,
                 },
 
             );

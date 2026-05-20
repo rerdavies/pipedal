@@ -28,12 +28,13 @@ jobs:
         npm view npm get version of @babel/plugin-proposal-private-property-in-object version command
         sudo apt-get update
         sudo apt install gcc-12 g++-12 libnm-dev
-        sudo apt-get install liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
-        sudo apt install libasound2-dev
-        sudo apt install libwebsocketpp-dev authbind
-        sudo apt install libsdbus-c++-dev libsdbus-c++-bin
-        sudo apt install libavahi-client-dev libzip-dev libicu-dev apt
-        sudo apt install libpipewire-0.3-dev 
+        sudo apt-get install -y liblilv-dev libboost-dev libjack-jackd2-dev libnl-3-dev libnl-genl-3-dev libsystemd-dev catch
+        sudo apt install -y libasound2-dev
+        sudo apt install -y libwebsocketpp-dev authbind
+        sudo apt install -y libsdbus-c++-dev libsdbus-c++-bin
+        sudo apt install -y libavahi-client-dev libzip-dev libicu-dev apt
+        sudo apt install -y libpipewire-0.3-dev 
+        sudo apt install -y libssl-dev
         
         sudo apt install -y librsvg2-dev 
         git submodule update --init --recursive 

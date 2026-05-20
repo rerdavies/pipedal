@@ -38,6 +38,7 @@
 #include <vector>
 #include <memory>
 
+#ifndef __INTELLISENSE__
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap
 
@@ -56,7 +57,17 @@
     }                  \
     }                  \
     ;
+#else 
+#define DECLARE_JSON_MAP(CLASSNAME) 
 
+#define JSON_MAP_BEGIN(CLASSNAME) 
+
+#define JSON_MAP_REFERENCE(class, name)
+
+#define JSON_MAP_END() ;
+    ;
+
+#endif
 
 #define JSON_GETTER_SETTER_REF(name)                               \
     const decltype(name##_) &name() const { return name##_; } \
