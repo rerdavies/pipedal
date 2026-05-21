@@ -96,7 +96,7 @@ class ModelMetadata {
             this.preset_version = metadataValues[TOOB_NAM_METADATA_OFFSETS.preset_version];
             this.hasSlimmableWeights = metadataValues[TOOB_NAM_METADATA_OFFSETS.has_slimmable_weights] !== 0;
             this.modelWeight = metadataValues[TOOB_NAM_METADATA_OFFSETS.model_weight];
-            this.modelType =  floatToModelType(metadataValues[TOOB_NAM_METADATA_OFFSETS.model_type]);
+            this.modelType = floatToModelType(metadataValues[TOOB_NAM_METADATA_OFFSETS.model_type]);
         } else {
             this.hasModel = false;
             this.hasLoudness = false;
@@ -117,12 +117,12 @@ class ModelMetadata {
     preset_version: number;
     hasSlimmableWeights: boolean = false;
     modelWeight: number = 1.0;
-    modelType: NamModelType;
-    hasModel: boolean;
-    hasLoudness: boolean;
-    hasGain: boolean;
-    hasInputLevelDBU: boolean;
-    hasOutputLevelDBU: boolean;
+    modelType: NamModelType = NamModelType.None;
+    hasModel: boolean = false;
+    hasLoudness: boolean = false;
+    hasGain: boolean = false;
+    hasInputLevelDBU: boolean = false;
+    hasOutputLevelDBU: boolean = false;
 
     loudness: number;
     gain: number;
@@ -281,7 +281,7 @@ const ToobNamView =
 
             }
             MakeModelWeightSelector(host: ICustomizationHost): React.ReactNode {
-                if ((this.state.modelMetadata.modelWeight === undefined || this.state.modelMetadata.modelWeight || this.state.modelMetadata.hasSlimmableWeights()) === false) {
+                if ((this.state.modelMetadata.modelWeight === undefined || this.state.modelMetadata.modelWeight || this.state.modelMetadata.hasSlimmableWeights) === false) {
                     return null;
                 }
                 let selectControl = (
@@ -289,6 +289,7 @@ const ToobNamView =
                         onChange={(e) => { this.SelectModelWeight(Number(e.target.value)) }}
                         style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 12, marginTop: 4 }}
                     >
+                        {/*
                         {this.state.modelMetadata.slimmable_weights.map((weight, index) => {
                             return (
                                 <MenuItem key={weight.toString()} value={weight}
@@ -298,7 +299,7 @@ const ToobNamView =
                                 </MenuItem>
                             );
                         })}
-
+                        */}
                     </Select>
                 );
                 return (
