@@ -29,7 +29,7 @@ You must stop the pipedald service before launching a debug instance of pipedald
 
 or
 
-    pipedalconfig -stop  #Stops the Jack service as well.
+    pipedalconfig --stop  #Stops the Jack service as well.
 
 Although not strictly necessary, you should probably add your login account to the pipedal_d group.
      
@@ -38,7 +38,7 @@ Although not strictly necessary, you should probably add your login account to t
 This will allow you to run `pipedald` under the debugger of your choice using the 
 same /etc/pipedal and /var/pipedal directories as an instance of  `pipedal` running
 under systemd. Note that when running under systemd, `pipedald` runs under an unprivileged 
-`pipedal_d` service account, and relies it's group (also 'pipedal_d`) in order to access its 
+`pipedal_d` service account, and relies it's group (also `pipedal_d`) in order to access its 
 data files, and to communicate with the `pipedaladmin` service, which does run with root 
 privileges when `pipedald` needs to perform operations that do required root privileges (e.g. shutdown/reboot and starting  and stopping WiFi services). 
 
