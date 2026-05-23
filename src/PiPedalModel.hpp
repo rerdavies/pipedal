@@ -44,6 +44,7 @@
 #include <unordered_map>
 #include "Tone3000Downloader.hpp"
 #include "Uri.hpp"
+#include "Tone3000Tone.hpp"
 
 namespace pipedal
 {
@@ -94,7 +95,7 @@ namespace pipedal
 
         // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value) = 0;
         virtual void OnErrorMessage(const std::string &message) = 0;
-        
+
         virtual void OnTone3000DownloadStarted(int64_t handle, const std::string &title) = 0;
         virtual void OnTone3000DownloadProgress(const Tone3000DownloadProgress &progress) = 0;
         virtual void OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath) = 0;
@@ -127,7 +128,6 @@ namespace pipedal
         virtual void OnTone3000Progress(const Tone3000DownloadProgress &progress) override;
         virtual void OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath) override;
         virtual void OnTone3000DownloadError(int64_t handle, const std::string &errorMessage) override;
-
 
         std::shared_ptr<Tone3000Downloader> tone3000Downloader;
         void CancelAudioRetry();
@@ -212,7 +212,8 @@ namespace pipedal
         std::shared_ptr<Lv2Pedalboard> lv2Pedalboard;
         std::filesystem::path webRoot;
 
-        std::vector<std::shared_ptr<IPiPedalModelSubscriber>> subscribers;
+        using SubscriberList = std::vector<std::shared_ptr<IPiPedalModelSubscriber>>;
+        SubscriberList subscribers;
         void SetPresetChanged(int64_t clientId, bool value, bool changeSnapshotSelect = true);
         void FireSnapshotModified(int64_t snapshotIndex, bool modified);
         void FireSelectedSnapshotChanged(int64_t selectedSnapshot);
@@ -303,7 +304,6 @@ namespace pipedal
 
         virtual std::string Tone3000ThumbnailDirectory() override;
 
-
         bool GetHasWifi();
 
         void NextBank(Direction direction = Direction::Increase);
@@ -312,16 +312,14 @@ namespace pipedal
         void PreviousPreset() { NextPreset(Direction::Decrease); }
 
         int64_t DownloadModelsFromTone3000(
-            const std::string&responseuri,
-            const Tone3000PkceParams& pkce,
+            const std::string &responseuri,
+            const Tone3000PkceParams &pkce,
             const std::string &downloadPath,
-            Tone3000DownloadType downloadType
-        );
+            Tone3000DownloadType downloadType);
 
         void CancelTone3000Download(
             int64_t clientId,
-            int64_t downloadHandle
-        );
+            int64_t downloadHandle);
         void RequestShutdown(bool restart);
 
         virtual PostHandle Post(PostCallback &&fn);
@@ -531,6 +529,7 @@ namespace pipedal
 
         void SetChannelRouterSettings(int64_t clientId, ChannelRouterSettings::ptr &settings);
         ChannelRouterSettings::ptr GetChannelRouterSettings();
+        void WriteTone3000Readme(const std::filesystem::path &filePath, const tone3000::Tone &tone, const std::string &thumbnailUrl);
     };
 
 } // namespace pipedal.

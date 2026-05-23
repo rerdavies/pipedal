@@ -593,6 +593,7 @@ export class UiControl implements Deserializable<UiControl> {
         this.max_value = input.max_value;
         this.default_value = input.default_value;
         this.is_logarithmic = input.is_logarithmic;
+        this.is_expensive = input.is_expensive;
         this.display_priority = input.display_priority;
         this.range_steps = input.range_steps;
         this.integer_property = input.integer_property;
@@ -715,6 +716,7 @@ export class UiControl implements Deserializable<UiControl> {
     integer_property: boolean = false;
     mod_momentaryOffByDefault: boolean = false;
     mod_momentaryOnByDefault: boolean = false;
+    is_expensive: boolean = false;
     pipedal_graphicEq: boolean = false;
     enumeration_property: boolean = false;
     trigger_property: boolean = false;

@@ -36,6 +36,7 @@
 #include "Promise.hpp"
 #include <mutex>
 #include "Tone3000Downloader.hpp"
+#include "Tone3000Tone.hpp"
 
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
@@ -60,6 +61,20 @@ public:
 JSON_MAP_BEGIN(CopyPresetsToBankBody)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, presets)
+JSON_MAP_END();
+
+class WriteTone3000ReadmeBody {
+public:
+    std::string filePath_;
+    tone3000::Tone tone_;
+    std::string thumbnailUrl_;
+    DECLARE_JSON_MAP(WriteTone3000ReadmeBody);
+};
+
+JSON_MAP_BEGIN(WriteTone3000ReadmeBody)
+JSON_MAP_REFERENCE(WriteTone3000ReadmeBody, filePath)
+JSON_MAP_REFERENCE(WriteTone3000ReadmeBody, tone)
+JSON_MAP_REFERENCE(WriteTone3000ReadmeBody, thumbnailUrl)
 JSON_MAP_END();
 
 class DownloadModelsFromTone3000Body
@@ -1192,6 +1207,15 @@ public:
          
     }
     REGISTER_MESSAGE_HANDLER(makeTone3000Pkce);
+
+
+    void handle_writeTone3000Readme(int replyTo, json_reader*pReader)
+    {
+        WriteTone3000ReadmeBody body;
+        pReader->read(&body);
+        model.WriteTone3000Readme(body.filePath_, body.tone_,body.thumbnailUrl_);
+    }
+    REGISTER_MESSAGE_HANDLER(writeTone3000Readme)
 
     void handle_sha256Base64url(int replyTo, json_reader *pReader)
     {

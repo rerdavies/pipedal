@@ -125,6 +125,7 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     core__isSideChain = lilv_new_uri(pWorld, LV2_CORE_PREFIX "isSideChain"); // missing in lv2.h
     portprops__not_on_gui_property_uri = lilv_new_uri(pWorld, LV2_PORT_PROPS__notOnGUI);
     portprops__trigger = lilv_new_uri(pWorld, LV2_PORT_PROPS__trigger);
+    portprops__expensive = lilv_new_uri(pWorld, LV2_PORT_PROPS__expensive);
     midi__event = lilv_new_uri(pWorld, LV2_MIDI__MidiEvent);
     core__designation = lilv_new_uri(pWorld, LV2_CORE__designation);
     portgroups__group = lilv_new_uri(pWorld, LV2_PORT_GROUPS__group);
@@ -1265,6 +1266,7 @@ Lv2PortInfo::Lv2PortInfo(PluginHost *host, const LilvPlugin *plugin, const LilvP
     this->integer_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->integer_property_uri);
     this->mod_momentaryOffByDefault_ = lilv_port_has_property(plugin, pPort, host->lilvUris->mod__preferMomentaryOffByDefault);
     this->mod_momentaryOnByDefault_ = lilv_port_has_property(plugin, pPort, host->lilvUris->mod__preferMomentaryOnByDefault);
+    this->is_expensive_ = lilv_port_has_property(plugin, pPort, host->lilvUris->portprops__expensive);
     this->pipedal_graphicEq_ = lilv_port_has_property(plugin, pPort, host->lilvUris->pipedalUI__graphicEq);
 
     this->enumeration_property_ = lilv_port_has_property(plugin, pPort, host->lilvUris->enumeration_property_uri);
@@ -2321,6 +2323,7 @@ json_map::storage_type<Lv2PortInfo> Lv2PortInfo::jmap{
      MAP_REF(Lv2PortInfo, toggled_property),
      MAP_REF(Lv2PortInfo, mod_momentaryOffByDefault),
      MAP_REF(Lv2PortInfo, mod_momentaryOnByDefault),
+     MAP_REF(Lv2PortInfo, is_expensive),
      MAP_REF(Lv2PortInfo, pipedal_graphicEq),
      MAP_REF(Lv2PortInfo, not_on_gui),
      MAP_REF(Lv2PortInfo, buffer_type),
@@ -2408,6 +2411,7 @@ json_map::storage_type<Lv2PluginUiPort> Lv2PluginUiPort::jmap{{
 
     MAP_REF(Lv2PluginUiPort, mod_momentaryOffByDefault),
     MAP_REF(Lv2PluginUiPort, mod_momentaryOnByDefault),
+    MAP_REF(Lv2PluginUiPort, is_expensive),
     MAP_REF(Lv2PluginUiPort, pipedal_graphicEq),
     MAP_REF(Lv2PluginUiPort, enumeration_property),
     MAP_REF(Lv2PluginUiPort, not_on_gui),

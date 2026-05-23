@@ -30,13 +30,9 @@ import { PiPedalModelFactory, PiPedalModel, ListenHandle, State } from "./PiPeda
 import { PedalboardItem, ControlValue } from './Pedalboard';
 import PluginControlView, { ICustomizationHost, ControlGroup, ControlViewCustomization } from './PluginControlView';
 import { UiPlugin, UiControl, ControlType } from './Lv2Plugin';
-import Select from '@mui/material/Select/Select';
-import MenuItem from '@mui/material/MenuItem/MenuItem';
-import { CustomPluginControl } from './PluginControl';
 
 
 const TOOB_NAM__MODEL_METADATA_URI = "http://two-play.com/plugins/toob-nam#model_metadata";
-const TOOB_NAM__MODEL_WEIGHT_URI = "http://two-play.com/plugins/toob-nam#modelWeight";
 
 
 enum NamModelType {
@@ -218,10 +214,9 @@ const ToobNamView =
             }
 
             modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
-                let EqPos = 7;
-                const CalibrationGroupPos = 8;
-                const ModelSizeControlPos = 9;
-                const ModelWeightControlPos = 10;
+                const ModelWeightControlPos = 3;
+                const EqPos = 8;
+                const CalibrationGroupPos = 9;
 
 
                 let calibrationGroup = controls[CalibrationGroupPos] as ControlGroup;
@@ -255,58 +250,15 @@ const ToobNamView =
                 } else {
                     controls[CalibrationGroupPos] = null;
                 }
-                controls[ModelSizeControlPos] = null;
-                controls[ModelWeightControlPos] = null;
                 if (!this.state.showEqSection) {
-                    controls.splice(EqPos, 1);
+                    controls[EqPos] = null;
                 }
-                if (this.state.modelMetadata.hasSlimmableWeights) {
-                    controls.splice(3, 0, this.MakeModelWeightSelector(host));
+                if (!this.state.modelMetadata.hasSlimmableWeights) {
+                    controls[ModelWeightControlPos] = null;
                 }
                 return controls;
             }
 
-            ModelWeightToString(weight: number): string {
-                switch (weight) {
-                    case 1.0: return "Standard";
-                    case 0.5: return "Lite";
-                    case 0.25: return "Feather";
-                    default: return weight.toString();
-                }
-            }
-
-            SelectModelWeight(weight: number) {
-                this.setState({ modelWeight: weight });
-                this.model.setPatchProperty(this.props.instanceId, TOOB_NAM__MODEL_WEIGHT_URI, weight);
-
-            }
-            MakeModelWeightSelector(host: ICustomizationHost): React.ReactNode {
-                if ((this.state.modelMetadata.modelWeight === undefined || this.state.modelMetadata.modelWeight || this.state.modelMetadata.hasSlimmableWeights) === false) {
-                    return null;
-                }
-                let selectControl = (
-                    <Select key="model_weight_control" variant="standard" size="small" value={this.state.modelMetadata.modelWeight}
-                        onChange={(e) => { this.SelectModelWeight(Number(e.target.value)) }}
-                        style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 12, marginTop: 4 }}
-                    >
-                        {/*
-                        {this.state.modelMetadata.slimmable_weights.map((weight, index) => {
-                            return (
-                                <MenuItem key={weight.toString()} value={weight}
-                                    style={{ fontSize: 14 }}
-                                >
-                                    {this.ModelWeightToString(weight)}
-                                </MenuItem>
-                            );
-                        })}
-                        */}
-                    </Select>
-                );
-                return (
-                    <div style={{ marginLeft: 12 }}>
-                        <CustomPluginControl title="Model Weight" mainControl={selectControl} isSelect={true} />
-                    </div>);
-            }
 
             private handleConnectionStateChanged(state: State) {
                 if (state === State.Ready) {

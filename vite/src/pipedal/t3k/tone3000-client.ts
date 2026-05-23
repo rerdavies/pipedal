@@ -542,7 +542,7 @@ export async function handleOAuthCallback(
         console.debug("PiPedal handleOAuthCallback Response: " + JSON.stringify(data).replace(/\n/g, ' '));
     }
 
-    if (toneId === undefined && modelId === undefined) {
+    if (toneId === undefined && modelId === undefined && !canceled) {
         throw new Error('Missing both toneId and modelId in OAuth callback response');
     }
     return { ok: true, tokens, toneId, modelId, ...(canceled ? { canceled: true } : {}) };

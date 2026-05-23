@@ -338,7 +338,7 @@
             "args": [   
                 "--no-profile",
                 "--preset-file", "/home/robin/Downloads/A1 Profiling.piPreset",
-                "--seconds", "1",
+                "--seconds", "100",
                 "-w"
              ],
             "stopAtEntry": false,

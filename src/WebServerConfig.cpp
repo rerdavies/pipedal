@@ -86,7 +86,23 @@ static bool IsSafeMediaPath(const fs::path path)
     if (!HtmlHelper::IsSafeFileName(path)) {
         return false;
     }
-    if (!(path.string().starts_with("/var/pipedal/audio_uploads")))
+    if (!(path.string().starts_with("/var/pipedal/audio_uploads/")))
+    {
+        return false;
+    }
+    return true;
+}
+static bool IsSafeThumbnailPath(const fs::path path)
+{
+    if (!HtmlHelper::IsSafeFileName(path)) {
+        return false;
+    }
+    if (!(path.string().starts_with("/var/pipedal/tone3000_thumbnails/")))
+    {
+        return false;
+    }
+    auto extension = path.extension();
+    if (extension != ".jpg" && extension != ".jpeg" && extension != ".png" && extension != ".webm")
     {
         return false;
     }
@@ -380,6 +396,10 @@ public:
                 }
                 auto mimeType = GetMimeType(path);
                 if (mimeType.empty())
+                {
+                    throw PiPedalException("Can't download files of this type.");
+                }
+                if (!mimeType.starts_with("image/"))
                 {
                     throw PiPedalException("Can't download files of this type.");
                 }
@@ -984,7 +1004,7 @@ public:
                     {
                         throw std::runtime_error("Invalid path");
                     }
-                    if (!IsSafeMediaPath(targetPath))
+                    if (!IsSafeMediaPath(targetPath) &&  !IsSafeThumbnailPath(targetPath))
                     {
                         throw std::runtime_error("Unsafe path.");
                     }
