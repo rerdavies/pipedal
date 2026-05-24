@@ -238,6 +238,10 @@ export class Tone3000DownloadHandler {
             if (!tokenResponse.ok) {
                 throw new Error(tokenResponse.error);
             }
+            if (tokenResponse.canceled) {
+                this.onTone3000DownloadComplete("");
+                return;
+            }
             if (this.checkForCancel()) {
                 return;
             }
@@ -308,15 +312,14 @@ export class Tone3000DownloadHandler {
             let lastUpdateTime = Date.now();
 
 
-
-            for (const model of models) {
+                for (const model of models) {
                 this.progress.title = model.name;;
                 if (Date.now() - lastUpdateTime > 250) {
                     this.onTone3000DownloadProgress(this.progress);
                     lastUpdateTime = Date.now();
                 }
 
-                 if (!await this.throttleRequests()) return;
+                if (!await this.throttleRequests()) return;
 
                 if (!model.model_url) {
                     throw new Error("Model " + model.name + " does not have a model URL.");
@@ -377,15 +380,86 @@ export class Tone3000DownloadHandler {
                     throw new Error(`Upload failed: ${uploadResult.error ?? "Unknown error."}`);
                 }
                 this.progress.progress++;
+            }
+            // the image file and readme.
+            let toobThubmnailUrl: string = "";
+            if (tone.images && tone.images.length > 0) {
+
+                await this.throttleRequests();
+
+                let accessToken = await this.t3kClient.getAccessToken();
+                let thumbnailUrl = tone.images[0];
+                let thumbnailResult = await fetch(thumbnailUrl,   
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        duplex: 'half',
+                    } as RequestInit & { duplex: 'half' }
+
+                );
+                if (!thumbnailResult.ok) {
+                    throw new Error(`Thumbnail download failed: ${thumbnailResult.status} ${thumbnailResult.statusText}`);
+                }
+                if (this.checkForCancel()) {
+                    return;
+                }
+                let mediaType = thumbnailResult.headers.get("Content-Type");
+                if (mediaType == null) {
+                    throw new Error("Thumbnail download failed: Content-Type header is missing.");  
+                }
+                let extension: string;
+                switch (mediaType) {
+                    case "image/jpeg":
+                        extension = ".jpeg";
+                        break;
+                    case "image/webp":
+                        extension = ".webp";
+                        break;
+                    case "image/png":
+                        extension = ".png";
+                        break;
+                    default:
+                        throw new Error(`Thumbnail download failed: Unexpected media type '${mediaType}'.`);
+                }
+                let blob = await thumbnailResult.blob();
+                const TONE3000_THUMBNAIL_PATH = "/var/pipedal/tone3000_thumbnails/";
+                let thumbnailUploadPath = TONE3000_THUMBNAIL_PATH + tone.id +  extension;
+
+                 let serverUrl = this.model.varServerUrl + "t3k_uploadAsset?path="
+                    + encodeURIComponent(thumbnailUploadPath);
+
+                const uploadResponse = await fetch(serverUrl, {
+                    method: 'POST',
+                    body: blob,
+                    headers: {
+                        'Content-Type': mediaType,
+                        "Content-Length": blob.size.toString(),
+                        "Transfer-Encoding": "chunked"
+                    },
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error(`Thumbnail upload failed: ${uploadResponse.statusText}`);
+                }
+                 let uploadResult: any = await uploadResponse.json();
+
+                if (!uploadResult.ok === true) {
+                    throw new Error(`Thumbnail upload failed: ${uploadResult.error ?? "Unknown error."}`);
+                } 
+                toobThubmnailUrl = "/var/t3k_thumbnail?id=" + tone.id;  
 
             }
-            // yyy: get the image file.
-            // yyy: write the reaadme file.
+            let readmePath = toneUploadPath + "README.md";
+            this.model.writeTone3000Readme(readmePath, tone, toobThubmnailUrl);
 
-            this.onTone3000DownloadComplete(uploadPath);
+            this.onTone3000DownloadComplete(toneUploadPath);
         } catch (error) {
-            this.onTone3000DownloadError(getErrorMessage(error)
-                + " " + this.progress.progress.toString() + "/" + this.progress.total.toString() + " models downloaded.");
+            let message = getErrorMessage(error);
+            if (this.progress.progress > 0) {
+                message += " (" + this.progress.progress.toString() + "/" + this.progress.total.toString() + " models downloaded)";    
+            }
+            this.onTone3000DownloadError(message);
             return;
         }
     }

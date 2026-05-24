@@ -50,6 +50,7 @@ import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSe
 import { getDefaultModGuiPreference } from './ModGuiHost';
 import ChannelRouterSettings from './ChannelRouterSettings';
 import Tone3000DownloadProgress from './Tone3000DownloadProgress';
+import { Tone } from './t3k/types';
 
 
 export enum State {
@@ -1331,6 +1332,23 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
+    async writeTone3000Readme(
+        filePath: string, 
+        tone: Tone,
+        thumbnailUrl: string
+
+    ): Promise<void> {
+        if (!this.webSocket) {
+            throw new Error("Server disconnected.");
+        }
+        await this.webSocket.request<void>(
+            "writeTone3000Readme",
+            {
+                filePath: filePath,
+                tone: tone,
+                thumbnailUrl: thumbnailUrl
+            });
+    }
 
     maxFileUploadSize: number = 512 * 1024 * 1024;
     maxPresetUploadSize: number = 1024 * 1024;
@@ -2058,13 +2076,33 @@ export class PiPedalModel //implements PiPedalModel
     previewPedalboardValue(instanceId: number, key: string, value: number): void {
         // mouse is down. Don't update EVERYBODY, but we must change 
         // the control on the running audio plugin.
-        // TODO: respect "expensive" port attribute.
+
+        // respect "expensive" port attribute.
+
+        // Handle special cases for input/output volume
         if (instanceId === Pedalboard.START_CONTROL_ID && key === "volume_db") {
             this.previewInputVolume(value);
             return;
         } else if (instanceId === Pedalboard.END_CONTROL_ID) {
             this.previewOutputVolume(value);
             return;
+        }
+
+        // Get the control info to check if it's expensive
+        let pedalboard = this.pedalboard.get();
+        if (pedalboard) {
+            let item = pedalboard.tryGetItem(instanceId);
+            if (item) {
+                let plugin = this.getUiPlugin(item.uri);
+                if (plugin) {
+                    let control = plugin.getControl(key);
+                    if (control && control.is_expensive) {
+                        // Don't send preview for expensive controls
+                        // The final value will be sent when the control is committed
+                        return;
+                    }
+                }
+            }
         }
 
         this._setServerControl("previewControl", instanceId, key, value);
@@ -2085,6 +2123,23 @@ export class PiPedalModel //implements PiPedalModel
         }
         return result;
 
+
+    }
+    replacePedalboarditem(instanceId: number, newItem: PedalboardItem): void {
+        let pedalboard = this.pedalboard.get();
+        let newPedalboard = pedalboard.clone();
+
+        this.updateVst3State(newPedalboard);
+
+        let fromItem = newPedalboard.getItem(instanceId);
+        if (fromItem === null) {
+            throw new PiPedalArgumentError("fromInstanceId not found.");
+        }
+
+        let newInstanceId = newPedalboard.replaceItem(instanceId, newItem.clone());
+        newPedalboard.selectedPlugin = newInstanceId;
+        this.setModelPedalboard(newPedalboard);
+        this.updateServerPedalboard();
 
     }
     movePedalboardItemBefore(fromInstanceId: number, toInstanceId: number): void {

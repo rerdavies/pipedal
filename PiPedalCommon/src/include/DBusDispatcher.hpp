@@ -78,7 +78,7 @@ private:
     std::atomic<bool> stopping;
 
     std::vector<CallbackEntry> postedEvents;
-    bool threadStarted;
+    bool threadStarted = false;
     std::thread serviceThread;
     std::mutex postMutex;
 };

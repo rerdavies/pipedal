@@ -207,6 +207,7 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    Tone3000Tone.hpp Tone3000Tone.cpp
     AesDigest.cpp AesDigest.hpp
     ChannelRouterSettings.cpp ChannelRouterSettings.hpp
     Curl.cpp Curl.hpp

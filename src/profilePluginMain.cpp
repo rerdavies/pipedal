@@ -132,7 +132,9 @@ void profilePlugin(const ProfileOptions &profileOptions)
         throw std::runtime_error(s.str());
     }
 
+    model.EnableUpdater(false);
     model.Init(configuration);
+    model.GetPluginHost().asIHost()->SetMaxAudioBufferSize(64);
 
     model.LoadLv2PluginInfo();
 

@@ -59,6 +59,9 @@ export class ControlValue implements Deserializable<ControlValue> {
 }
 
 export class PedalboardItem implements Deserializable<PedalboardItem> {
+    clone() {
+        return new PedalboardItem().deserialize(this);
+    }
     deserializePedalboardItem(input: any): PedalboardItem {
         this.instanceId = input.instanceId ?? -1;
         this.title = input.title ?? "";
@@ -753,11 +756,14 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     
     replaceItem(instanceId: number, newItem: PedalboardItem)
     {
+        newItem.instanceId = ++this.nextInstanceId;
+
         let result = this._replaceItem(this.items,instanceId,newItem);
         if (!result)
         {
             throw new PiPedalArgumentError("instanceId not found.");
         }
+        return newItem.instanceId;
     }
     private _addItem(items: PedalboardItem[], newItem: PedalboardItem, instanceId: number, append: boolean)
     {

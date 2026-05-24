@@ -427,7 +427,6 @@ export const MainPage =
                     let title = "";
                     let author = "";
                     let infoPluginUri = "";
-                    let presetsUri = "";
                     let missing = false;
                     let canEditTitle = false;
                     let modGuiButtonVisible = false;
@@ -439,7 +438,6 @@ export const MainPage =
                         } else if (pedalboardItem.isSyntheticItem()) {
                             title = pedalboardItem.pluginName ?? "#error";
                             author = "";
-                            presetsUri = "";
                             infoPluginUri = "";
                         }
                         else {
@@ -456,7 +454,6 @@ export const MainPage =
                                     title = uiPlugin.name;
                                     author = uiPlugin.author_name;
                                 }
-                                presetsUri = uiPlugin.uri;
                                 // if (uiPlugin.description.length > 20) {
                                 // }
                                 infoPluginUri = uiPlugin.uri;
@@ -544,10 +541,6 @@ export const MainPage =
                                 <div style={{ flex: "0 0 auto", verticalAlign: "center" }}>
                                     <PluginInfoDialog plugin_uri={infoPluginUri} />
                                 </div>
-                                <div style={{ flex: "0 0 auto" }}>
-                                    <PluginPresetSelector pluginUri={presetsUri} instanceId={pedalboardItem?.instanceId ?? 0}
-                                    />
-                                </div>
 
                                 {modGuiButtonVisible && (
                                     <div style={{ flex: "0 0 auto" }}>
@@ -634,6 +627,7 @@ export const MainPage =
                         canShowModUi = this.canShowModUi(pedalboardItem);
                         canDelete = pedalboard.canDeleteItem(pedalboardItem.instanceId);
                         instanceId = pedalboardItem.instanceId;
+                        pluginUri = pedalboardItem.uri;
                         if (pedalboardItem.isEmpty()) {
                             canInsert = true;
                             canAppend = true;
@@ -699,7 +693,12 @@ export const MainPage =
                                     </div>
                                     {this.props.enableStructureEditing && (
                                         <div style={{ flex: "0 0 auto", display: "flex", flexFlow: "row nowrap", alignItems: "center" }}>
-                                            <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none", paddingRight: 8 }}>
+                                            <div style={{ flex: "0 0 auto" }}>
+                                                <PluginPresetSelector pedalboardItem={pedalboardItem} instanceId={pedalboardItem?.instanceId ?? 0}
+                                                />
+                                            </div>
+
+                                            <div style={{ flex: "0 0 auto", display: (canInsert || canAppend) ? "block" : "none" }}>
                                                 <IconButtonEx tooltip="Add pedal slot" onClick={(e) => { this.onAddClick(e) }} size="large">
                                                     <AddIcon style={{ height: 24, width: 24, fill: this.props.theme.palette.text.primary, opacity: 0.6 }} />
                                                 </IconButtonEx>
@@ -718,7 +717,7 @@ export const MainPage =
                                                     {canAppend && (<MenuItem onClick={() => this.onAppendSplit(instanceId)}>Append split</MenuItem>)}
                                                 </Menu>
                                             </div>
-                                            <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none", paddingRight: 8 }}>
+                                            <div style={{ flex: "0 0 auto", display: canDelete ? "block" : "none",  }}>
                                                 <IconButtonEx tooltip="Delete pedal"
                                                     onClick={() => { this.onDeletePedal(pedalboardItem?.instanceId ?? -1) }}
                                                     size="large">

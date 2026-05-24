@@ -4,9 +4,9 @@
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (aarch64) v2.0.101 Beta](https://github.com/rerdavies/pipedal/releases/download/v2.0.101/pipedal_2.0.101_arm64.deb)
-- [Ubuntu 24.x, 25.04 (aarch64) v2.0.101 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.101/pipedal_2.0.101_arm64.deb)
-- [Ubuntu 24.x, 25.04 (amd64) v2.0.101 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.101/pipedal_2.0.101_amd64.deb)
+- [Raspberry Pi OS bookworm (aarch64) v2.0.102 Beta](https://github.com/rerdavies/pipedal/releases/download/v2.0.102/pipedal_2.0.102_arm64.deb)
+- [Ubuntu 24.x, 25.04 (aarch64) v2.0.102 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.102/pipedal_2.0.102_arm64.deb)
+- [Ubuntu 24.x, 25.04 (amd64) v2.0.102 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.102/pipedal_2.0.102_amd64.deb)
 
 
 Install the package by running 
@@ -14,7 +14,7 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_2.0.101_arm64.deb
+  sudo apt-get install ./pipedal_2.0.102_arm64.deb
 ```
 You MUST use `apt-get` to install the package. `apt install` will NOT install the package correctly. The message about missing permissions given by `apt-get` is
 expected, and can be safely ignored.

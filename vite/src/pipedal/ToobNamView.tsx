@@ -30,17 +30,27 @@ import { PiPedalModelFactory, PiPedalModel, ListenHandle, State } from "./PiPeda
 import { PedalboardItem, ControlValue } from './Pedalboard';
 import PluginControlView, { ICustomizationHost, ControlGroup, ControlViewCustomization } from './PluginControlView';
 import { UiPlugin, UiControl, ControlType } from './Lv2Plugin';
-import Select from '@mui/material/Select/Select';
-import MenuItem from '@mui/material/MenuItem/MenuItem';
-import { CustomPluginControl } from './PluginControl';
 
 
 const TOOB_NAM__MODEL_METADATA_URI = "http://two-play.com/plugins/toob-nam#model_metadata";
-const TOOB_NAM__MODEL_WEIGHT_URI = "http://two-play.com/plugins/toob-nam#modelWeight";
 
+
+enum NamModelType {
+    None = 0,
+    A1 = 1,
+    A2 = 2
+};
+
+function floatToModelType(value: number): NamModelType {
+    switch (value) {
+        case 0: return NamModelType.None;
+        case 1: return NamModelType.A1;
+        case 2: return NamModelType.A2;
+        default: return NamModelType.None;
+    }
+}
 // offset 0: an integer with the folloing bits set.
 // Must match ToobAmp/src/NeuralAmpModeler_Lv2Extensions.hpp enum TOOB_NAM_METADATA_OFFSETS
-const MAX_SLIMMABLE_WEIGHTS = 16;
 class TOOB_NAM_METADATA_OFFSETS {
     static readonly flags = 0;
     static readonly preset_version = 1;
@@ -48,11 +58,10 @@ class TOOB_NAM_METADATA_OFFSETS {
     static readonly gain = 3;
     static readonly input_level_dbu = 4;
     static readonly output_level_dbu = 5;
-    static readonly is_a2 = 6;
+    static readonly has_slimmable_weights = 6;
     static readonly model_weight = 7;
-    static readonly slimmable_weights_size = 8;
-    static readonly slimmable_weights = 9;
-    static readonly max_medatadata = TOOB_NAM_METADATA_OFFSETS.slimmable_weights + MAX_SLIMMABLE_WEIGHTS;
+    static readonly model_type = 8;
+    static readonly max_medatadata = 9;
 };
 
 
@@ -81,12 +90,9 @@ class ModelMetadata {
             this.inputlevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.input_level_dbu];
             this.outputlevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.output_level_dbu];
             this.preset_version = metadataValues[TOOB_NAM_METADATA_OFFSETS.preset_version];
-            this.isA2 = metadataValues[TOOB_NAM_METADATA_OFFSETS.is_a2] !== 0;
+            this.hasSlimmableWeights = metadataValues[TOOB_NAM_METADATA_OFFSETS.has_slimmable_weights] !== 0;
             this.modelWeight = metadataValues[TOOB_NAM_METADATA_OFFSETS.model_weight];
-            let slimmableWeightsSize = metadataValues[TOOB_NAM_METADATA_OFFSETS.slimmable_weights_size];
-            for (let i = 0; i < slimmableWeightsSize && i < 16; ++i) {
-                this.slimmable_weights.push(metadataValues[TOOB_NAM_METADATA_OFFSETS.slimmable_weights + i]);
-            }
+            this.modelType = floatToModelType(metadataValues[TOOB_NAM_METADATA_OFFSETS.model_type]);
         } else {
             this.hasModel = false;
             this.hasLoudness = false;
@@ -96,33 +102,28 @@ class ModelMetadata {
 
             this.loudness = 0;
             this.gain = 0;
+            this.hasSlimmableWeights = false;
             this.inputlevelDBU = 0;
             this.outputlevelDBU = 0;
             this.preset_version = 1;
             this.modelWeight = -1;
-            this.isA2 = false;
-            this.slimmable_weights = [];
         }
     }
 
     preset_version: number;
-    isA2: boolean = false;
+    hasSlimmableWeights: boolean = false;
     modelWeight: number = 1.0;
-    slimmable_weights: number[] = [];
-    hasModel: boolean;
-    hasLoudness: boolean;
-    hasGain: boolean;
-    hasInputLevelDBU: boolean;
-    hasOutputLevelDBU: boolean;
+    modelType: NamModelType = NamModelType.None;
+    hasModel: boolean = false;
+    hasLoudness: boolean = false;
+    hasGain: boolean = false;
+    hasInputLevelDBU: boolean = false;
+    hasOutputLevelDBU: boolean = false;
 
     loudness: number;
     gain: number;
     inputlevelDBU: number;
     outputlevelDBU: number;
-
-    hasSlimmableWeights(): boolean {
-        return this.slimmable_weights.length > 0;
-    }
 
 }
 
@@ -213,10 +214,9 @@ const ToobNamView =
             }
 
             modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
-                let EqPos = 7;
-                const CalibrationGroupPos = 8;
-                const ModelSizeControlPos = 9;
-                const ModelWeightControlPos = 10;
+                const ModelWeightControlPos = 3;
+                const EqPos = 8;
+                const CalibrationGroupPos = 9;
 
 
                 let calibrationGroup = controls[CalibrationGroupPos] as ControlGroup;
@@ -250,57 +250,15 @@ const ToobNamView =
                 } else {
                     controls[CalibrationGroupPos] = null;
                 }
-                controls[ModelSizeControlPos] = null;
-                controls[ModelWeightControlPos] = null;
                 if (!this.state.showEqSection) {
-                    controls.splice(EqPos, 1);
+                    controls[EqPos] = null;
                 }
-                if (this.state.modelMetadata.hasSlimmableWeights()) {
-                    controls.splice(3, 0, this.MakeModelWeightSelector(host));
+                if (!this.state.modelMetadata.hasSlimmableWeights) {
+                    controls[ModelWeightControlPos] = null;
                 }
                 return controls;
             }
 
-            ModelWeightToString(weight: number): string {
-                switch (weight) {
-                    case 1.0: return "Standard";
-                    case 0.5: return "Lite";
-                    case 0.25: return "Feather";
-                    default: return weight.toString();
-                }
-            }
-
-            SelectModelWeight(weight: number) {
-                this.setState({ modelWeight: weight });
-                this.model.setPatchProperty(this.props.instanceId, TOOB_NAM__MODEL_WEIGHT_URI, weight);
-
-            }
-            MakeModelWeightSelector(host: ICustomizationHost): React.ReactNode {
-                if ((this.state.modelMetadata.modelWeight === undefined || this.state.modelMetadata.modelWeight || this.state.modelMetadata.hasSlimmableWeights()) === false) {
-                    return null;
-                }
-                let selectControl = (
-                    <Select key="model_weight_control" variant="standard" size="small" value={this.state.modelMetadata.modelWeight}
-                        onChange={(e) => { this.SelectModelWeight(Number(e.target.value)) }}
-                        style={{ marginLeft: 4, marginRight: 4, width: 140, fontSize: 12, marginTop: 4 }}
-                    >
-                        {this.state.modelMetadata.slimmable_weights.map((weight, index) => {
-                            return (
-                                <MenuItem key={weight.toString()} value={weight}
-                                    style={{ fontSize: 14 }}
-                                >
-                                    {this.ModelWeightToString(weight)}
-                                </MenuItem>
-                            );
-                        })}
-
-                    </Select>
-                );
-                return (
-                    <div style={{ marginLeft: 12 }}>
-                        <CustomPluginControl title="Model Weight" mainControl={selectControl} isSelect={true} />
-                    </div>);
-            }
 
             private handleConnectionStateChanged(state: State) {
                 if (state === State.Ready) {

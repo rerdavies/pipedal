@@ -226,6 +226,7 @@ namespace pipedal
 
         bool mod_momentaryOffByDefault_ = false;
         bool mod_momentaryOnByDefault_ = false;
+        bool is_expensive_ = false;
         bool pipedal_graphicEq_ = false;
 
         bool not_on_gui_ = false;
@@ -304,6 +305,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
         LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOffByDefault);
         LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOnByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(is_expensive);
         LV2_PROPERTY_GETSET_SCALAR(pipedal_graphicEq);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
@@ -591,6 +593,7 @@ namespace pipedal
               integer_property_(pPort->integer_property()),
               mod_momentaryOffByDefault_(pPort->mod_momentaryOffByDefault()),
               mod_momentaryOnByDefault_(pPort->mod_momentaryOnByDefault()),
+              is_expensive_(pPort->is_expensive()),
               pipedal_graphicEq_(pPort->pipedal_graphicEq()),
 
               enumeration_property_(pPort->enumeration_property()),
@@ -641,6 +644,7 @@ namespace pipedal
 
         bool mod_momentaryOffByDefault_ = false;
         bool mod_momentaryOnByDefault_ = false;
+        bool is_expensive_ = false;
         bool pipedal_graphicEq_ = false;
 
         bool enumeration_property_ = false;
@@ -671,6 +675,10 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(display_priority);
         LV2_PROPERTY_GETSET_SCALAR(is_logarithmic);
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
+        LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOffByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOnByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(is_expensive);
+        LV2_PROPERTY_GETSET_SCALAR(pipedal_graphicEq);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
         LV2_PROPERTY_GETSET_SCALAR(trigger_property);
@@ -798,6 +806,7 @@ namespace pipedal
             AutoLilvNode core__isSideChain;
             AutoLilvNode portprops__not_on_gui_property_uri;
             AutoLilvNode portprops__trigger;
+            AutoLilvNode portprops__expensive;
             AutoLilvNode midi__event;
             AutoLilvNode core__designation;
             AutoLilvNode portgroups__group;

@@ -572,8 +572,12 @@ export default withStyles(
                 return;
             }
             if (resultPath.startsWith(this.state.navDirectory)) {
+                let selectedFile = resultPath;
+                if (selectedFile.endsWith("/")) {
+                    selectedFile = selectedFile.slice(0, -1);
+                }
                 this.setState({
-                    selectedFile: resultPath,
+                    selectedFile: selectedFile,
                 });
                 this.requestFiles(this.state.navDirectory);
             }

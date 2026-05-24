@@ -153,6 +153,11 @@ function makeControls(plugin: UiPlugin, controlHeadeClass: string) {
                 if (portGroup !== lastPortGroup) {
                     if (portGroup !== null) 
                     {
+                        // Hide Tone port group on Toob NAM.
+                        if (portGroup.uri === 'http://two-play.com/plugins/toob-nam#eqGroup')
+                        {
+                            continue;
+                        }
                         trs.push((
                             <tr>
                                 <td className={controlHeadeClass} style={{ verticalAlign: "top", paddingTop: 8 }} colSpan={2}>
