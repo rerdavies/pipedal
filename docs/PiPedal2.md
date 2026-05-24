@@ -28,6 +28,7 @@ Whether you are looking for free models, or premium models, NAM A2 provides the 
 
 PiPedal 2.0 provides a new Channel Routing dialog, which replaces the Channel Selection Dialog in Pipedal 1.x. You can now globally (for all existing presets) route auxiliary input channels on your audio device (such as backing tracks or microphone inputs), or route clean unprocessed guitar input signals to otherwise-unused output audio channels for later re-amping later in a DAW. 
 
+PiPedal 2.0 can now be run as a "Progressive Web Application". This allows you to launch Pipedal from your desktop as a native desktop application, without extra browser address bars and window decorations. See below for instructions on how to install Pipedal on your desktop as a standalone app.
 
 {% include gallery.html %}
 
@@ -40,6 +41,14 @@ start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to
 
 Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi networks, or Wi-Fi hotspots. If you are using PiPedal away from home, you can configure PiPedal to automatically start a Wi-Fi hotspot on your Raspberry Pi 
 whenever Pipedal is unable to detect your home network. The PiPedal Client Android app will allow to connect by simply launching the app, whether you are at home, or using a Wi-Fi auto-hotspot at a gig, when away from home.
+
+PiPedal 2.0 can no be installed as a Progressive Web Application (PWA). This allows you to launch Pipedal with a native window frame. Launch it from a desktop shortcut, and it will run without browser address bars, tabs, and other browser window decorations. I looks and works like a normal native application. To install PiPedal on your desktop as a PWA, load PiPedal in your web browser, and click on the "Install" button found here: 
+
+![Install PiPedal as a Browser Application](img/chrome_install.jpg)
+
+As an added bonus, when running PiPedal as a PWA, press the F11 key to toggle full-screen mode, and get a completely immersive experience, with no distractions on your screen at all.
+
+Using Pipedal as a PWA also provides a nice way to use Pipedal on Apple devices. We recommend that you use Google Chrome to host the PWA on Apple devices, rather than Safari.
 
 PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
 

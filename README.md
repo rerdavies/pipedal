@@ -13,11 +13,11 @@ Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### NEW version 2.0.102 Release. See the [release notes](https://rerdavies.github.io/pipedal/ReleaseNotes) for details. TooB NAM calibration, manipulation of i/r files in Toob Convolution Reverb, new Parametric EQ and 3 Band EQ plugins, and MORE!
+#### Announcing PiPedal 2.0 (2.0.102 Alpha). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for information, and instructions on how to install Pipedal 2.0. New features include support for Neural Amp Modeler A2 models, integration with Tone3000.com services for easy downloading of Neural Amp Modeler A2 models and IIRs, a new Channel Routing dialog for global routing of auxiliary input channels, and unprocessed re-amp output channels, and many other minor features, improvements, and bug fixes. Pipedal 2.0 also adds support for running PiPedal as a Progressive Web Application (PWA), which allows you to launch Pipedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for instructions on how to install Pipedal on your desktop as a standalone app.
 
 &nbsp;
 
-Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.
+Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal using a remote web browsers, from your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
 
 PiPedal will also run on Ubuntu 24.04,  24.10, or 25.04 (amd64/x64 or aarch64). Make sure you follow the [Ubuntu post-install instructions](https://rerdavies.github.io/pipedal/Configuring.html) to ensure that your Ubuntu OS is using a  realtime-capable kernel.

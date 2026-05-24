@@ -13,15 +13,19 @@ Currently, the best way to get access to NAM A2 models is via the integrated Ton
 
 A new channel routing dialog replaces the channel configurationg dialog. The Channel Routing dialog allows global (i.e. not per-preset) configuration of audio channels. You can now configure audio channels as Aux channels (e.g. using the non-guitar channel on your audio interface as an input for backing tracks), or sending unprocessed guitar input signal to an unused output channel for re-amping in a DAW or external hardware. Refer to the (?) help dialog in the Channel Routing Dialog for more information on how to use this feature.
 
+PiPedal 2.0 can now be installed as a Progressive Web Application (PWA). This allows you to launch Pipedal from your desktop as a native desktop application, without extra browser address bars and window decorations. 
+
 ### Features
 
 - Support for Neural Amp Modeler A2 models. The latest version of the TooB Neural Amp Modeler plugin now supports NAM A2 models, which provide improved performance and sound quality compared to older NAM A1 models. 
 
-- Download Tone3000 NAM models and IIR files directly to the PiPedal server. Click on the DOWNLOAD MODELS FROM TONE3000 button in the NAM file selection dialog to download the latest NAM A2 models.
+- Download Tone3000 NAM models and IIR files directly to the PiPedal server. Click on the DOWNLOAD MODELS FROM TONE3000 button in the NAM file selection dialog to download the latest NAM A2 models. 
 
 - Download IIR files directly into TooB Cab IR from Tone3000. 
 
 - New Channel Routing Dialog.
+
+- Install PiPedal as a Progressive Web Application (PWA), which allows you to launch PiPedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device).
 
 - New TooB Tone plugin: a simple one-knob tone control. The new TooB Tone plugin provides a simple one-knob tone control that can be used to adjust the overall tone of your guitar signal. It is a great tool for quickly shaping your tone without having to use a more complex EQ plugin.
 

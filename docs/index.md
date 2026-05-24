@@ -27,6 +27,7 @@ box-shadow: 1px 4px 12px rgba(0, 0, 0, 0.3);">
         Integration with Tone3000.com services for easy downloading of Neural Amp Modeler A2 models and IIRs.</li>
         <li style="margin-bottom: 8px">
         A new Channel Routing dialog for global routing of auxiliary input channels, and unprocessed re-amp output channels.</li> 
+        <li>Install Pipedal as a Progressive Web Application (PWA), which allows you to launch Pipedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device).</li>
         <li style="margin-bottom: 8px">
         Many other minor features, improvements, and bug fixes.</li>
         </ul>
