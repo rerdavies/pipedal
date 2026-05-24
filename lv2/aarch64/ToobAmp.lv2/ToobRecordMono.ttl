@@ -50,8 +50,8 @@ recordPrefix:audioFile
                 ;
         doap:license <https://opensource.org/license/mit/> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
-        lv2:minorVersion 2 ;
-        lv2:microVersion 76 ;
+        lv2:minorVersion 3 ;
+        lv2:microVersion 78 ;
 
         ui:ui <http://two-play.com/plugins/toob-record-mono-ui>;
 
