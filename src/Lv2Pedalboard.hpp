@@ -31,6 +31,7 @@
 namespace pipedal
 {
 
+    class AudioDriver;
     class IPatchWriterCallback;
     class RealtimeVuBuffers;
     class RealtimePatchPropertyRequest;
@@ -128,6 +129,9 @@ namespace pipedal
         std::vector<IEffect *> &GetEffects() { return realtimeEffects; }
         std::vector<std::shared_ptr<IEffect>> &GetSharedEffectList() { return effects; }
 
+        size_t GetNumberOfAudioInputChannels() const;
+        size_t GetNumberOfAudioOutputChannels() const;
+
         int GetIndexOfInstanceId(uint64_t instanceId)
         {
             for (int i = 0; i < this->realtimeEffects.size(); ++i)
@@ -169,7 +173,7 @@ namespace pipedal
         void SetOutputVolume(float value) { this->outputVolume.SetTarget(value); }
         void SetBypass(int effectIndex, bool enabled);
 
-        void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float **inputBuffers, float **outputBuffers);
+        void ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples);
 
         float GetControlOutputValue(int effectIndex, int portIndex);
 

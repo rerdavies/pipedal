@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.16.0)
 
-add_subdirectory("SQLiteCpp")
+# Prevent installation of SQLite built components. (we use the .a library files directly)
+
+add_subdirectory("SQLiteCpp" EXCLUDE_FROM_ALL)
+
 
 set(SDBUSCPP_BUILD_CODEGEN off)
 set(SDBUSCPP_INSTALL off)
@@ -23,3 +26,4 @@ option(BUILD_OSSFUZZ "Build fuzzers for ossfuzz" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_DOC "Build documentation" OFF)
 add_subdirectory("libzip")
+

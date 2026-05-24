@@ -44,6 +44,7 @@
 #include "AtomConverter.hpp"
 #include "FileBrowserFilesFeature.hpp"
 #include <string.h>
+#include "util.hpp"
 
 using namespace pipedal;
 namespace fs = std::filesystem;
@@ -196,11 +197,11 @@ void Storage::SetDataRoot(const std::filesystem::path &path)
     this->dataRoot__audio_uploads = dataRoot / "audio_uploads";
 }
 
-const std::filesystem::path &Storage::GetConfigRoot()
+const std::filesystem::path &Storage::GetConfigRoot() const
 {
     return this->configRoot;
 }
-const std::filesystem::path &Storage::GetDataRoot()
+const std::filesystem::path &Storage::GetDataRoot() const
 {
     return this->dataRoot;
 }
@@ -248,7 +249,6 @@ static void removeFileNoThrow(const std::filesystem::path &path)
     {
     }
 }
-
 
 void Storage::UpgradeFactoryPresets()
 {
@@ -375,10 +375,9 @@ void Storage::Initialize()
     LoadPluginPresetIndex();
     LoadBankIndex();
     LoadCurrentBank();
-    LoadTone3000Auth();
     try
     {
-        LoadChannelSelection();
+        LoadJackChannelSelection();
     }
     catch (const std::exception &)
     {
@@ -387,8 +386,10 @@ void Storage::Initialize()
 
     LoadWifiConfigSettings();
     LoadWifiDirectConfigSettings();
+    this->channelRouterSettings = LoadChannelRouterSettings();
     LoadUserSettings();
     UpgradeFactoryPresets();
+    UpgradeChannelRouterSettings();
 }
 
 void Storage::LoadBank(int64_t instanceId)
@@ -432,11 +433,6 @@ const std::filesystem::path &Storage::GetPluginUploadDirectory() const
 std::filesystem::path Storage::GetCurrentPresetPath() const
 {
     return this->dataRoot / "currentPreset.json";
-}
-
-std::filesystem::path Storage::GetTone3000AuthPath() const
-{
-    return this->dataRoot / "tone3000.json";
 }
 
 std::filesystem::path Storage::GetChannelSelectionFileName()
@@ -687,40 +683,46 @@ int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, int64_t bankI
     }
 }
 
-static std::string stripNumericSuffix(const std::string &name) {
+static std::string stripNumericSuffix(const std::string &name)
+{
     // remove (digit*) from the end of the string.
     // Find the last '(' character
     size_t pos = name.find_last_of('(');
-    if (pos == std::string::npos) {
+    if (pos == std::string::npos)
+    {
         return name;
     }
 
     // Check if everything between '(' and ')' is digits
-    size_t len = name.length()-1;
-    if (name[len] != ')') 
+    size_t len = name.length() - 1;
+    if (name[len] != ')')
     {
         return name;
     }
     bool allDigits = true;
-    for (size_t i = pos + 1; i < len - 1; ++i) {
-        if (name[i] < '0' || name[i] > '9') {
+    for (size_t i = pos + 1; i < len - 1; ++i)
+    {
+        if (name[i] < '0' || name[i] > '9')
+        {
             allDigits = false;
             break;
         }
     }
 
-    if (!allDigits) {
+    if (!allDigits)
+    {
         return name;
     }
 
     // Remove trailing spaces before the '('
-    while (pos > 0 && name[pos - 1] == ' ') {
+    while (pos > 0 && name[pos - 1] == ' ')
+    {
         --pos;
     }
 
     return name.substr(0, pos);
 }
-static std::string makeUniqueName(const std::string &name, const std::set<std::string>&existingNames)
+static std::string makeUniqueName(const std::string &name, const std::set<std::string> &existingNames)
 {
     if (!existingNames.contains(name))
     {
@@ -729,9 +731,11 @@ static std::string makeUniqueName(const std::string &name, const std::set<std::s
     std::string baseName = stripNumericSuffix(name);
 
     size_t i = 2;
-    while (true) {
+    while (true)
+    {
         std::string newName = SS(baseName << " (" << i << ")");
-        if (!existingNames.contains(newName)) {
+        if (!existingNames.contains(newName))
+        {
             return newName;
         }
         ++i;
@@ -739,23 +743,27 @@ static std::string makeUniqueName(const std::string &name, const std::set<std::s
 }
 int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
 {
-    if (bankIndex.selectedBank() == bankInstanceId) {
+    if (bankIndex.selectedBank() == bankInstanceId)
+    {
         throw std::runtime_error("Can't import to self.");
     }
-    std::set<int64_t> presetsSet { presets.begin(), presets.end()};
+    std::set<int64_t> presetsSet{presets.begin(), presets.end()};
     auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
 
     std::set<std::string> existingNames;
 
-    for (auto&preset: this->currentBank.presets()) {
+    for (auto &preset : this->currentBank.presets())
+    {
         existingNames.insert(preset->preset().name());
     }
     BankFile bankFile;
-    LoadBankFile(indexEntry.name(),&bankFile);
+    LoadBankFile(indexEntry.name(), &bankFile);
     int64_t lastPresetId = -1;
-    for (auto &presetEntry: bankFile.presets()) {
-        if (presetsSet.contains(presetEntry->instanceId())) {
-            std::string uniqueName = makeUniqueName(presetEntry->preset().name(),existingNames);
+    for (auto &presetEntry : bankFile.presets())
+    {
+        if (presetsSet.contains(presetEntry->instanceId()))
+        {
+            std::string uniqueName = makeUniqueName(presetEntry->preset().name(), existingNames);
             existingNames.insert(uniqueName);
             Pedalboard t = presetEntry->preset();
             t.name(uniqueName);
@@ -767,31 +775,35 @@ int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector
 }
 int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
 {
-    if (bankIndex.selectedBank() == bankInstanceId) {
+    if (bankIndex.selectedBank() == bankInstanceId)
+    {
         throw std::runtime_error("Can't copy to self.");
     }
 
     auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
     BankFile bankFile;
-    LoadBankFile(indexEntry.name(),&bankFile);
+    LoadBankFile(indexEntry.name(), &bankFile);
 
-    std::set<int64_t> presetsSet { presets.begin(), presets.end()};
+    std::set<int64_t> presetsSet{presets.begin(), presets.end()};
 
     std::set<std::string> existingNames;
 
-    for (auto&preset: bankFile.presets()) {
+    for (auto &preset : bankFile.presets())
+    {
         existingNames.insert(preset->preset().name());
     }
-    for (auto &presetEntry: this->currentBank.presets()) {
-        if (presetsSet.contains(presetEntry->instanceId())) {
-            std::string uniqueName = makeUniqueName(presetEntry->preset().name(),existingNames);
+    for (auto &presetEntry : this->currentBank.presets())
+    {
+        if (presetsSet.contains(presetEntry->instanceId()))
+        {
+            std::string uniqueName = makeUniqueName(presetEntry->preset().name(), existingNames);
             existingNames.insert(uniqueName);
             Pedalboard t = presetEntry->preset();
             t.name(uniqueName);
             bankFile.addPreset(t);
         }
     }
-    SaveBankFile(indexEntry.name(),bankFile);
+    SaveBankFile(indexEntry.name(), bankFile);
     return -1;
 }
 
@@ -801,16 +813,14 @@ std::vector<PresetIndexEntry> Storage::RequestBankPresets(int64_t bankInstanceId
 
     std::vector<PresetIndexEntry> result;
     BankFile bankFile;
-    LoadBankFile(indexEntry.name(),&bankFile);
-    for (auto &preset: bankFile.presets()) {
+    LoadBankFile(indexEntry.name(), &bankFile);
+    for (auto &preset : bankFile.presets())
+    {
         result.push_back(
-            PresetIndexEntry(preset->instanceId(),preset->preset().name())
-        );
+            PresetIndexEntry(preset->instanceId(), preset->preset().name()));
     }
     return result;
 }
-
-
 
 void Storage::SetPresetIndex(const PresetIndex &presets)
 {
@@ -885,7 +895,8 @@ Pedalboard Storage::GetPreset(int64_t instanceId) const
 int64_t Storage::DeletePresets(const std::vector<int64_t> &presetInstanceIds)
 {
     int64_t newSelection = currentBank.selectedPreset();
-    for (auto presetId: presetInstanceIds) {
+    for (auto presetId : presetInstanceIds)
+    {
         newSelection = currentBank.deletePreset(presetId);
     }
     SaveCurrentBank();
@@ -977,7 +988,7 @@ int64_t Storage::CreateNewPreset()
         }
     }
     newPedalboard.name(name);
-    auto t =  this->currentBank.addPreset(newPedalboard, -1);
+    auto t = this->currentBank.addPreset(newPedalboard, -1);
     SaveCurrentBank();
     return t;
 }
@@ -997,7 +1008,7 @@ int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
     {
         auto &toItem = this->currentBank.getItem(toId);
         toItem.preset(fromItem.preset());
-        result =  toId;
+        result = toId;
     }
     SaveCurrentBank();
     return result;
@@ -1119,7 +1130,7 @@ AlsaSequencerConfiguration Storage::GetAlsaSequencerConfiguration() const
     return this->alsaSequencerConfiguration;
 }
 
-void Storage::LoadChannelSelection()
+void Storage::LoadJackChannelSelection()
 {
     auto fileName = this->GetChannelSelectionFileName();
     if (std::filesystem::exists(fileName))
@@ -1919,14 +1930,13 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
             result.GetAlsaInputDevice().empty() &&
             result.GetAlsaOutputDevice().empty())
         {
-            result.SetAlsaInputDevice(result.GetLegacyAlsaDevice());
-            result.SetAlsaOutputDevice(result.GetLegacyAlsaDevice());
+            std::string legacyDeviceId = result.GetLegacyAlsaDevice();
+            result.SetAlsaInputDevice(legacyDeviceId, "");
+            result.SetAlsaOutputDevice(legacyDeviceId, "");
             result.SetLegacyAlsaDevice("");
         }
+        result.FixUpDeviceNames();
     }
-#if JACK_HOST
-    result.Initialize();
-#endif
 
     return result;
 }
@@ -1940,9 +1950,6 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
         json_writer writer(f, false);
         writer.write(jackConfiguration);
     }
-#if JACK_HOST
-    jackConfiguration.Write();
-#endif
 }
 
 void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
@@ -2075,26 +2082,29 @@ static bool ensureNoDotDot(const std::filesystem::path &path)
     return true;
 }
 
-static bool isInfoFile(const std::string&fileName)
+bool isInfoFile(const fs::path &path)
 {
-    if (strcasecmp(fileName.c_str(),"license.txt") == 0) 
+    auto extension = path.extension();
+    if (extension == ".pdf")
     {
         return true;
     }
-    if (strcasecmp(fileName.c_str(),"license.md") == 0) 
+    auto filename = path.filename();
+    if (filename == "LICENSE.txt" || filename == "README.txt")
     {
         return true;
     }
-    if (strcasecmp(fileName.c_str(),"readme.txt") == 0) 
+    if (filename == "LICENSE.md" || filename == "README.md")
     {
         return true;
     }
-    if (strcasecmp(fileName.c_str(),"readme.md") == 0) 
+    if (filename == "license.txt" || filename == "readme.txt")
     {
         return true;
     }
     return false;
 }
+
 static bool isInfoFile(const FileEntry &l)
 {
     return isInfoFile(l.displayName_);
@@ -2139,13 +2149,13 @@ static void AddFilesToResult(
                     if (match && !name.starts_with("."))
                     {
                         resultFiles.push_back(
-                            FileEntry(path, name, false, false));
+                            FileEntry(path, SafeFilenameToString(name), false, false));
                     }
                 }
             }
             else if (dir_entry.is_directory())
             {
-                resultFiles.push_back(FileEntry{path, name, true, fs::is_symlink(path)});
+                resultFiles.push_back(FileEntry{path, SafeFilenameToString(name), true, fs::is_symlink(path)});
             }
         }
     }
@@ -2325,7 +2335,8 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
             {
                 rootModDirectory = modDirectoryInfo;
                 modDirectoryPath = uploadsDirectory / modDirectoryInfo->pipedalPath;
-                result.breadcrumbs_.push_back({modDirectoryPath.string(), modDirectoryInfo->displayName});
+                result.breadcrumbs_.push_back({modDirectoryPath.string(),
+                                               (modDirectoryInfo->displayName)});
                 break;
             }
         }
@@ -2335,7 +2346,8 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         if (IsSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
         {
             modDirectoryPath = uploadsDirectory / fileProperty.directory();
-            result.breadcrumbs_.push_back({modDirectoryPath.string(), fs::path(fileProperty.directory()).filename().string()});
+            result.breadcrumbs_.push_back({modDirectoryPath.string(),
+                                           SafeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
         }
         else
         {
@@ -2360,7 +2372,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         while (iRp != rp.end())
         {
             cumulativePath /= (*iRp);
-            result.breadcrumbs_.push_back({cumulativePath, *iRp});
+            result.breadcrumbs_.push_back({cumulativePath, SafeFilenameToString(*iRp)});
             ++iRp;
         }
     }
@@ -2450,7 +2462,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
         while (iAbsolutePath != fsAbsolutePath.end())
         {
             cumulativePath /= (*iAbsolutePath);
-            result.breadcrumbs_.push_back({cumulativePath.string(), iAbsolutePath->string()});
+            result.breadcrumbs_.push_back({cumulativePath.string(), SafeFilenameToString(iAbsolutePath->string())});
             ++iAbsolutePath;
         }
     }
@@ -2978,54 +2990,15 @@ const PluginPresetIndex &Storage::GetPluginPresetIndex()
     return pluginPresetIndex;
 }
 
-void Storage::LoadTone3000Auth()
-{
-    fs::path path = GetTone3000AuthPath();
-    try
-    {
-        if (!fs::exists(path))
-        {
-            this->tone3000Auth = "";
-            return;
-        }
-        std::ifstream s(path);
-        json_reader reader(s);
-        reader.read(&(this->tone3000Auth));
-    }
-    catch (const std::exception &e)
-    {
-        Lv2Log::error("Failed to load tone3000Auth: %s", e.what());
-    }
-}
-
-void Storage::SetTone3000Auth(const std::string &apiKey)
-{
-    if (tone3000Auth != apiKey)
-    {
-        tone3000Auth = apiKey;
-
-        pipedal::ofstream_synced os(this->GetTone3000AuthPath());
-        if (!os.is_open())
-        {
-            Lv2Log::error("Failed to open Tone3000 auth file for writing.");
-            return;
-        }
-        json_writer writer(os);
-        writer.write(apiKey);
-    }
-}
-std::string Storage::GetTone3000Auth() const
-{
-    return tone3000Auth;
-}
-
 std::filesystem::path Storage::FromAbstractPathString(const std::string &stringPath)
 {
-    if (stringPath.empty()) {
+    if (stringPath.empty())
+    {
         return "";
     }
-    fs::path path { stringPath};
-    if (path.is_absolute()) {
+    fs::path path{stringPath};
+    if (path.is_absolute())
+    {
         return path;
     }
     return GetPluginUploadDirectory() / path;
@@ -3048,6 +3021,136 @@ std::string Storage::FromAbstractPathJson(const std::string &pathJson)
     return v.to_string();
 }
 
+void Storage::SetChannelRouterSettings(ChannelRouterSettings::ptr settings)
+{
+    this->channelRouterSettings = settings;
+    this->channelSelection = ChannelSelection(*settings);
+    SaveChannelRouterSettings(settings);
+}
+ChannelRouterSettings::ptr Storage::GetChannelRouterSettings()
+{
+    return channelRouterSettings;
+}
+
+std::filesystem::path Storage::GetChannelRouterSettingsPath() const
+{
+    return GetDataRoot() / "ChannelRouterSettings.json";
+}
+
+void Storage::SaveChannelRouterSettings(ChannelRouterSettings::ptr settings)
+{
+    std::ofstream os(GetChannelRouterSettingsPath());
+    json_writer writer(os);
+    writer.write(settings);
+}
+ChannelRouterSettings::ptr Storage::LoadChannelRouterSettings()
+{
+    auto path = GetChannelRouterSettingsPath();
+    if (!fs::exists(path))
+    {
+        // See UpgradeChannelRouterSettings(), which will upgrade from old settings
+        // or create a default instance.
+        return nullptr; // will be upgraded later.
+    }
+    try
+    {
+        std::ifstream is(path);
+        json_reader reader(is);
+        ChannelRouterSettings::ptr result;
+        reader.read(&result);
+        this->channelSelection = ChannelSelection(*result);
+        return result;
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error("Failed to load Channel Router settings: %s", e.what());
+        return std::make_shared<ChannelRouterSettings>();
+    }
+}
+
+static int64_t GetUpgradedPortIndex(const std::string &portName)
+{
+    auto nPos = portName.find_last_of('_');
+    if (nPos != std::string::npos)
+    {
+        std::string channelStr = portName.substr(nPos + 1);
+        try
+        {
+            int64_t channelIndex = std::stoll(channelStr);
+            return channelIndex;
+        }
+        catch (const std::exception &)
+        {
+            return -1;
+        }
+    }
+    return -1;
+}
+void Storage::UpgradeChannelRouterSettings()
+{
+    if (channelRouterSettings == nullptr)
+    {
+        channelRouterSettings = std::make_shared<ChannelRouterSettings>();
+        if (jackChannelSelection.isValid())
+        {
+            channelRouterSettings->configured(true);
+            channelRouterSettings->mainInputChannels().resize(2);
+            const std::vector<std::string> &oldInputs = jackChannelSelection.GetInputAudioPorts();
+            std::vector<int64_t> &newInputs = channelRouterSettings->mainInputChannels();
+
+            if (oldInputs.size() == 1)
+            {
+                int64_t leftIndex = GetUpgradedPortIndex(oldInputs[0]);
+                newInputs.resize(2);
+                newInputs[0] = leftIndex;
+                newInputs[1] = leftIndex;
+            }
+            else if (oldInputs.size() == 2)
+            {
+                newInputs.resize(2);
+                for (size_t i = 0; i < std::min(oldInputs.size(), newInputs.size()); ++i)
+                {
+                    int64_t portIndex = GetUpgradedPortIndex(oldInputs[i]);
+                    newInputs[i] = portIndex;
+                }
+            }
+            const std::vector<std::string> &oldOutputs = jackChannelSelection.GetOutputAudioPorts();
+            auto &newMainOutputs = channelRouterSettings->mainOutputChannels();
+            if (oldOutputs.size() == 1)
+            {
+                int64_t leftIndex = GetUpgradedPortIndex(oldOutputs[0]);
+                newMainOutputs.resize(2);
+                newMainOutputs[0] = leftIndex;
+                newMainOutputs[1] = leftIndex;
+            }
+            else if (oldOutputs.size() == 2)
+            {
+                newMainOutputs.resize(2);
+                for (size_t i = 0; i < std::min(oldOutputs.size(), newMainOutputs.size()); ++i)
+                {
+                    int64_t portIndex = GetUpgradedPortIndex(oldOutputs[i]);
+                    newMainOutputs[i] = portIndex;
+                }
+            }
+
+            auto &newAuxInputs = channelRouterSettings->auxInputChannels();
+            newAuxInputs.resize(2);
+            newAuxInputs[0] = -1;
+            newAuxInputs[1] = -1;
+            auto &newAuxOutputs = channelRouterSettings->auxOutputChannels();
+            newAuxOutputs.resize(2);
+            newAuxOutputs[0] = -1;
+            newAuxOutputs[1] = -1;
+            SaveChannelRouterSettings(channelRouterSettings);
+        }
+        channelSelection = ChannelSelection(*channelRouterSettings);
+    }
+}
+
+const ChannelSelection &Storage::GetChannelSelection() const
+{
+    return channelSelection;
+}
 
 JSON_MAP_BEGIN(UserSettings)
 JSON_MAP_REFERENCE(UserSettings, governor)

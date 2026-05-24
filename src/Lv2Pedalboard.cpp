@@ -29,6 +29,7 @@
 #include "Lv2Log.hpp"
 #include "CrashGuard.hpp"
 #include "restrict.hpp"
+#include "AudioDriver.hpp"
 
 using namespace pipedal;
 
@@ -329,13 +330,15 @@ void Lv2Pedalboard::Prepare(IHost *pHost, Pedalboard &pedalboard, Lv2PedalboardE
     inputVolume.SetTarget(pedalboard.input_volume_db());
     outputVolume.SetTarget(pedalboard.output_volume_db());
 
-    for (int i = 0; i < pHost->GetNumberOfInputAudioChannels(); ++i)
+    size_t nInputs = std::max(GetNumberOfAudioInputChannels(),(size_t)1);
+
+    for (size_t i = 0; i < nInputs; ++i)
     {
         this->pedalboardInputBuffers.push_back(bufferPool.AllocateBuffer<float>(pHost->GetMaxAudioBufferSize()));
     }
 
     auto outputs = PrepareItems(pedalboard.items(), this->pedalboardInputBuffers, errorList, existingEffects);
-    int nOutputs = pHost->GetNumberOfOutputAudioChannels();
+    size_t nOutputs = GetNumberOfAudioOutputChannels();
     if (nOutputs == 1)
     {
         this->pedalboardOutputBuffers.push_back(outputs[0]);
@@ -543,6 +546,9 @@ bool Lv2Pedalboard::Run(float **inputBuffers, float **outputBuffers, uint32_t sa
         float volume = outputVolume.Tick();
         for (size_t c = 0; c < this->pedalboardOutputBuffers.size(); ++c)
         {
+            if (outputBuffers[c] == nullptr) {
+                break;
+            }
             outputBuffers[c][i] = this->pedalboardOutputBuffers[c][i] * volume;
         }
     }
@@ -568,37 +574,46 @@ void Lv2Pedalboard::SetBypass(int effectIndex, bool enabled)
     effect->SetBypass(enabled);
 }
 
-void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *vuConfiguration, uint32_t samples, float **inputBuffers, float **outputBuffers)
+
+void Lv2Pedalboard::ComputeVus(RealtimeVuBuffers *realtimeVuBuffers, uint32_t samples)
 {
-    for (size_t i = 0; i < vuConfiguration->enabledIndexes.size(); ++i)
+    if (realtimeVuBuffers == nullptr) 
     {
-        int index = vuConfiguration->enabledIndexes[i];
-        VuUpdate *pUpdate = &vuConfiguration->vuUpdateWorkingData[i];
-        if (index == Pedalboard::INPUT_VOLUME_ID)
+        return;
+    }
+    for (size_t i = 0; i < realtimeVuBuffers->enabledIndexes.size(); ++i)
+    {
+        auto& rtIndex = realtimeVuBuffers->enabledIndexes[i];
+        int index = rtIndex.index;
+        if (index == -1) continue;
+        if (index == Pedalboard::AUX_START_CONTROL_ID || index == Pedalboard::AUX_END_CONTROL_ID)
         {
-            if (this->pedalboardInputBuffers.size() > 1)
+            // handled by master VU updates.
+            continue;
+        }
+        VuUpdateX *pUpdate = &realtimeVuBuffers->vuUpdateWorkingData[i];
+        if (index == Pedalboard::START_CONTROL_ID)
+        {
+            if (this->pedalboardInputBuffers.size() == 2)
             {
-                GetInputBuffers();
-                pUpdate->AccumulateInputs(inputBuffers[0], inputBuffers[1], samples);
+                // input is handled by master VU updates.
                 pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), &(this->pedalboardInputBuffers[1][0]), samples); // after outputVolume applied.
             }
-            else
+            else if (this->pedalboardInputBuffers.size() == 1)
             {
-                pUpdate->AccumulateInputs(inputBuffers[0], samples);
-                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), samples); // after input volume applied.
+                pUpdate->AccumulateOutputs(&(this->pedalboardInputBuffers[0][0]), samples); // before input volume applied.
+                // output is handled by master VU updates.
             }
         }
-        else if (index == Pedalboard::OUTPUT_VOLUME_ID)
+        else if (index == Pedalboard::END_CONTROL_ID)
         {
-            if (this->pedalboardOutputBuffers.size() > 1)
+            if (this->pedalboardOutputBuffers.size() == 2)
             {
                 pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]), &(this->pedalboardOutputBuffers[1][0]), samples);
-                pUpdate->AccumulateOutputs(outputBuffers[0], outputBuffers[1], samples);
             }
-            else
+            else if (this->pedalboardOutputBuffers.size() == 1)
             {
                 pUpdate->AccumulateInputs(&(this->pedalboardOutputBuffers[0][0]), samples);
-                pUpdate->AccumulateOutputs(outputBuffers[0], samples);
             }
         }
         else
@@ -1015,4 +1030,13 @@ void Lv2Pedalboard::handleTapTempo(uint8_t value, const MidiTimestamp& timestamp
         }
         mapping.lastTapTimestamp = timestamp;
     }
+}
+
+
+size_t Lv2Pedalboard::GetNumberOfAudioInputChannels() const {
+    return pHost->GetChannelSelection().mainInputChannels().size();
+}
+
+size_t Lv2Pedalboard::GetNumberOfAudioOutputChannels() const {
+    return pHost->GetChannelSelection().mainOutputChannels().size();
 }

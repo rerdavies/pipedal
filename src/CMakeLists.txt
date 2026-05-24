@@ -1,6 +1,13 @@
 set(VERBOSE true)
 cmake_minimum_required(VERSION 3.16.0)
 
+configure_file(config.hpp.in config.hpp)
+file(GENERATE
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/T3kConfig.h"
+    CONTENT "#define PIPEDAL_T3K_PUBLISHABLE_KEY \"${PIPEDAL_T3K_PUBLISHABLE_KEY}\"\n")
+
+
+
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
 set (USE_PCH 1)
@@ -10,18 +17,12 @@ set (ENABLE_BACKTRACE 0)
 set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
 
+
 set(CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(PipeWire REQUIRED libpipewire-0.3)
-
-
-message(STATUS "PipeWire_INCLUDE_DIRS: ${PipeWire_INCLUDE_DIRS}"
-    "PipeWire_LIBRARIES: ${PipeWire_LIBRARIES}"
-    "PipeWire_CFLAGS: ${PipeWire_CFLAGS}"
-    "PipeWire_DEFINES: ${PipeWire_DEFINES}"
-    "PipeWire_VERSION: ${PipeWire_VERSION}")
 
 include(FetchContent)
 
@@ -57,6 +58,8 @@ include(FindPkgConfig)
 
 
 
+
+find_package(OpenSSL REQUIRED)
 
 find_package(ICU REQUIRED COMPONENTS uc i18n)
 message(STATUS "ICU_LIBRARIES: ${ICU_LIBRARIES}")
@@ -204,6 +207,16 @@ else()
 endif()
 
 set (PIPEDAL_SOURCES
+    Tone3000Tone.hpp Tone3000Tone.cpp
+    AesDigest.cpp AesDigest.hpp
+    ChannelRouterSettings.cpp ChannelRouterSettings.hpp
+    Curl.cpp Curl.hpp
+    Tone3000DownloadType.cpp Tone3000DownloadType.hpp
+    Tone3000DownloadProgress.cpp Tone3000DownloadProgress.hpp
+    Tone3000Download.cpp Tone3000Download.hpp
+    Tone3000Downloader.cpp Tone3000Downloader.hpp
+    Tone3000Throttler.cpp Tone3000Throttler.hpp
+
     CrashGuard.cpp CrashGuard.hpp
     ModTemplateGenerator.cpp ModTemplateGenerator.hpp
     WebServerMod.cpp WebServerMod.hpp
@@ -265,6 +278,7 @@ set (PIPEDAL_SOURCES
     GovernorSettings.cpp GovernorSettings.hpp
     WebServer.cpp WebServer.hpp pch.h Uri.cpp Uri.hpp
 
+
     RequestHandler.hpp 
     Scratch.cpp PluginHost.hpp PluginHost.cpp
     PluginType.hpp PluginType.cpp
@@ -315,7 +329,7 @@ set (PIPEDAL_SOURCES
 )
 
 
-configure_file(config.hpp.in config.hpp)
+    
 include_directories( 
     ${pipedald_SOURCE_DIR}/.
     ../build/src
@@ -351,9 +365,11 @@ target_compile_definitions(libpipedald PUBLIC "_REENTRANT")
 target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES})
 
 target_link_libraries(libpipedald
-    PUBLIC
+   PUBLIC
    PiPedalCommon
+   PRIVATE
    SQLiteCpp
+    OpenSSL::Crypto
    ${PipeWire_LIBRARIES}
    )
 
@@ -731,6 +747,7 @@ add_executable(pipedalconfig
     ModFileTypes.cpp ModFileTypes.hpp
     MimeTypes.cpp MimeTypes.hpp
     PiPedalConfiguration.hpp PiPedalConfiguration.cpp
+    PiPedalAlsa.hpp PiPedalAlsa.cpp
     JackServerSettings.hpp JackServerSettings.cpp
     SystemConfigFile.hpp SystemConfigFile.cpp
     WifiChannelSelectors.cpp WifiChannelSelectors.hpp
@@ -761,6 +778,7 @@ add_executable(pipedal_latency_test
 
 target_link_libraries(pipedal_latency_test PRIVATE pthread asound PiPedalCommon)
 
+target_include_directories(pipedal_latency_test PRIVATE ${PIPEDAL_INCLUDES})
 
 add_executable(pipedal_alsa_info
     alsaCheck.cpp alsaCheck.hpp
@@ -807,6 +825,7 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
 
     SetWifiConfig.cpp SetWifiConfig.hpp
     JackServerSettings.hpp JackServerSettings.cpp
+    PiPedalAlsa.hpp PiPedalAlsa.cpp
     Lv2SystemdLogger.hpp Lv2SystemdLogger.cpp
 
     SystemConfigFile.hpp SystemConfigFile.cpp
@@ -814,7 +833,7 @@ add_executable(pipedaladmind AdminMain.cpp CommandLineParser.hpp
     asan_options.cpp
 
     )
-target_link_libraries(pipedaladmind PRIVATE PiPedalCommon pthread atomic stdc++fs systemd )
+target_link_libraries(pipedaladmind PRIVATE PiPedalCommon pthread atomic stdc++fs systemd asound)
 
 add_executable(processcopyrights copyrightMain.cpp
     CommandLineParser.hpp
@@ -857,11 +876,17 @@ add_custom_target (
     DEPENDS ${REACT_NOTICES_FILE}
 )
 
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+    cmake_policy(SET CMP0177 NEW)
+endif()
 
 install (TARGETS pipedalconfig pipedal_kconfig pipedal_latency_test DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-   EXPORT pipedalTargets)
+   EXPORT pipedalTargets
+   )
 
 install (TARGETS pipedald pipedaladmind pipedal_update DESTINATION ${CMAKE_INSTALL_PREFIX}/sbin
-   EXPORT pipedalSbinTargets)
+   EXPORT pipedalSbinTargets
+   )
 
+   
 

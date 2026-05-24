@@ -21,6 +21,8 @@
 #include <sstream>
 #include <string>
 #include <cstring>
+#include "ss.hpp"
+#include <map>
 
 using namespace pipedal;
 
@@ -245,8 +247,30 @@ std::string HtmlHelper::Rfc5987EncodeFileName(const std::string &name)
 
 #define MAX_FILE_NAME_LENGHT 96
 
-const std::string SF_SPECIALS = " <>@;:\"\'/[]?=";
+const std::string SF_SPECIALS = "<>@;:\"\'/[]?=";
+const std::string ISF_SPECIALS = "\\:";
 
+
+bool HtmlHelper::IsSafeFileName(const std::filesystem::path &path)
+{
+    for (const auto&segment: path)
+    {
+        if (segment.string() == "..")
+        {
+            return false;
+        }
+        for (char c: segment.string())
+        {
+            unsigned char uc = (unsigned char)c;
+            if (uc < 0x20 || uc >= 0x80 || ISF_SPECIALS.find(c) != std::string::npos)
+            {
+                return false;
+            }
+
+        }
+    }
+    return true;
+}
 std::string HtmlHelper::SafeFileName(const std::string &name)
 {
     std::stringstream s;
@@ -387,4 +411,97 @@ std::string HtmlHelper::generateEtag(const std::filesystem::path &path)
     auto fTime = std::filesystem::last_write_time(path);
     crc = crc64((uint8_t*)&fTime, sizeof(fTime));
     return std::to_string(crc);
+}
+
+static std::map<int,std::string> httpErrorStrings = 
+{
+    {200,"OK"},
+    {201, "Created"},
+    {202, "Accepted"},
+    {203, "Non-Authoritative Information"},
+    {204, "No Content"},
+    {205, "Reset Content"},
+    {206, "Partial Content"},
+    {300, "Multiple Choices"},
+    {301, "Moved Permanently"},
+    {302, "Found"},
+    {303, "See Other"},
+    {304, "Not Modified"},
+    {305, "Use Proxy"},
+    {307, "Temporary Redirect"},
+    {308, "Permanent Redirect"},
+    {400, "Bad Request"},
+    {401, "Unauthorized"},
+    {402, "Payment Required"},
+    {403, "Forbidden"},
+    {404, "Not Found"},
+    {405, "Method Not Allowed"},
+    {406, "Not Acceptable"},
+    {407, "Proxy Authentication Required"},
+    {408, "Request Timeout"},
+    {409, "Conflict"},
+    {410, "Gone"},
+    {411, "Length Required"},
+    {412, "Precondition Failed"},
+    {413, "Payload Too Large"},
+    {414, "URI Too Long"},
+    {415, "Unsupported Media Type"},
+    {416, "Range Not Satisfiable"},
+    {417, "Expectation Failed"},
+    {418, "I'm a teapot"},
+    {421, "Misdirected Request"},
+    {422, "Unprocessable Content"},
+    {423, "Locked"},
+    {424, "Failed Dependency"},
+    {426, "Upgrade Required"},
+    {428, "Precondition Required"},
+    {429, "Too Many Requests"},
+    {431, "Request Header Fields Too Large"},
+    {451, "Unavailable For Legal Reasons"},
+    {500, "Internal Server Error"},
+    {501, "Not Implemented"},
+    {502, "Bad Gateway"},
+    {503, "Service Unavailable"},
+    {504, "Gateway Timeout"},
+    {505, "HTTP Version Not Supported"},
+    {506, "Variant Also Negotiates"},
+    {507, "Insufficient Storage"},
+    {508, "Loop Detected"},
+    {510, "Not Extended"},
+    {511, "Network Authentication Required"}
+    
+
+};
+
+std::string HtmlHelper::httpErrorString(int errorCode)
+{
+    auto ff = httpErrorStrings.find(errorCode);
+    if (ff != httpErrorStrings.end())
+    {
+        return SS(errorCode << ": " << ff->second);
+    }
+    return SS(errorCode << ": Unknown error");
+
+}
+
+std::string HtmlFormBuilder::build()
+{
+    std::ostringstream ss;
+    bool firstTime = true;
+    for (const auto &entry: entries_)
+    {
+        if (!firstTime) 
+        {
+            ss << "&";
+        }
+        ss << entry.key();
+        if (entry.value().has_value()) 
+        {
+
+            ss << "=" << HtmlHelper::encode_url_segment(entry.value().value(),true);
+        }
+        firstTime = false;
+
+    }
+    return ss.str();
 }

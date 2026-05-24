@@ -27,6 +27,8 @@ import { Pedalboard, PedalboardItem, ControlValue, Snapshot } from './Pedalboard
 import PluginClass from './PluginClass';
 import ScreenOrientation from './ScreenOrientation';
 import PiPedalSocket, { PiPedalMessageHeader } from './PiPedalSocket';
+import { Tone3000DownloadHandler } from './Tone3000Downloader';
+import Tone3000DownloadType from './Tone3000DownloadType';
 import { nullCast } from './Utility'
 import { JackConfiguration, JackChannelSelection } from './Jack';
 import { BankIndex } from './Banks';
@@ -46,6 +48,10 @@ import AudioFileMetadata from './AudioFileMetadata';
 import { pathFileName } from './FileUtils';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
 import { getDefaultModGuiPreference } from './ModGuiHost';
+import ChannelRouterSettings from './ChannelRouterSettings';
+import Tone3000DownloadProgress from './Tone3000DownloadProgress';
+import { Tone } from './t3k/types';
+
 
 export enum State {
     Loading,
@@ -60,7 +66,16 @@ export enum State {
     HotspotChanging,
 };
 
-function getErrorMessage(error: any) {
+export interface Tone3000PkceParams {
+    publishableKey: string;
+    redirectUrl: string;
+    codeVerifier: string;
+    codeChallenge: string;
+    state: string;
+}
+
+
+export function getErrorMessage(error: any) {
     if (error instanceof Error) {
         return (error as Error).message;
     }
@@ -81,6 +96,38 @@ export enum ReconnectReason {
     ReloadingPlugins,
     Updating,
     HotspotChanging
+};
+
+export interface Tone3000ModelInfo {
+    url: string;
+    name: string;
+};
+
+export interface Tone3000DownloadRequest {
+
+    downloadType: Tone3000DownloadType;
+    downloadPath: string;
+
+    appId: string;
+    state: string;
+    codeChallenge: string;
+    codeVerifier: string;
+
+    authToken: string;
+
+    id: number,
+    title: string;
+    description: string;
+    imageUrl: string;
+    models: Tone3000ModelInfo[];
+
+    updated_at: string;
+    user: string;
+    sizes: string[];
+    platform: string;
+    gear: string;
+    license: string;
+    links: string[];
 };
 
 export class HostVersion {
@@ -430,9 +477,9 @@ interface MonitorPortOutputBody {
 }
 
 
-interface ChannelSelectionChangedBody {
+interface ChannelRouterSettingsChangedBody {
     clientId: number;
-    jackChannelSelection: JackChannelSelection;
+    channelRouterSettings: ChannelRouterSettings;
 }
 interface RenamePresetBody {
     clientId: number;
@@ -484,6 +531,7 @@ export class PiPedalModel //implements PiPedalModel
     serverVersion?: PiPedalVersion;
     countryCodes: { [Name: string]: string } = {};
 
+    serverUrl: string = "";
     socketServerUrl: string = "";
     varServerUrl: string = "";
     modResourcesUrl: string = "";
@@ -494,7 +542,6 @@ export class PiPedalModel //implements PiPedalModel
     static getInstance(): PiPedalModel {
         return PiPedalModelFactory.getInstance();
     }
-    hasTone3000Auth: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
 
     canKeepScreenOn: boolean = false;
     keepScreenOn: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
@@ -504,6 +551,8 @@ export class PiPedalModel //implements PiPedalModel
 
     hasWifiDevice: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
     onSnapshotModified: ObservableEvent<SnapshotModifiedEvent> = new ObservableEvent<SnapshotModifiedEvent>();
+
+    onTone3000DownloadCompleteEvent: ObservableEvent<string> = new ObservableEvent<string>();
 
     ui_plugins: ObservableProperty<UiPlugin[]>
         = new ObservableProperty<UiPlugin[]>([]);
@@ -529,6 +578,8 @@ export class PiPedalModel //implements PiPedalModel
     jackServerSettings: ObservableProperty<JackServerSettings>
         = new ObservableProperty<JackServerSettings>(new JackServerSettings());
 
+    channelRouterSettings: ObservableProperty<ChannelRouterSettings> = new ObservableProperty<ChannelRouterSettings>(new ChannelRouterSettings());
+
     wifiConfigSettings: ObservableProperty<WifiConfigSettings> = new ObservableProperty<WifiConfigSettings>(new WifiConfigSettings());
     wifiDirectConfigSettings: ObservableProperty<WifiDirectConfigSettings> = new ObservableProperty<WifiDirectConfigSettings>(new WifiDirectConfigSettings());
     governorSettings: ObservableProperty<GovernorSettings> = new ObservableProperty<GovernorSettings>(new GovernorSettings());
@@ -550,7 +601,12 @@ export class PiPedalModel //implements PiPedalModel
         );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);
 
+    tone3000Downloading: ObservableProperty<boolean> = new ObservableProperty<boolean>(false);
+    tone3000DownloadProgress: ObservableProperty<Tone3000DownloadProgress | null> = new ObservableProperty<Tone3000DownloadProgress | null>(null);
+
     uiPluginsByUri: Map<string, UiPlugin> = new Map<string, UiPlugin>();
+
+    private tone3000DownloadHandler: Tone3000DownloadHandler | null = null;
 
     svgImgUrl(svgImage: string): string {
         // return this.varServerUrl + "img/" + svgImage;
@@ -651,6 +707,105 @@ export class PiPedalModel //implements PiPedalModel
         return true;
 
     }
+
+    async makeTone3000Pkce(redirectUrl: string) : Promise<Tone3000PkceParams>
+    {
+        if (this.webSocket === undefined)
+        {
+            throw new Error("Server disconnected.");
+        }
+        return await this.webSocket.request<Tone3000PkceParams>(
+            "makeTone3000Pkce", redirectUrl);
+    }
+
+    async sha256Base64url(intput: string) : Promise<string> {
+        if (this.webSocket === undefined)
+        {
+            throw new Error("Server disconnected.");
+        }
+        return this.webSocket.request<string>(
+            "sha256Base64url", intput);
+
+    }
+    async pingTone3000Server(): Promise<boolean> {
+        if (this.webSocket === undefined) {
+            return false;
+
+        }
+        try {
+            let result = await this.webSocket.request<boolean>("pingTone3000Server", {});
+            return result;
+        } catch (error) {
+            console.log("Error pinging TONE3000 Server on PiPedal server: " + getErrorMessage(error));
+            return false;
+        }
+    }
+
+    async downloadModelsFromTone3000(
+        downloadRequest: Tone3000DownloadRequest
+    ): Promise<void> {
+        try {
+            if (!this.webSocket) {
+                return;
+            }
+            this.webSocket.send("downloadModelsFromTone3000", downloadRequest);
+        } catch (error) {
+            this.showAlert(getErrorMessage(error));
+        }
+    }
+    private cancelTone3000Download(): void {
+        let downloadProgress = this.tone3000DownloadProgress.get();
+        if (downloadProgress !== null) {
+            if (this.tone3000DownloadHandler) {
+
+                this.tone3000DownloadHandler.cancelDownload(this.tone3000DownloadProgress.get()?.handle ?? -1);
+            }
+            // if (downloadProgress.handle !== -1) {
+            //     if (!this.webSocket) {
+            //         this.tone3000DownloadProgress.set(null);
+            //         this.tone3000Downloading.set(false);
+            //         return;
+            //     }
+            //     this.webSocket.send("cancelTone3000Download", downloadProgress.handle);
+            // }
+        }
+    }
+
+    showTone3000DownloadPopup(
+        downloadType: Tone3000DownloadType,
+        downloadPath: string
+    ): void {
+        if (this.tone3000DownloadHandler === null) {
+            this.tone3000DownloadHandler = new Tone3000DownloadHandler(this);
+        }
+        this.tone3000DownloadHandler.launchTone3000Popup(
+            downloadType,
+            downloadPath,
+        );
+
+    };
+
+    showTone3000DownloadStatus(): void {
+        this.tone3000Downloading.set(true);
+        this.tone3000DownloadProgress.set(null);
+        console.log("Showing TONE3000 download status popup");
+    }
+    hideTone3000DownloadStatus(): void {
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+        console.log("Hiding TONE3000 download status popup");
+    }
+
+    closeTone3000DownloadPopup(): void {
+        this.cancelTone3000Download();
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+
+        if (this.tone3000DownloadHandler) {
+            this.tone3000DownloadHandler.closeTone3000Popup();
+        }
+    }
+
     private updateEnabledItems(pedalboard: Pedalboard) {
         for (let item of pedalboard.itemsGenerator()) {
             this.updatePedalboardItemEnabled(item.instanceId, item.isEnabled);
@@ -726,10 +881,11 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onShowStatusMonitorChanged") {
             let value = body as boolean;
             this.showStatusMonitor.set(value);
-        } else if (message === "onChannelSelectionChanged") {
-            let channelSelectionBody = body as ChannelSelectionChangedBody;
-            let channelSelection = new JackChannelSelection().deserialize(channelSelectionBody.jackChannelSelection);
-            this.jackSettings.set(channelSelection);
+        } else if (message === "onChannelRouterSettingsChanged") {
+            let channelRouterSettingChangedBody = body as ChannelRouterSettingsChangedBody;
+            let channelRouterSettings = new ChannelRouterSettings().deserialize(
+                channelRouterSettingChangedBody.channelRouterSettings);
+            this.channelRouterSettings.set(channelRouterSettings);
         } else if (message === "onSnapshotModified") {
             let { snapshotIndex, modified } = (body as { snapshotIndex: number, modified: boolean });
             let snapshots = this.pedalboard.get().snapshots;
@@ -862,10 +1018,7 @@ export class PiPedalModel //implements PiPedalModel
         } else if (message === "onErrorMessage") {
             this.showAlert(body as string);
 
-        } else if (message == "onTone3000AuthChanged") {
-            this.hasTone3000Auth.set(body as boolean);
-        }
-        else if (message === "onLv2PluginsChanging") {
+        } else if (message === "onLv2PluginsChanging") {
             this.onLv2PluginsChanging();
         } else if (message === "onUpdateStatusChanged") {
             let updateStatus = new UpdateStatus().deserialize(body);
@@ -876,6 +1029,22 @@ export class PiPedalModel //implements PiPedalModel
         else if (message === "onHasWifiChanged") {
             let hasWifi = body as boolean;
             this.hasWifiDevice.set(hasWifi);
+        }
+        else if (message === "onTone3000DownloadStarted") {
+            let { handle, title } = body as { handle: number, title: string };
+            this.onTone3000DownloadStarted(handle, title);
+        }
+        else if (message === "onTone3000DownloadProgress") {
+            // body is DownloadProgress
+            this.onTone3000DownloadProgress(body);
+        }
+        else if (message === "onTone3000DownloadComplete") {
+            let resultPath = body as string;
+            this.onTone3000DownloadComplete(resultPath);
+        }
+        else if (message === "onTone3000DownloadError") {
+            let { handle, errorMessage } = body as { handle: number, errorMessage: string };
+            this.onTone3000DownloadError(handle, errorMessage);
         }
     }
 
@@ -976,6 +1145,34 @@ export class PiPedalModel //implements PiPedalModel
         // this.webSocket?.reconnect(); // let the server do it for us.
 
     }
+
+    // TONE3000 download notification handlers (stub implementations)
+    onTone3000DownloadStarted(handle: number, title: string): void {
+        this.tone3000Downloading.set(true);
+    }
+
+    onTone3000DownloadProgress(progress: Tone3000DownloadProgress): void {
+        this.tone3000Downloading.set(true);
+        this.tone3000DownloadProgress.set(progress);
+    }
+
+    onTone3000DownloadComplete(resultPath: string): void {
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+        this.onTone3000DownloadCompleteEvent.fire(resultPath);
+    }
+
+    onTone3000DownloadError(handle: number, errorMessage: string): void {
+        console.error(`TONE3000 download error: handle=${handle}, error=${errorMessage}`);
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+        this.onTone3000DownloadCompleteEvent.fire("");
+
+        setTimeout(() => {
+            this.showAlert(errorMessage);
+        }, 100);
+    }
+
     setError(message: string): void {
         this.errorMessage.set(message);
         this.setState(State.Error);
@@ -984,9 +1181,12 @@ export class PiPedalModel //implements PiPedalModel
         return "var/" + url;
     }
 
-    setState(state: State) {
+    private setState(state: State) {
         if (this.state.get() !== state) {
             this.state.set(state);
+            if (state === State.Error) {
+                this.closeTone3000DownloadPopup();
+            }
         }
     }
 
@@ -1038,6 +1238,9 @@ export class PiPedalModel //implements PiPedalModel
         this.vuSubscriptions = [];
         this.monitorPatchPropertyListeners = [];
 
+        this.tone3000Downloading.set(false);
+        this.tone3000DownloadProgress.set(null);
+
         if (this.isAndroidHosted()) {
             // if unexpected, go back to the device browser immediately.
             if (this.reconnectReason === ReconnectReason.Disconnected) {
@@ -1078,7 +1281,9 @@ export class PiPedalModel //implements PiPedalModel
     }
     private makeVarServerUrl(protocol: string, hostName: string, port: number): string {
         return protocol + "://" + hostName + ":" + port + "/var/";
-
+    }
+    private makeServerUrl(protocol: string, hostName: string, port: number): string {
+        return protocol + "://" + hostName + ":" + port;
     }
     private makeModResourceUrl(protocol: string, hostName: string, port: number): string {
         return protocol + "://" + hostName + ":" + port + "/resources/";
@@ -1127,10 +1332,28 @@ export class PiPedalModel //implements PiPedalModel
         }
     }
 
+    async writeTone3000Readme(
+        filePath: string, 
+        tone: Tone,
+        thumbnailUrl: string
+
+    ): Promise<void> {
+        if (!this.webSocket) {
+            throw new Error("Server disconnected.");
+        }
+        await this.webSocket.request<void>(
+            "writeTone3000Readme",
+            {
+                filePath: filePath,
+                tone: tone,
+                thumbnailUrl: thumbnailUrl
+            });
+    }
 
     maxFileUploadSize: number = 512 * 1024 * 1024;
     maxPresetUploadSize: number = 1024 * 1024;
     debug: boolean = false;
+    tone3000_A2_models: boolean = true;
     enableAutoUpdate: boolean = false;
 
 
@@ -1141,6 +1364,7 @@ export class PiPedalModel //implements PiPedalModel
             let response: Response = await fetch(myRequest);
             let data = await response.json();
 
+            this.tone3000_A2_models = data.tone3000_A2_models ?? true;
             this.enableAutoUpdate = !!data.enable_auto_update;
             this.hasWifiDevice.set(!!data.has_wifi_device);
             if (data.max_upload_size) {
@@ -1161,6 +1385,7 @@ export class PiPedalModel //implements PiPedalModel
 
             this.socketServerUrl = socket_server;
             this.varServerUrl = var_server_url;
+            this.serverUrl = this.makeServerUrl("http", socket_server_address, socket_server_port);
             this.maxFileUploadSize = parseInt(max_upload_size);
         } catch (error: any) {
             this.setError("Can't connect to server. " + getErrorMessage(error));
@@ -1247,6 +1472,11 @@ export class PiPedalModel //implements PiPedalModel
                     await this.getWebSocket().request<any>("getJackServerSettings")
                 )
             );
+            this.channelRouterSettings.set(
+                new ChannelRouterSettings().deserialize(
+                    await this.getWebSocket().request<any>("getChannelRouterSettings")
+                )
+            )
             this.jackConfiguration.set(new JackConfiguration().deserialize(
                 await this.getWebSocket().request<JackConfiguration>("getJackConfiguration")
             ));
@@ -1256,9 +1486,6 @@ export class PiPedalModel //implements PiPedalModel
             this.alsaSequencerConfiguration.set(new AlsaSequencerConfiguration().deserialize(
                 await this.getWebSocket().request<any>("getAlsaSequencerConfiguration")
             ));
-            this.hasTone3000Auth.set(
-                await this.getWebSocket().request<boolean>("getHasTone3000Auth")
-            );
             this.banks.set(new BankIndex().deserialize(await this.getWebSocket().request<any>("getBankIndex")));
 
             this.favorites.set(await this.getWebSocket().request<FavoritesList>("getFavorites"));
@@ -1291,7 +1518,7 @@ export class PiPedalModel //implements PiPedalModel
             m = message.toString();
         }
         this.errorMessage.set(m);
-        this.state.set(State.Error);
+        this.setState(State.Error);
 
     }
 
@@ -1352,6 +1579,7 @@ export class PiPedalModel //implements PiPedalModel
         return false;
     }
 
+
     initialize(): void {
         this.setError("");
         this.setState(State.Loading);
@@ -1359,7 +1587,7 @@ export class PiPedalModel //implements PiPedalModel
         this.requestConfig()
             .then((succeeded) => {
                 if (succeeded) {
-                    this.state.set(State.Ready);
+                    this.setState(State.Ready);
                     if (this.androidHost) {
                         this.hostVersion = new HostVersion(this.androidHost.getHostVersion());
                         if (!this.hostVersion.lessThan(1, 1, 16)) {
@@ -1539,8 +1767,7 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("setSnapshot", index);
     }
 
-    private pruneSnapshotValues(pedalboard: Pedalboard)
-    {
+    private pruneSnapshotValues(pedalboard: Pedalboard) {
         let validPluginIds: Set<number> = new Set<number>();
 
         let it = pedalboard.itemsGenerator();
@@ -1572,7 +1799,7 @@ export class PiPedalModel //implements PiPedalModel
             pedalboard.selectedSnapshot = selectedSnapshot;
         }
         this.pruneSnapshotValues(pedalboard);
-        
+
         this.setModelPedalboard(pedalboard);
 
         this.webSocket?.send("setSnapshots", { snapshots: pedalboard.snapshots, selectedSnapshot: selectedSnapshot });
@@ -1607,7 +1834,7 @@ export class PiPedalModel //implements PiPedalModel
 
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
-                if (Pedalboard.START_CONTROL === item.instanceId) {
+                if (Pedalboard.START_CONTROL_ID === item.instanceId) {
                     item.onValueChanged("volume_db", volume_db);
                 }
             }
@@ -1634,7 +1861,7 @@ export class PiPedalModel //implements PiPedalModel
             }
             for (let i = 0; i < this._controlValueChangeItems.length; ++i) {
                 let item = this._controlValueChangeItems[i];
-                if (Pedalboard.END_CONTROL === item.instanceId) {
+                if (Pedalboard.END_CONTROL_ID === item.instanceId) {
                     item.onValueChanged("volume_db", volume_db);
                 }
             }
@@ -1646,18 +1873,19 @@ export class PiPedalModel //implements PiPedalModel
     private _setPedalboardControlValue(instanceId: number, key: string, value: number, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
         if (pedalboard === undefined) throw new PiPedalStateError("Pedalboard not ready.");
+
+        let changed: boolean;
         let newPedalboard = pedalboard.clone();
 
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
+        if (instanceId === Pedalboard.START_CONTROL_ID && key === "volume_db") {
             this._setInputVolume(value, notifyServer);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID) {
             this._setOutputVolume(value, notifyServer);
             return;
         }
         let item = newPedalboard.getItem(instanceId);
-        let changed = item.setControlValue(key, value);
-
+        changed = item.setControlValue(key, value);
         if (changed) {
             if (notifyServer) {
                 this.lastControlMessageWasSentbyMe = true;
@@ -1671,7 +1899,6 @@ export class PiPedalModel //implements PiPedalModel
                 }
             }
         }
-
     }
     private _setVst3PedalboardControlValue(instanceId: number, key: string, value: number, state: string, notifyServer: boolean): void {
         let pedalboard = this.pedalboard.get();
@@ -1849,13 +2076,33 @@ export class PiPedalModel //implements PiPedalModel
     previewPedalboardValue(instanceId: number, key: string, value: number): void {
         // mouse is down. Don't update EVERYBODY, but we must change 
         // the control on the running audio plugin.
-        // TODO: respect "expensive" port attribute.
-        if (instanceId === Pedalboard.START_CONTROL && key === "volume_db") {
+
+        // respect "expensive" port attribute.
+
+        // Handle special cases for input/output volume
+        if (instanceId === Pedalboard.START_CONTROL_ID && key === "volume_db") {
             this.previewInputVolume(value);
             return;
-        } else if (instanceId === Pedalboard.END_CONTROL) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID) {
             this.previewOutputVolume(value);
             return;
+        }
+
+        // Get the control info to check if it's expensive
+        let pedalboard = this.pedalboard.get();
+        if (pedalboard) {
+            let item = pedalboard.tryGetItem(instanceId);
+            if (item) {
+                let plugin = this.getUiPlugin(item.uri);
+                if (plugin) {
+                    let control = plugin.getControl(key);
+                    if (control && control.is_expensive) {
+                        // Don't send preview for expensive controls
+                        // The final value will be sent when the control is committed
+                        return;
+                    }
+                }
+            }
         }
 
         this._setServerControl("previewControl", instanceId, key, value);
@@ -1876,6 +2123,23 @@ export class PiPedalModel //implements PiPedalModel
         }
         return result;
 
+
+    }
+    replacePedalboarditem(instanceId: number, newItem: PedalboardItem): void {
+        let pedalboard = this.pedalboard.get();
+        let newPedalboard = pedalboard.clone();
+
+        this.updateVst3State(newPedalboard);
+
+        let fromItem = newPedalboard.getItem(instanceId);
+        if (fromItem === null) {
+            throw new PiPedalArgumentError("fromInstanceId not found.");
+        }
+
+        let newInstanceId = newPedalboard.replaceItem(instanceId, newItem.clone());
+        newPedalboard.selectedPlugin = newInstanceId;
+        this.setModelPedalboard(newPedalboard);
+        this.updateServerPedalboard();
 
     }
     movePedalboardItemBefore(fromInstanceId: number, toInstanceId: number): void {
@@ -1993,10 +2257,10 @@ export class PiPedalModel //implements PiPedalModel
     }
     addPedalboardItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
-        if (instanceId === Pedalboard.START_CONTROL && append) {
+        if (instanceId === Pedalboard.START_CONTROL_ID && append) {
             instanceId = pedalboard.items[0].instanceId;
             append = false;
-        } else if (instanceId === Pedalboard.END_CONTROL && !append) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID && !append) {
             instanceId = pedalboard.items[pedalboard.items.length - 1].instanceId;
             append = true;
         }
@@ -2018,10 +2282,10 @@ export class PiPedalModel //implements PiPedalModel
     addPedalboardSplitItem(instanceId: number, append: boolean): number {
         let pedalboard = this.pedalboard.get();
 
-        if (instanceId === Pedalboard.START_CONTROL && append) {
+        if (instanceId === Pedalboard.START_CONTROL_ID && append) {
             instanceId = pedalboard.items[0].instanceId;
             append = false;
-        } else if (instanceId === Pedalboard.END_CONTROL && !append) {
+        } else if (instanceId === Pedalboard.END_CONTROL_ID && !append) {
             instanceId = pedalboard.items[pedalboard.items.length - 1].instanceId;
             append = true;
         }
@@ -2291,12 +2555,6 @@ export class PiPedalModel //implements PiPedalModel
     }
 
 
-    setJackSettings(jackSettings: JackChannelSelection): void {
-        this.expectDisconnect(ReconnectReason.LoadingSettings);
-        this.webSocket?.send("setJackSettings", jackSettings);
-    }
-
-
     monitorPortSubscriptions: MonitorPortHandleImpl[] = [];
 
     monitorPort(instanceId: number, key: string, updateRateSeconds: number, onUpdated: (value: number) => void): MonitorPortHandle {
@@ -2361,6 +2619,7 @@ export class PiPedalModel //implements PiPedalModel
         } else {
             let newTarget = new VuSubscriptionTarget();
             newTarget.subscribers.push(result);
+            this.vuSubscriptions[instanceId] = newTarget;
 
             this.webSocket.request<number>("addVuSubscription", instanceId)
                 .then((subscriptionHandle) => {
@@ -2370,6 +2629,9 @@ export class PiPedalModel //implements PiPedalModel
                     } else {
                         newTarget.serverSubscriptionHandle = subscriptionHandle;
                     }
+                }).catch((error) => {
+                    // failed to subscribe.
+                    this.vuSubscriptions[instanceId] = undefined;
                 });
 
             this.vuSubscriptions[instanceId] = newTarget;
@@ -2724,6 +2986,10 @@ export class PiPedalModel //implements PiPedalModel
         this.webSocket?.send("cancelListenForMidiEvent", listenHandle._handle);
     }
 
+    displayMediaFile(filePath: string) {
+        let url = this.varServerUrl + "displayMediaFile?path=" + encodeURIComponent(filePath);
+        window.open(url, "_blank");
+    }
     downloadAudioFile(filePath: string) {
         let downloadUrl = this.varServerUrl + "downloadMediaFile?path=" + encodeURIComponent(filePath);
 
@@ -3285,7 +3551,6 @@ export class PiPedalModel //implements PiPedalModel
         if (this.webSocket) {
             this.webSocket.send("setFavorites", newFavorites);
         }
-        // stub: update server.
     }
 
 
@@ -3655,6 +3920,29 @@ export class PiPedalModel //implements PiPedalModel
         }
         this.removeInvalidSidechains(pedalboard);
     }
+
+    setChannelRouterSettings(settings: ChannelRouterSettings) {
+        this.channelRouterSettings.set(settings);
+        if (this.webSocket) {
+            this.webSocket.send("setChannelRouterSettings", settings);
+        }
+    }
+    DownloadModelsFromTone3000(
+        responseUri: string,
+        tone3000PckceParams: Tone3000PkceParams,
+        downloadPath: string,
+        downloadType: Tone3000DownloadType
+    ): void {
+        if (this.webSocket) {
+            this.webSocket.send("DownloadModelsFromTone3000", { 
+                responseUri: responseUri, 
+                tone3000PckceParams: tone3000PckceParams,
+                downloadPath: downloadPath,
+                downloadType: downloadType === Tone3000DownloadType.Nam ? 0: 1
+             });
+        }
+    }
+
 };
 
 let instance: PiPedalModel | undefined = undefined;

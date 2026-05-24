@@ -1,4 +1,4 @@
-© 2020-2023, Robin E. R. Davies  
+© 2020-2026, Robin E. R. Davies  
   
 The MIT License
 

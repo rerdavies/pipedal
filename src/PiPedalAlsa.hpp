@@ -71,12 +71,16 @@ namespace pipedal {
     };
 
     class PiPedalAlsaDevices {
-
+    private:
+        static std::unique_ptr<PiPedalAlsaDevices> instance_;
+        PiPedalAlsaDevices() { }
         std::map<std::string,AlsaDeviceInfo> cachedDevices;
 
         bool getCachedDevice(const std::string&name, AlsaDeviceInfo*pResult);
         void cacheDevice(const std::string&name, const AlsaDeviceInfo&deviceInfo);
+        
     public:
+        static PiPedalAlsaDevices&instance();
         
         std::vector<AlsaDeviceInfo> GetAlsaDevices();
     };

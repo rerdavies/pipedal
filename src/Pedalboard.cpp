@@ -510,6 +510,11 @@ Snapshot Pedalboard::MakeSnapshotFromCurrentSettings(const Pedalboard &previousP
 }
 
 
+Pedalboard::Pedalboard()
+{
+    nextInstanceId_ = 0;
+}
+
 
 JSON_MAP_BEGIN(ControlValue)
     JSON_MAP_REFERENCE(ControlValue,key)

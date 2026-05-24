@@ -1,13 +1,97 @@
+A2 Questions
+
+Does A2 support Callibration?
+input_level_dbu, output_level_dbu accessors on NeuralAmpModelerCore DSP
+slimmable_weights accessors on NeuralAmpModelerCore DSP
+standard values for slimmable_weights? 
+
+Implement NAM Model Weight selection UI
+
+NAM INput VU is f*ed up.
+
+File Player Underrun is NOT CPU use related. There's an underrun somewhere.
+
+Update Pi 4 Benchmark Results:
+
+The benchmark is to run TooB Neural Amp Modeler with an A1 model to generate 100s of audio. Lower times are better.
+
+TooB NAM has a compile-time switch that uses either the NeuralAudio NAM implementation or
+the Neural Modeler Core NAM implementation.
+
+Results
 
 
-ls 
+aarch64 (Raspberry PI 4, ARM Cortex A72, Raspberry PI OS Bookworm)
+
+     Neural Amp Modeler Core: 94.296s
+     NeuralAudio:             31.589s
+
+     Compiler options: "-Ofast" "-mcpu=cortex-a72" "-march=armv8-a" "-mtune=cortex-a72" "-DEIGEN_DEFAULT_L1_CACHE_SIZE=32768"
+
+aarch64 (Raspberry PI 5, ARM Cortex A76, Rasperry PI OS Trixie)
+
+    Neural Amp Modeler Core: 16.084s
+    NeuralAudio: 10.766s
+
+    Compiler options: "-Ofast" "-mcpu=cortex-a76" "-march=armv8.2-a" "-mtune=cortex-a76" "-DEIGEN_DEFAULT_L1_CACHE_SIZE=65536"apt
+
+
+
+amd64 Native (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
+
+    Neural Amp Modeler Core:  4.716s
+    NeuralAudio x64:          3.952s
+
+    Compiler options /Ofast, MMX, SSE, SSE2, no AVX.
+
+amd64 AVX+ (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
+
+    Neural Amp Modeler Core:  4.97s
+    NeuralAudio x64:          4.032s
+
+    Compiler options /Ofast, "-march=sandybridge" "-mtune=sandybridge"
+
+amd64 SSE2 (AMD Ryzen 7 7735HS, Ubuntu 24.04 amd64)
+
+    Neural Amp Modeler Core:  7.748s
+    NeuralAudio x64:          5.983s
+
+    Compiler options /Ofast (defaults to SSE2, no AVX)
+
+The Model: 
+
+Package: Fender Deluxe Reverb %2765 Reissue %7c Clean %7c SM57 %2b Royer R-121 %2b Room
+Model: Fender DRRI %7c Clean %7c Room Only %7c Full Rig
+Downloaded from Tone3000.
+
+The model file is attached.
+
+
+    
+
+
+
+
+summaries for Mono audio adapaters.
+Check PWA on windows, edge and chrome.
+Make sure Pi 4 default audio device is still hidden when selecting devices!
+
+A final solution for rate-limiting on Tone3000.
+
+A way to force input to mono?
+
+
+Tooltip on File Property Select: add to release notes.
+sAFEfILEnAMES: RENAME, &C. Safe bank names? 
+NEW BANK
+WINDOW SIZE CALCUALTIONS ARE WRONG ON LINUX HIDEF DISPLAYS.
+
 Carla Project icons.
 check reload after change of LV2 plugins.
 
 Exactly one underrun per seek in Toob Player
 
 
-json "skip" code doesn't work with complex objects (MidiChannelBinding specifically).
 json nan/inf is fatal.
 
 - pipewire aux in?

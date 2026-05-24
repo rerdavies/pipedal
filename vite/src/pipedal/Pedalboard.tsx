@@ -59,6 +59,9 @@ export class ControlValue implements Deserializable<ControlValue> {
 }
 
 export class PedalboardItem implements Deserializable<PedalboardItem> {
+    clone() {
+        return new PedalboardItem().deserialize(this);
+    }
     deserializePedalboardItem(input: any): PedalboardItem {
         this.instanceId = input.instanceId ?? -1;
         this.title = input.title ?? "";
@@ -107,8 +110,8 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
     }
 
     isSyntheticItem(): boolean {
-        return this.instanceId === Pedalboard.START_CONTROL
-        || this.instanceId === Pedalboard.END_CONTROL;
+        return this.instanceId === Pedalboard.START_CONTROL_ID
+        || this.instanceId === Pedalboard.END_CONTROL_ID;
     }
     getInstanceId() : number {
         if (this.instanceId === undefined)
@@ -359,11 +362,22 @@ export class PedalboardSplitItem extends PedalboardItem {
 
 
 
+export enum InstanceType {
+    MainPedalboard,
+    MainInsert,
+    AuxInsert
+}
+
 
 export class Pedalboard implements Deserializable<Pedalboard> {
 
-    static readonly START_CONTROL = -2; // synthetic PedalboardItem for input volume.
-    static readonly END_CONTROL = -3; // synthetic PedalboardItem for output volume.
+
+    static readonly START_CONTROL_ID = -2; // synthetic PedalboardItem for input volume.
+    static readonly END_CONTROL_ID = -3; // synthetic PedalboardItem for output volume.
+    static readonly AUX_START_CONTROL_ID = -4;
+    static readonly AUX_END_CONTROL_ID = -5;
+
+
     static readonly START_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#Start";
     static readonly END_PEDALBOARD_ITEM_URI = "uri://two-play/pipedal/pedalboard#End";
 
@@ -372,7 +386,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         this.input_volume_db  = input.input_volume_db;
         this.output_volume_db = input.output_volume_db;
         this.items = PedalboardItem.deserializeArray(input.items);
-        this.nextInstanceId = input.nextInstanceId ?? -1;
+        this.nextInstanceId = input.nextInstanceId ?? 0;
         this.snapshots = input.snapshots ? Snapshot.deserializeArray(input.snapshots): [];
         this.selectedSnapshot = input.selectedSnapshot;
         this.pathProperties = input.pathProperties;
@@ -470,7 +484,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     makeStartItem(): PedalboardItem {
         let result = new PedalboardItem();
         result.pluginName = "Input";
-        result.instanceId = Pedalboard.START_CONTROL;
+        result.instanceId = Pedalboard.START_CONTROL_ID;
         result.uri = Pedalboard.START_PEDALBOARD_ITEM_URI;
         result.isEnabled = true;
         result.controlValues = [new ControlValue("volume_db",this.input_volume_db)];
@@ -480,7 +494,7 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     makeEndItem(): PedalboardItem {
         let result = new PedalboardItem();
         result.pluginName = "Output";
-        result.instanceId = Pedalboard.END_CONTROL;
+        result.instanceId = Pedalboard.END_CONTROL_ID;
         result.uri = Pedalboard.END_PEDALBOARD_ITEM_URI;
         result.isEnabled = true;
         result.controlValues = [new ControlValue("volume_db",this.output_volume_db)];
@@ -742,11 +756,14 @@ export class Pedalboard implements Deserializable<Pedalboard> {
     
     replaceItem(instanceId: number, newItem: PedalboardItem)
     {
+        newItem.instanceId = ++this.nextInstanceId;
+
         let result = this._replaceItem(this.items,instanceId,newItem);
         if (!result)
         {
             throw new PiPedalArgumentError("instanceId not found.");
         }
+        return newItem.instanceId;
     }
     private _addItem(items: PedalboardItem[], newItem: PedalboardItem, instanceId: number, append: boolean)
     {

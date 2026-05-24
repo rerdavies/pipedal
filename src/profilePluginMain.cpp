@@ -7,6 +7,7 @@
 #include <thread>
 #include <chrono>
 #include "ss.hpp"
+#include "PresetBundle.hpp"
 
 // apt install google-perftools
 #include <gperftools/profiler.h>
@@ -78,6 +79,22 @@ private:
     std::unique_ptr<std::thread> thread;
     WriterRingbuffer &writerRingbuffer;
 };
+
+static bool IsZipFile(const std::filesystem::path &path)
+{
+    std::ifstream f(path);
+    if (!f.is_open())
+        return false;
+
+    char c[4];
+    memset(c, 0, sizeof(c));
+
+    f >> c[0] >> c[1] >> c[2] >> c[3];
+
+    // official file header according to PKware documetnation.
+    return c[0] == 0x50 && c[1] == 0x4B && c[2] == 0x03 && c[3] == 0x04;
+}
+
 struct ProfileOptions
 {
     std::string presetName;
@@ -115,7 +132,9 @@ void profilePlugin(const ProfileOptions &profileOptions)
         throw std::runtime_error(s.str());
     }
 
+    model.EnableUpdater(false);
     model.Init(configuration);
+    model.GetPluginHost().asIHost()->SetMaxAudioBufferSize(64);
 
     model.LoadLv2PluginInfo();
 
@@ -127,6 +146,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
 
     if (profileOptions.presetName.length() != 0)
     {
+
         PresetIndex presetIndex;
         model.GetPresets(&presetIndex);
 
@@ -149,26 +169,50 @@ void profilePlugin(const ProfileOptions &profileOptions)
     }
     else if (profileOptions.presetFileName.length() != 0)
     {
-        std::ifstream f(profileOptions.presetFileName);
-        if (!f.is_open())
+        std::filesystem::path filePath = profileOptions.presetFileName;
+
+        if (IsZipFile(filePath))
         {
-            throw std::runtime_error(SS("Unable to load preset file " << profileOptions.presetFileName << "."));
-        }
-        try
-        {
-            json_reader reader(f);
+            auto presetReader = PresetBundleReader::LoadPresetsFile(model, filePath);
+            presetReader->ExtractMediaFiles();
+
+            std::stringstream ss(presetReader->GetPresetJson());
+            json_reader reader(ss);
+
             BankFile bankFile;
             reader.read(&bankFile);
+
             if (bankFile.presets().size() != 1)
             {
                 throw new std::runtime_error(SS("Invalid preset file. Expection one preset, but " << bankFile.presets().size() << " presets were found."));
             }
             Pedalboard pedalboard = (bankFile.presets()[0]->preset());
-            model.SetPedalboard(-1,pedalboard);
+            model.SetPedalboard(-1, pedalboard);
         }
-        catch (const std::exception &e)
+        else
         {
-            throw std::runtime_error(SS("Invalid file format:  " << profileOptions.presetFileName << ". " << e.what() ));
+
+            std::ifstream f(profileOptions.presetFileName);
+            if (!f.is_open())
+            {
+                throw std::runtime_error(SS("Unable to load preset file " << profileOptions.presetFileName << "."));
+            }
+            try
+            {
+                json_reader reader(f);
+                BankFile bankFile;
+                reader.read(&bankFile);
+                if (bankFile.presets().size() != 1)
+                {
+                    throw new std::runtime_error(SS("Invalid preset file. Expecting one preset, but " << bankFile.presets().size() << " presets were found."));
+                }
+                Pedalboard pedalboard = (bankFile.presets()[0]->preset());
+                model.SetPedalboard(-1, pedalboard);
+            }
+            catch (const std::exception &e)
+            {
+                throw std::runtime_error(SS("Invalid file format:  " << profileOptions.presetFileName << ". " << e.what()));
+            }
         }
     }
     else
@@ -183,13 +227,12 @@ void profilePlugin(const ProfileOptions &profileOptions)
 
     lv2Pedalboard->Activate();
 
-    std::vector<float> inputBufferVector;
-    std::vector<float> outputBufferVector;
-    inputBufferVector.resize(nFrames);
-    outputBufferVector.resize(nFrames);
+    std::vector<float> inputBufferVectorL(nFrames);
+    std::vector<float> outputBufferVectorL(nFrames);
+    std::vector<float> outputBufferVectorR(nFrames);;
 
-    float *inputBuffers[2]{inputBufferVector.data(), nullptr};
-    float *outputBuffers[2] = {inputBufferVector.data(), nullptr};
+    float *inputBuffers[3]{inputBufferVectorL.data(), inputBufferVectorL.data(),nullptr};
+    float *outputBuffers[3] = {outputBufferVectorL.data(), outputBufferVectorR.data(),nullptr};
 
     WriterRingbuffer writerRingbuffer;
     RealtimeRingBufferWriter ringBufferWriter(&writerRingbuffer);
@@ -197,6 +240,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
     RingBufferSink ringBufferSink(writerRingbuffer);
 
     // run once to get memory allocations in NAM and ML out of the way.
+    lv2Pedalboard->ResetAtomBuffers();
     lv2Pedalboard->Run(inputBuffers, outputBuffers, nFrames, &ringBufferWriter);
 
     /* *** Pump the plugin for a bit if it is expected to do work on the scheduler  thread when initializing */
@@ -210,6 +254,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
 
         while (true)
         {
+            lv2Pedalboard->ResetAtomBuffers();
             lv2Pedalboard->Run(inputBuffers, outputBuffers, nFrames, &ringBufferWriter);
 
             auto elapsed = clock::now() - waitStart;
@@ -235,6 +280,7 @@ void profilePlugin(const ProfileOptions &profileOptions)
     size_t repetitions = static_cast<size_t>(48000 * profileOptions.benchmark_seconds / nFrames);
     for (size_t i = 0; i < repetitions; ++i)
     {
+        lv2Pedalboard->ResetAtomBuffers();
         lv2Pedalboard->Run(inputBuffers, outputBuffers, nFrames, &ringBufferWriter);
     }
 
@@ -298,6 +344,8 @@ int main(int argc, char **argv)
             cout << "Options:" << endl;
             cout << "    --no-profile:" << endl;
             cout << "          do NOT generate a perf file." << endl;
+            cout << "    --nam-core:" << endl;
+            cout << "          Force use of NAM Core models." << endl;
             cout << "    -p, --preset-file filename:" << endl;
             cout << "          Load the specified preset file. " << endl;
             cout << "    -o, --output filename:" << endl;

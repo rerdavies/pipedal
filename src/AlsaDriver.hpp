@@ -1,7 +1,7 @@
 /*
  * MIT License
  * 
- * Copyright (c) 2025 Robin E. R. Davies
+ * Copyright (c) 2026 Robin E. R. Davies
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <lilv/lilv.h>
 #include "AudioDriver.hpp"
 #include "JackServerSettings.hpp"
 
@@ -37,10 +38,17 @@ namespace pipedal {
 
     AudioDriver* CreateAlsaDriver(AudioDriverHost*driverHost);
 
-    // test only.
-    void AlsaFormatEncodeDecodeTest(AudioDriverHost*driverHost);
-    void MidiDecoderTest();
+    namespace test {
+        // Private use, test only. 
+        void AlsaFormatEncodeDecodeTest(AudioDriverHost*driverHost);
+        void MidiDecoderTest();
+    }
 
     void FreeAlsaGlobals(); // for valgrind. Free the Alsa configuration cache.
+
+    // AlsaDeviceInfo MakeDummyDeviceInfo(uint32_t channels);
+    uint32_t GetDummyAudioChannels(const std::string &deviceName);
+    // std::shared_ptr<AudioDriver> CreateDummyAudioDriver(AudioDriverHost*driverHost,const std::string&deviceId);
+
 }
 

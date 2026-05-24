@@ -819,7 +819,10 @@ UpdateStatus UpdaterImpl::DoUpdate(bool forReleaseGenerator)
                 GithubRelease release{el};
                 if (!release.draft && release.GetDownloadForCurrentArchitecture() != nullptr)
                 {
-                    if (release.name.find("Experimental") == std::string::npos) // experimental releases do not participate in auto-updates (not even for dev stream)
+                    if (release.name.find("Experimental") == std::string::npos // experimental releases do not participate in auto-updates (not even for dev stream)
+                    && release.name.find("Testing") == std::string::npos
+                    && release.name.find("Retracted") == std::string::npos
+                ) 
                     {
                         releases.push_back(std::move(release));
                     }

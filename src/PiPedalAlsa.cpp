@@ -160,10 +160,13 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 
     std::vector<AlsaDeviceInfo> result;
 
-    int cardNum = -1; // Start with first card
     int err;
 
     std::vector<ProcAlsaDevice> procAlsaDevices = getProcAlsaDevices();
+
+
+    snd_pcm_info_t *pcminfo = nullptr;
+    snd_pcm_info_alloca(&pcminfo);
 
     for (const auto &procAlsaDevice: procAlsaDevices)
     {
@@ -198,13 +201,60 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
         err = snd_ctl_card_info(hDevice, alsaInfo);
         if (err == 0)
         {
+
             AlsaDeviceInfo info;
-            info.cardId_ = cardNum;
+            info.cardId_ = procAlsaDevice.cardId;
             info.id_ = std::string("hw:") + snd_ctl_card_info_get_id(alsaInfo);
             const char *driver = snd_ctl_card_info_get_driver(alsaInfo);
             (void)driver;
 
-            info.name_ = snd_ctl_card_info_get_name(alsaInfo);
+            snd_pcm_info_set_device(pcminfo, procAlsaDevice.subdeviceId);
+            snd_pcm_info_set_subdevice(pcminfo, 0);
+            snd_pcm_info_set_stream(pcminfo, SND_PCM_STREAM_PLAYBACK);
+
+            if ((err = snd_ctl_pcm_info(hDevice, pcminfo)) < 0) {
+                snd_pcm_info_set_device(pcminfo, procAlsaDevice.subdeviceId);
+                snd_pcm_info_set_subdevice(pcminfo, 0);
+                snd_pcm_info_set_stream(pcminfo, SND_PCM_STREAM_CAPTURE);
+
+                if ((err = snd_ctl_pcm_info(hDevice, pcminfo)) < 0) {
+                    if (err != -ENOENT)
+                        Lv2Log::warning("control digital audio info (%i): %s", info.cardId_, snd_strerror(err));
+                    continue;
+                }
+            }
+            /*
+            Names and IDs are f-ed up in ALSA. id seems to be vaguely reliable. names are garbage!
+            Sample data from Unbuntu 24.04.
+
+            snd_ctl_card_info_get_id(info) snd_ctl_card_info_get_name(alsaInfo) subdevice snd_pcm_info_get_id(pcminfo) snd_pcm_info_get_name(pcminfo)
+            Generic                        HD-Audio Generic                     3         HDMI 0                       Acer S231HL
+            Generic                        HD-Audio Generic                     3         HDMI 0                       ASUS MG28U
+            Generic_1                      HD-Audio Generic                     0         CX11970 Analog               CX11970 Analog
+            M2                             M2                                   USB Audio                    USB Audio
+            CODEC                          USB AUDIO  CODEC                     USB Audio                    USB Audio
+
+            */
+            std::string name;
+            {
+                // let's assume (without evidence) that names get localized, but ids do not. :-/
+                std::string cardId = snd_ctl_card_info_get_id(alsaInfo);
+                std::string cardName = snd_ctl_card_info_get_name(alsaInfo);
+                std::string pcmId = snd_pcm_info_get_id(pcminfo);
+                std::string pcmName = snd_pcm_info_get_name(pcminfo);
+                std::string driver = snd_ctl_card_info_get_driver(alsaInfo);
+                if (driver == "USB-Audio")
+                {
+                    name = SS("USB - " << cardId);
+                }
+                else if (pcmId == pcmName)
+                {
+                    name = pcmId;
+                } else {
+                    name = SS(pcmId << '[' << pcmName << ']');
+                }
+            }
+            info.name_ = name;
             info.longName_ = snd_ctl_card_info_get_longname(alsaInfo);
 
             // we can't read our own device if it's open so use data that gets
@@ -219,6 +269,8 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
                 result.push_back(cachedInfo);
                 continue;
             }
+
+
             snd_pcm_t *captureDevice = nullptr;
             snd_pcm_t *playbackDevice = nullptr;
             auto rc = snd_pcm_open(&captureDevice, cardId.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
@@ -248,6 +300,7 @@ std::vector<AlsaDeviceInfo> PiPedalAlsaDevices::GetAlsaDevices()
 
             if (captureOk || playbackOk)
             {
+
                 snd_pcm_t *hDevice = captureOk ? captureDevice : playbackDevice;
                 snd_pcm_hw_params_t *params = nullptr;
                 err = snd_pcm_hw_params_malloc(&params);
@@ -636,6 +689,17 @@ AlsaMidiDeviceInfo::AlsaMidiDeviceInfo(const char *name, const char *description
     this->device_ = device;
     this->subdevice_ = subdevice;
 }
+
+std::unique_ptr<PiPedalAlsaDevices> PiPedalAlsaDevices::instance_;
+
+PiPedalAlsaDevices&PiPedalAlsaDevices::instance() {
+    if (!instance_)
+    {
+        instance_ = std::unique_ptr<PiPedalAlsaDevices>(new PiPedalAlsaDevices());
+    }
+    return (*instance_);
+}
+
 
 JSON_MAP_BEGIN(AlsaDeviceInfo)
 JSON_MAP_REFERENCE(AlsaDeviceInfo, cardId)

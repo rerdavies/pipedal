@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) 2026 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -38,6 +38,7 @@
 #include <vector>
 #include <memory>
 
+#ifndef __INTELLISENSE__
 #define DECLARE_JSON_MAP(CLASSNAME) \
     static pipedal::json_map::storage_type<CLASSNAME> jmap
 
@@ -56,6 +57,35 @@
     }                  \
     }                  \
     ;
+#else 
+#define DECLARE_JSON_MAP(CLASSNAME) 
+
+#define JSON_MAP_BEGIN(CLASSNAME) 
+
+#define JSON_MAP_REFERENCE(class, name)
+
+#define JSON_MAP_END() ;
+    ;
+
+#endif
+
+#define JSON_GETTER_SETTER_REF(name)                               \
+    const decltype(name##_) &name() const { return name##_; } \
+    decltype(name##_) &name() { return name##_; } \
+    void name(const decltype(name##_) &value) { name##_ = value; }
+
+#define JSON_GETTER_SETTER(name)                            \
+    decltype(name##_) name() const { return name##_; } \
+    void name(decltype(name##_) value) { name##_ = value; }
+
+
+#define JSON_GETTER_REF(name)                               \
+    const decltype(name##_) &name() const { return name##_; } \
+    decltype(name##_) &name() { return name##_; } 
+
+#define JSON_GETTER(name)                            \
+    decltype(name##_) name() const { return name##_; } 
+
 
 namespace pipedal
 {

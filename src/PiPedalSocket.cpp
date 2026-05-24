@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Robin Davies
+// Copyright (c) 2026 Robin Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -19,11 +19,13 @@
 
 #include "pch.h"
 
+#include "Curl.hpp"
 #include "PiPedalSocket.hpp"
 #include "Updater.hpp"
 #include "json.hpp"
 #include "viewstream.hpp"
 #include "PiPedalVersion.hpp"
+#include "Tone3000Downloader.hpp"
 #include <atomic>
 #include <limits>
 #include "Lv2Log.hpp"
@@ -33,6 +35,8 @@
 #include "Ipv6Helpers.hpp"
 #include "Promise.hpp"
 #include <mutex>
+#include "Tone3000Downloader.hpp"
+#include "Tone3000Tone.hpp"
 
 #include "AdminClient.hpp"
 #include "WifiConfigSettings.hpp"
@@ -42,12 +46,14 @@
 #include "PiPedalAlsa.hpp"
 #include <filesystem>
 #include "FileEntry.hpp"
+#include "Tone3000Downloader.hpp"
 
 using namespace std;
 using namespace pipedal;
 
-class CopyPresetsToBankBody {
-    public: 
+class CopyPresetsToBankBody
+{
+public:
     int64_t bankInstanceId_;
     std::vector<int64_t> presets_;
     DECLARE_JSON_MAP(CopyPresetsToBankBody);
@@ -55,11 +61,46 @@ class CopyPresetsToBankBody {
 JSON_MAP_BEGIN(CopyPresetsToBankBody)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(CopyPresetsToBankBody, presets)
-JSON_MAP_END()
+JSON_MAP_END();
 
+class WriteTone3000ReadmeBody {
+public:
+    std::string filePath_;
+    tone3000::Tone tone_;
+    std::string thumbnailUrl_;
+    DECLARE_JSON_MAP(WriteTone3000ReadmeBody);
+};
 
-class ImportPresetsFromBankBody {
-    public: 
+JSON_MAP_BEGIN(WriteTone3000ReadmeBody)
+JSON_MAP_REFERENCE(WriteTone3000ReadmeBody, filePath)
+JSON_MAP_REFERENCE(WriteTone3000ReadmeBody, tone)
+JSON_MAP_REFERENCE(WriteTone3000ReadmeBody, thumbnailUrl)
+JSON_MAP_END();
+
+class DownloadModelsFromTone3000Body
+{
+public:
+    std::string responseUri_;
+    Tone3000PkceParams tone3000PckceParams_;
+    std::string downloadPath_;
+    int64_t downloadType_ = -1;
+
+    Tone3000DownloadType downloadType() const { return (Tone3000DownloadType)downloadType_; }
+    void downloadType(Tone3000DownloadType value) { downloadType_ = (int64_t)value; }
+
+    DECLARE_JSON_MAP(DownloadModelsFromTone3000Body);
+};
+
+JSON_MAP_BEGIN(DownloadModelsFromTone3000Body)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, responseUri)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, tone3000PckceParams)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadPath)
+JSON_MAP_REFERENCE(DownloadModelsFromTone3000Body, downloadType)
+JSON_MAP_END();
+
+class ImportPresetsFromBankBody
+{
+public:
     int64_t bankInstanceId_;
     std::vector<int64_t> presets_;
     DECLARE_JSON_MAP(ImportPresetsFromBankBody);
@@ -69,13 +110,42 @@ JSON_MAP_REFERENCE(ImportPresetsFromBankBody, bankInstanceId)
 JSON_MAP_REFERENCE(ImportPresetsFromBankBody, presets)
 JSON_MAP_END()
 
-class RequestBankPresetsBody {
+class RequestBankPresetsBody
+{
 public:
     int64_t bankInstanceId_;
     DECLARE_JSON_MAP(RequestBankPresetsBody);
 };
 JSON_MAP_BEGIN(RequestBankPresetsBody)
 JSON_MAP_REFERENCE(RequestBankPresetsBody, bankInstanceId)
+JSON_MAP_END()
+
+class Tone3000DownloadStartedBody
+{
+public:
+    int64_t handle_;
+    std::string title_;
+
+    DECLARE_JSON_MAP(Tone3000DownloadStartedBody);
+};
+
+JSON_MAP_BEGIN(Tone3000DownloadStartedBody)
+JSON_MAP_REFERENCE(Tone3000DownloadStartedBody, handle)
+JSON_MAP_REFERENCE(Tone3000DownloadStartedBody, title)
+JSON_MAP_END()
+
+class Tone3000DownloadErrorBody
+{
+public:
+    int64_t handle_;
+    std::string errorMessage_;
+
+    DECLARE_JSON_MAP(Tone3000DownloadErrorBody);
+};
+
+JSON_MAP_BEGIN(Tone3000DownloadErrorBody)
+JSON_MAP_REFERENCE(Tone3000DownloadErrorBody, handle)
+JSON_MAP_REFERENCE(Tone3000DownloadErrorBody, errorMessage)
 JSON_MAP_END()
 
 class PathPatchPropertyChangedBody
@@ -176,7 +246,7 @@ public:
 JSON_MAP_BEGIN(GetFilePropertyDirectoryTreeArgs)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, fileProperty)
 JSON_MAP_REFERENCE(GetFilePropertyDirectoryTreeArgs, selectedPath)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class Lv2StateChangedBody
 {
@@ -189,7 +259,7 @@ public:
 JSON_MAP_BEGIN(Lv2StateChangedBody)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, instanceId)
 JSON_MAP_REFERENCE(Lv2StateChangedBody, state)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class SetPatchPropertyBody
 {
@@ -220,9 +290,6 @@ JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, instanceId)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, title)
 JSON_MAP_REFERENCE(SetPedalboardItemTitleBody, colorKey)
 JSON_MAP_END()
-
-
-
 
 class NotifyMidiListenerBody
 {
@@ -255,7 +322,7 @@ JSON_MAP_REFERENCE(NotifyAtomOutputBody, clientHandle)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, instanceId)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, propertyUri)
 JSON_MAP_REFERENCE(NotifyAtomOutputBody, atomJson)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class ListenForMidiEventBody
 {
@@ -379,7 +446,7 @@ JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, clientId)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, bankInstanceId)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, name)
 JSON_MAP_REFERENCE(SaveCurrentPresetAsBody, saveAfterInstanceId)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class SavePluginPresetAsBody
 {
@@ -392,7 +459,7 @@ public:
 JSON_MAP_BEGIN(SavePluginPresetAsBody)
 JSON_MAP_REFERENCE(SavePluginPresetAsBody, instanceId)
 JSON_MAP_REFERENCE(SavePluginPresetAsBody, name)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class RenameBankBody
 {
@@ -404,7 +471,7 @@ public:
 JSON_MAP_BEGIN(RenameBankBody)
 JSON_MAP_REFERENCE(RenameBankBody, bankId)
 JSON_MAP_REFERENCE(RenameBankBody, newName)
-JSON_MAP_END()
+JSON_MAP_END();
 
 class RenamePresetBody
 {
@@ -479,7 +546,6 @@ JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, instanceId)
 JSON_MAP_REFERENCE(PedalboardItemUseModGuiBody, useModUi)
 JSON_MAP_END()
 
-
 class UpdateCurrentPedalboardBody
 {
 public:
@@ -522,7 +588,6 @@ JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, clientId)
 JSON_MAP_REFERENCE(SetSelectedPedalboardPluginBody, pluginInstanceId)
 JSON_MAP_END()
 
-
 class SnapshotModifiedBody
 {
 public:
@@ -537,17 +602,22 @@ JSON_MAP_REFERENCE(SnapshotModifiedBody, snapshotIndex)
 JSON_MAP_REFERENCE(SnapshotModifiedBody, modified)
 JSON_MAP_END()
 
-class ChannelSelectionChangedBody
+class ChannelRouterSettingsChangedBody
 {
 public:
+    ChannelRouterSettingsChangedBody(
+        int64_t clientId,
+        const ChannelRouterSettings &channelRouterSettings) : clientId_(clientId), channelRouterSettings_(channelRouterSettings)
+    {
+    }
     int64_t clientId_ = -1;
-    JackChannelSelection *jackChannelSelection_ = nullptr;
+    ChannelRouterSettings channelRouterSettings_;
 
-    DECLARE_JSON_MAP(ChannelSelectionChangedBody);
+    DECLARE_JSON_MAP(ChannelRouterSettingsChangedBody);
 };
-JSON_MAP_BEGIN(ChannelSelectionChangedBody)
-JSON_MAP_REFERENCE(ChannelSelectionChangedBody, clientId)
-JSON_MAP_REFERENCE(ChannelSelectionChangedBody, jackChannelSelection)
+JSON_MAP_BEGIN(ChannelRouterSettingsChangedBody)
+JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, clientId)
+JSON_MAP_REFERENCE(ChannelRouterSettingsChangedBody, channelRouterSettings)
 JSON_MAP_END()
 
 class PresetsChangedBody
@@ -618,6 +688,15 @@ JSON_MAP_REFERENCE(Vst3ControlChangedBody, value)
 JSON_MAP_REFERENCE(Vst3ControlChangedBody, state)
 JSON_MAP_END()
 
+class PiPedalSocketHandler;
+namespace
+{
+    using PfnMessageHandler = void (PiPedalSocketHandler::*)(int replyTo, json_reader *pReader);
+
+    inline static unordered_map<std::string, PfnMessageHandler> socket_messageHandlers;
+
+}
+
 class PiPedalSocketHandler : public SocketHandler, public IPiPedalModelSubscriber, public std::enable_shared_from_this<PiPedalSocketHandler>
 {
 private:
@@ -639,6 +718,8 @@ private:
         int64_t subscriptionHandle;
         int64_t instanceId;
     };
+
+    bool PingTone3000Server();
     std::vector<VuSubscription> activeVuSubscriptions;
 
     struct PortMonitorSubscription
@@ -1095,6 +1176,972 @@ public:
 
     /***********************/
 
+    class MessageRegistration
+    {
+    public:
+        MessageRegistration(const std::string &messageName, PfnMessageHandler pfnMessageHandler)
+        {
+            socket_messageHandlers[messageName] = pfnMessageHandler;
+        }
+    };
+
+#define REGISTER_MESSAGE_HANDLER(MESSAGE_NAME) \
+    static inline MessageRegistration r_##MESSAGE_NAME{#MESSAGE_NAME, &PiPedalSocketHandler::handle_##MESSAGE_NAME};
+
+    void handle_setControl(int replyTo, json_reader *pReader)
+    {
+        ControlChangedBody message;
+        pReader->read(&message);
+        this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+    }
+    REGISTER_MESSAGE_HANDLER(setControl)
+
+
+    void handle_makeTone3000Pkce(int replyTo, json_reader *pReader)
+    {
+        std::string redirectUrl;
+        pReader->read(&redirectUrl);
+
+        Tone3000PkceParams result {redirectUrl};
+        this->Reply(replyTo, "makeTone3000Pkce", result);
+         
+    }
+    REGISTER_MESSAGE_HANDLER(makeTone3000Pkce);
+
+
+    void handle_writeTone3000Readme(int replyTo, json_reader*pReader)
+    {
+        WriteTone3000ReadmeBody body;
+        pReader->read(&body);
+        model.WriteTone3000Readme(body.filePath_, body.tone_,body.thumbnailUrl_);
+    }
+    REGISTER_MESSAGE_HANDLER(writeTone3000Readme)
+
+    void handle_sha256Base64url(int replyTo, json_reader *pReader)
+    {
+        std::string input;
+        pReader->read(&input);
+
+        std::string result = Sha256Base64Url(input);
+        this->Reply(replyTo, "sha256Base64url", result);
+         
+    }
+    REGISTER_MESSAGE_HANDLER(sha256Base64url);
+
+    void handle_previewControl(int replyTo, json_reader *pReader)
+    {
+        ControlChangedBody message;
+        pReader->read(&message);
+        this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
+    }
+    REGISTER_MESSAGE_HANDLER(previewControl)
+
+    void handle_setInputVolume(int replyTo, json_reader *pReader)
+    {
+        float value;
+        pReader->read(&value);
+        this->model.SetInputVolume(value);
+    }
+    REGISTER_MESSAGE_HANDLER(setInputVolume)
+
+    void handle_setOutputVolume(int replyTo, json_reader *pReader)
+    {
+        float value;
+        pReader->read(&value);
+        this->model.SetOutputVolume(value);
+    }
+    REGISTER_MESSAGE_HANDLER(setOutputVolume)
+
+    void handle_previewInputVolume(int replyTo, json_reader *pReader)
+    {
+        float value;
+        pReader->read(&value);
+        this->model.PreviewInputVolume(value);
+    }
+    REGISTER_MESSAGE_HANDLER(previewInputVolume)
+
+    void handle_previewOutputVolume(int replyTo, json_reader *pReader)
+    {
+        float value;
+        pReader->read(&value);
+        this->model.PreviewOutputVolume(value);
+    }
+    REGISTER_MESSAGE_HANDLER(previewOutputVolume)
+
+    void handle_listenForMidiEvent(int replyTo, json_reader *pReader)
+    {
+        ListenForMidiEventBody body;
+        pReader->read(&body);
+        this->model.ListenForMidiEvent(this->clientId, body.handle_);
+    }
+    REGISTER_MESSAGE_HANDLER(listenForMidiEvent)
+
+    void handle_cancelListenForMidiEvent(int replyTo, json_reader *pReader)
+    {
+        uint64_t handle;
+        pReader->read(&handle);
+        this->model.CancelListenForMidiEvent(this->clientId, handle);
+    }
+    REGISTER_MESSAGE_HANDLER(cancelListenForMidiEvent)
+
+    void handle_monitorPatchProperty(int replyTo, json_reader *pReader)
+    {
+        MonitorPatchPropertyBody body;
+        pReader->read(&body);
+        this->model.MonitorPatchProperty(this->clientId, body.clientHandle_, body.instanceId_, body.propertyUri_);
+    }
+    REGISTER_MESSAGE_HANDLER(monitorPatchProperty)
+
+    void handle_cancelMonitorPatchProperty(int replyTo, json_reader *pReader)
+    {
+        int64_t handle;
+        pReader->read(&handle);
+        this->model.CancelMonitorPatchProperty(this->clientId, handle);
+    }
+    REGISTER_MESSAGE_HANDLER(cancelMonitorPatchProperty)
+
+    void handle_getUpdateStatus(int replyTo, json_reader *pReader)
+    {
+        UpdateStatus updateStatus = model.GetUpdateStatus();
+        this->Reply(replyTo, "getUpdateStatus", updateStatus);
+    }
+    REGISTER_MESSAGE_HANDLER(getUpdateStatus)
+
+    void handle_getHasWifi(int replyTo, json_reader *pReader)
+    {
+        bool result = model.GetHasWifi();
+        this->Reply(replyTo, "getHasWifi", result);
+    }
+    REGISTER_MESSAGE_HANDLER(getHasWifi)
+
+    void handle_updateNow(int replyTo, json_reader *pReader)
+    {
+        std::string updateUrl;
+        pReader->read(&updateUrl);
+        model.UpdateNow(updateUrl);
+        bool result = true;
+        this->Reply(replyTo, "updateNow", result);
+    }
+    REGISTER_MESSAGE_HANDLER(updateNow)
+
+    void handle_getJackStatus(int replyTo, json_reader *pReader)
+    {
+        JackHostStatus status = model.GetJackStatus();
+        this->Reply(replyTo, "getJackStatus", status);
+    }
+    REGISTER_MESSAGE_HANDLER(getJackStatus)
+
+    void handle_getAlsaDevices(int replyTo, json_reader *pReader)
+    {
+        std::vector<AlsaDeviceInfo> devices = model.GetAlsaDevices();
+        this->Reply(replyTo, "getAlsaDevices", devices);
+    }
+    REGISTER_MESSAGE_HANDLER(getAlsaDevices)
+
+    void handle_getKnownWifiNetworks(int replyTo, json_reader *pReader)
+    {
+        std::vector<std::string> channels = this->model.GetKnownWifiNetworks();
+        this->Reply(replyTo, "getWifiChannels", channels);
+    }
+    REGISTER_MESSAGE_HANDLER(getKnownWifiNetworks)
+
+    void handle_getWifiChannels(int replyTo, json_reader *pReader)
+    {
+        std::string country;
+        pReader->read(&country);
+        std::vector<WifiChannelSelector> channels = pipedal::getWifiChannelSelectors(country.c_str());
+        this->Reply(replyTo, "getWifiChannels", channels);
+    }
+    REGISTER_MESSAGE_HANDLER(getWifiChannels)
+
+    void handle_getPluginPresets(int replyTo, json_reader *pReader)
+    {
+        std::string uri;
+        pReader->read(&uri);
+        this->Reply(replyTo, "getPluginPresets", this->model.GetPluginUiPresets(uri));
+    }
+    REGISTER_MESSAGE_HANDLER(getPluginPresets)
+
+    void handle_loadPluginPreset(int replyTo, json_reader *pReader)
+    {
+        LoadPluginPresetBody body;
+        pReader->read(&body);
+        this->model.LoadPluginPreset(body.pluginInstanceId_, body.presetInstanceId_);
+    }
+    REGISTER_MESSAGE_HANDLER(loadPluginPreset)
+
+    void handle_setJackServerSettings(int replyTo, json_reader *pReader)
+    {
+        JackServerSettings jackServerSettings;
+        pReader->read(&jackServerSettings);
+        this->model.SetJackServerSettings(jackServerSettings);
+        this->Reply(replyTo, "setJackserverSettings");
+    }
+    REGISTER_MESSAGE_HANDLER(setJackServerSettings)
+
+    void handle_setGovernorSettings(int replyTo, json_reader *pReader)
+    {
+        std::string governor;
+        pReader->read(&governor);
+        std::string fromAddress = this->getFromAddress();
+        // if (!IsOnLocalSubnet(fromAddress))
+        // {
+        //     throw PiPedalException("Permission denied. Not on local subnet.");
+        // }
+        this->model.SetGovernorSettings(governor);
+        this->Reply(replyTo, "setGovernorSettings");
+    }
+    REGISTER_MESSAGE_HANDLER(setGovernorSettings)
+
+    void handle_setWifiConfigSettings(int replyTo, json_reader *pReader)
+    {
+        WifiConfigSettings wifiConfigSettings;
+        pReader->read(&wifiConfigSettings);
+        if (!GetAdminClient().CanUseAdminClient())
+        {
+            throw PiPedalException("Can't change server settings when running interactively.");
+        }
+        std::string fromAddress = this->getFromAddress();
+        // if (!IsOnLocalSubnet(fromAddress))
+        // {
+        //     throw PiPedalException("Permission denied. Not on local subnet.");
+        // }
+
+        this->model.SetWifiConfigSettings(wifiConfigSettings);
+        this->Reply(replyTo, "setWifiConfigSettings");
+    }
+    REGISTER_MESSAGE_HANDLER(setWifiConfigSettings)
+
+    void handle_getWifiConfigSettings(int replyTo, json_reader *pReader)
+    {
+        this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
+    }
+    REGISTER_MESSAGE_HANDLER(getWifiConfigSettings)
+
+    void handle_setWifiDirectConfigSettings(int replyTo, json_reader *pReader)
+    {
+        WifiDirectConfigSettings wifiDirectConfigSettings;
+        pReader->read(&wifiDirectConfigSettings);
+        if (!GetAdminClient().CanUseAdminClient())
+        {
+            throw PiPedalException("Can't change server settings when running interactively.");
+        }
+        std::string fromAddress = this->getFromAddress();
+        // if (!IsOnLocalSubnet(fromAddress))
+        // {
+        //     throw PiPedalException("Permission denied. Not on local subnet.");
+        // }
+
+        this->model.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
+        this->Reply(replyTo, "setWifiDirectConfigSettings");
+    }
+    REGISTER_MESSAGE_HANDLER(setWifiDirectConfigSettings)
+
+    void handle_getWifiDirectConfigSettings(int replyTo, json_reader *pReader)
+    {
+        this->Reply(replyTo, "getWifiDirectConfigSettings", model.GetWifiDirectConfigSettings());
+    }
+    REGISTER_MESSAGE_HANDLER(getWifiDirectConfigSettings)
+
+    void handle_getGovernorSettings(int replyTo, json_reader *pReader)
+    {
+        this->Reply(replyTo, "getGovernorSettings", model.GetGovernorSettings());
+    }
+    REGISTER_MESSAGE_HANDLER(getGovernorSettings)
+
+    void handle_getJackServerSettings(int replyTo, json_reader *pReader)
+    {
+        this->Reply(replyTo, "getJackServerSettings", model.GetJackServerSettings());
+    }
+    REGISTER_MESSAGE_HANDLER(getJackServerSettings)
+
+    void handle_getBankIndex(int replyTo, json_reader *pReader)
+    {
+        BankIndex bankIndex = model.GetBankIndex();
+        this->Reply(replyTo, "getBankIndex", bankIndex);
+    }
+    REGISTER_MESSAGE_HANDLER(getBankIndex)
+
+    void handle_getJackConfiguration(int replyTo, json_reader *pReader)
+    {
+        JackConfiguration configuration = this->model.GetJackConfiguration();
+        this->Reply(replyTo, "getJackConfiguration", configuration);
+    }
+    REGISTER_MESSAGE_HANDLER(getJackConfiguration)
+
+    void handle_getJackSettings(int replyTo, json_reader *pReader)
+    {
+        JackChannelSelection selection = this->model.GetJackChannelSelection();
+        this->Reply(replyTo, "getJackSettings", selection);
+    }
+    REGISTER_MESSAGE_HANDLER(getJackSettings)
+
+    void handle_saveCurrentPreset(int replyTo, json_reader *pReader)
+    {
+        this->model.SaveCurrentPreset(this->clientId);
+    }
+    REGISTER_MESSAGE_HANDLER(saveCurrentPreset)
+
+    void handle_saveCurrentPresetAs(int replyTo, json_reader *pReader)
+    {
+        SaveCurrentPresetAsBody body;
+        pReader->read(&body);
+        int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_, body.name_, body.saveAfterInstanceId_);
+        Reply(replyTo, "saveCurrentPresetsAs", result);
+    }
+    REGISTER_MESSAGE_HANDLER(saveCurrentPresetAs)
+
+    void handle_setSelectedPedalboardPlugin(int replyTo, json_reader *pReader)
+    {
+        SetSelectedPedalboardPluginBody body;
+        pReader->read(&body);
+        this->model.SetSelectedPedalboardPlugin(body.clientId_, body.pluginInstanceId_);
+    }
+    REGISTER_MESSAGE_HANDLER(setSelectedPedalboardPlugin)
+
+    void handle_savePluginPresetAs(int replyTo, json_reader *pReader)
+    {
+        SavePluginPresetAsBody body;
+        pReader->read(&body);
+        int64_t result = this->model.SavePluginPresetAs(body.instanceId_, body.name_);
+        Reply(replyTo, "saveCurrentPresetsAs", result);
+    }
+    REGISTER_MESSAGE_HANDLER(savePluginPresetAs)
+
+    void handle_getPresets(int replyTo, json_reader *pReader)
+    {
+        PresetIndex presets;
+        this->model.GetPresets(&presets);
+        Reply(replyTo, "getPresets", presets);
+    }
+    REGISTER_MESSAGE_HANDLER(getPresets)
+
+    void handle_setPedalboardItemEnable(int replyTo, json_reader *pReader)
+    {
+        PedalboardItemEnabledBody body;
+        pReader->read(&body);
+        model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
+    }
+    REGISTER_MESSAGE_HANDLER(setPedalboardItemEnable)
+
+    void handle_setPedalboardItemUseModUi(int replyTo, json_reader *pReader)
+    {
+        PedalboardItemUseModGuiBody body;
+        pReader->read(&body);
+        model.SetPedalboardItemUseModUi(body.clientId_, body.instanceId_, body.useModUi_);
+    }
+    REGISTER_MESSAGE_HANDLER(setPedalboardItemUseModUi)
+
+    void handle_updateCurrentPedalboard(int replyTo, json_reader *pReader)
+    {
+        UpdateCurrentPedalboardBody body;
+
+        pReader->read(&body);
+        this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboard_);
+    }
+    REGISTER_MESSAGE_HANDLER(updateCurrentPedalboard)
+
+    void handle_setSnapshot(int replyTo, json_reader *pReader)
+    {
+        int64_t snapshotIndex = -1;
+        pReader->read(&snapshotIndex);
+        this->model.SetSnapshot(snapshotIndex);
+    }
+    REGISTER_MESSAGE_HANDLER(setSnapshot)
+
+    void handle_setSnapshots(int replyTo, json_reader *pReader)
+    {
+        SetSnapshotsBody body;
+        pReader->read(&body);
+        this->model.SetSnapshots(body.snapshots_, body.selectedSnapshot_);
+    }
+    REGISTER_MESSAGE_HANDLER(setSnapshots)
+
+    void handle_currentPedalboard(int replyTo, json_reader *pReader)
+    {
+        auto pedalboard = model.GetCurrentPedalboardCopy();
+        Reply(replyTo, "currentPedalboard", pedalboard);
+    }
+    REGISTER_MESSAGE_HANDLER(currentPedalboard)
+
+    void handle_plugins(int replyTo, json_reader *pReader)
+    {
+        auto ui_plugins = model.GetPluginHost().GetUiPlugins();
+        Reply(replyTo, "plugins", ui_plugins);
+    }
+    REGISTER_MESSAGE_HANDLER(plugins)
+
+    void handle_pluginClasses(int replyTo, json_reader *pReader)
+    {
+        auto classes = model.GetPluginHost().GetLv2PluginClass();
+        Reply(replyTo, "pluginClasses", classes);
+    }
+    REGISTER_MESSAGE_HANDLER(pluginClasses)
+
+    void handle_hello(int replyTo, json_reader *pReader)
+    {
+        this->model.AddNotificationSubscription(shared_from_this());
+        Reply(replyTo, "ehlo", clientId);
+    }
+    REGISTER_MESSAGE_HANDLER(hello)
+
+    void handle_setShowStatusMonitor(int replyTo, json_reader *pReader)
+    {
+        bool showStatusMonitor;
+        pReader->read(&showStatusMonitor);
+        this->model.SetShowStatusMonitor(showStatusMonitor);
+    }
+    REGISTER_MESSAGE_HANDLER(setShowStatusMonitor)
+
+    void handle_getShowStatusMonitor(int replyTo, json_reader *pReader)
+    {
+        Reply(replyTo, "getShowStatusMonitor", this->model.GetShowStatusMonitor());
+    }
+    REGISTER_MESSAGE_HANDLER(getShowStatusMonitor)
+
+    void handle_version(int replyTo, json_reader *pReader)
+    {
+        PiPedalVersion version(this->model);
+
+        Reply(replyTo, "version", version);
+    }
+    REGISTER_MESSAGE_HANDLER(version)
+
+    void handle_loadPreset(int replyTo, json_reader *pReader)
+    {
+        int64_t instanceId = 0;
+        pReader->read(&instanceId);
+        model.LoadPreset(this->clientId, instanceId);
+    }
+    REGISTER_MESSAGE_HANDLER(loadPreset)
+
+    void handle_updatePresets(int replyTo, json_reader *pReader)
+    {
+        PresetIndex newIndex;
+        pReader->read(&newIndex);
+        bool result = model.UpdatePresets(this->clientId, newIndex);
+        this->Reply(replyTo, "updatePresets", result);
+    }
+    REGISTER_MESSAGE_HANDLER(updatePresets)
+
+    void handle_updatePluginPresets(int replyTo, json_reader *pReader)
+    {
+        PluginUiPresets pluginPresets;
+        pReader->read(&pluginPresets);
+        model.UpdatePluginPresets(pluginPresets);
+        this->Reply(replyTo, "updatePluginPresets", true);
+    }
+    REGISTER_MESSAGE_HANDLER(updatePluginPresets)
+
+    void handle_moveBank(int replyTo, json_reader *pReader)
+    {
+        FromToBody body;
+        pReader->read(&body);
+        model.MoveBank(this->clientId, body.from_, body.to_);
+        this->Reply(replyTo, "moveBank");
+    }
+    REGISTER_MESSAGE_HANDLER(moveBank)
+
+    void handle_shutdown(int replyTo, json_reader *pReader)
+    {
+        model.RequestShutdown(false);
+        this->Reply(replyTo, "shutdown");
+    }
+    REGISTER_MESSAGE_HANDLER(shutdown)
+
+    void handle_restart(int replyTo, json_reader *pReader)
+    {
+        model.RequestShutdown(true);
+        this->Reply(replyTo, "restart");
+    }
+    REGISTER_MESSAGE_HANDLER(restart)
+
+    void handle_deletePresetItems(int replyTo, json_reader *pReader)
+    {
+        std::vector<int64_t> items;
+        pReader->read(&items);
+        int64_t result = model.DeletePresets(this->clientId, items);
+        this->Reply(replyTo, "deletePresetItems", result);
+    }
+    REGISTER_MESSAGE_HANDLER(deletePresetItems)
+
+    void handle_deleteBankItem(int replyTo, json_reader *pReader)
+    {
+        int64_t instanceId = 0;
+        pReader->read(&instanceId);
+        uint64_t result = model.DeleteBank(this->clientId, instanceId);
+        this->Reply(replyTo, "deleteBankItem", result);
+    }
+    REGISTER_MESSAGE_HANDLER(deleteBankItem)
+
+    void handle_renameBank(int replyTo, json_reader *pReader)
+    {
+        RenameBankBody body;
+        pReader->read(&body);
+
+        std::stringstream tOut;
+        json_writer tWriter(tOut);
+        tWriter.write(body.newName_);
+        std::string tJson = tOut.str();
+        std::stringstream tIn(tJson);
+        json_reader tReader(tIn);
+        std::string tResult;
+        tReader.read(&tResult);
+
+        body.newName_ = tResult;
+
+        try
+        {
+            model.RenameBank(this->clientId, body.bankId_, body.newName_);
+            this->Reply(replyTo, "renameBank");
+        }
+        catch (const std::exception &e)
+        {
+            this->SendError(replyTo, std::string(e.what()));
+        }
+    }
+    REGISTER_MESSAGE_HANDLER(renameBank)
+
+    void handle_openBank(int replyTo, json_reader *pReader)
+    {
+        int64_t bankId = -1;
+        pReader->read(&bankId);
+        try
+        {
+            model.OpenBank(this->clientId, bankId);
+            ;
+            this->Reply(replyTo, "openBank");
+        }
+        catch (const std::exception &e)
+        {
+            this->SendError(replyTo, std::string(e.what()));
+        }
+    }
+    REGISTER_MESSAGE_HANDLER(openBank)
+
+    void handle_saveBankAs(int replyTo, json_reader *pReader)
+    {
+        RenameBankBody body;
+        pReader->read(&body);
+        try
+        {
+            int64_t newId = model.SaveBankAs(this->clientId, body.bankId_, body.newName_);
+            this->Reply(replyTo, "saveBankAs", newId);
+        }
+        catch (const std::exception &e)
+        {
+            this->SendError(replyTo, std::string(e.what()));
+        }
+    }
+    REGISTER_MESSAGE_HANDLER(saveBankAs)
+
+    void handle_nextBank(int replyTo, json_reader *pReader)
+    {
+        model.NextBank();
+    }
+    REGISTER_MESSAGE_HANDLER(nextBank)
+
+    void handle_previousBank(int replyTo, json_reader *pReader)
+    {
+        model.PreviousBank();
+    }
+    REGISTER_MESSAGE_HANDLER(previousBank)
+
+    void handle_nextPreset(int replyTo, json_reader *pReader)
+    {
+        model.NextPreset();
+    }
+    REGISTER_MESSAGE_HANDLER(nextPreset)
+
+    void handle_previousPreset(int replyTo, json_reader *pReader)
+    {
+        model.PreviousPreset();
+    }
+    REGISTER_MESSAGE_HANDLER(previousPreset)
+
+    void handle_renamePresetItem(int replyTo, json_reader *pReader)
+    {
+        RenamePresetBody body;
+        pReader->read(&body);
+
+        bool result = model.RenamePreset(body.clientId_, body.instanceId_, body.name_);
+        this->Reply(replyTo, "renamePresetItem", result);
+    }
+    REGISTER_MESSAGE_HANDLER(renamePresetItem)
+
+    void handle_copyPreset(int replyTo, json_reader *pReader)
+    {
+        CopyPresetBody body;
+        pReader->read(&body);
+        int64_t result = model.CopyPreset(body.clientId_, body.fromId_, body.toId_);
+        this->Reply(replyTo, "copyPreset", result);
+    }
+    REGISTER_MESSAGE_HANDLER(copyPreset)
+
+    void handle_copyPluginPreset(int replyTo, json_reader *pReader)
+    {
+        CopyPluginPresetBody body;
+        pReader->read(&body);
+        uint64_t result = model.CopyPluginPreset(body.pluginUri_, body.instanceId_);
+        this->Reply(replyTo, "copyPluginPreset", result);
+    }
+    REGISTER_MESSAGE_HANDLER(copyPluginPreset)
+
+    void handle_setPatchProperty(int replyTo, json_reader *pReader)
+    {
+        SetPatchPropertyBody body;
+        pReader->read(&body);
+        model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
+                                   { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
+                                   { this->SendError(replyTo, error.c_str()); });
+    }
+    REGISTER_MESSAGE_HANDLER(setPatchProperty)
+
+    void handle_setPedalboardItemTitle(int replyTo, json_reader *pReader)
+    {
+        SetPedalboardItemTitleBody body;
+        pReader->read(&body);
+        model.SetPedalboardItemTitle(body.instanceId_, body.title_, body.colorKey_);
+    }
+    REGISTER_MESSAGE_HANDLER(setPedalboardItemTitle)
+
+    void handle_getPatchProperty(int replyTo, json_reader *pReader)
+    {
+        GetPatchPropertyBody body;
+        pReader->read(&body);
+
+        model.SendGetPatchProperty(
+            this->clientId,
+            body.instanceId_,
+            body.propertyUri_,
+            [this, replyTo](const std::string &jsonResult)
+            {
+                this->JsonReply(replyTo, "getPatchProperty", jsonResult.c_str());
+            },
+            [this, replyTo](const std::string &error)
+            {
+                this->SendError(replyTo, error.c_str());
+            });
+    }
+    REGISTER_MESSAGE_HANDLER(getPatchProperty)
+
+    void handle_monitorPort(int replyTo, json_reader *pReader)
+    {
+        MonitorPortBody body;
+        pReader->read(&body);
+
+        MonitorPort(replyTo, body);
+    }
+    REGISTER_MESSAGE_HANDLER(monitorPort)
+
+    void handle_unmonitorPort(int replyTo, json_reader *pReader)
+    {
+        int64_t subscriptionHandle;
+        pReader->read(&subscriptionHandle);
+        {
+            {
+                std::lock_guard guard(activePortMonitorsMutex);
+                for (auto i = this->activePortMonitors.begin(); i != this->activePortMonitors.end(); ++i)
+                {
+                    if ((*i)->subscriptionHandle == subscriptionHandle)
+                    {
+                        auto subscription = (*i);
+                        subscription->Close();
+
+                        this->activePortMonitors.erase(i);
+                        break;
+                    }
+                }
+            }
+            model.UnmonitorPort(subscriptionHandle);
+        }
+    }
+    REGISTER_MESSAGE_HANDLER(unmonitorPort)
+
+    void handle_addVuSubscription(int replyTo, json_reader *pReader)
+    {
+        int64_t instanceId = -1;
+
+        pReader->read(&instanceId);
+
+        int64_t subscriptionHandle = model.AddVuSubscription(instanceId);
+
+        {
+            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+            activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, instanceId});
+        }
+        this->Reply(replyTo, "addVuSubscription", subscriptionHandle);
+    }
+    REGISTER_MESSAGE_HANDLER(addVuSubscription)
+
+    void handle_removeVuSubscription(int replyTo, json_reader *pReader)
+    {
+        int64_t subscriptionHandle = -1;
+        pReader->read(&subscriptionHandle);
+        {
+            std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
+
+            for (auto i = activeVuSubscriptions.begin(); i != activeVuSubscriptions.end(); ++i)
+            {
+                if (i->subscriptionHandle == subscriptionHandle)
+                {
+                    activeVuSubscriptions.erase(i);
+                    break;
+                }
+            }
+        }
+        model.RemoveVuSubscription(subscriptionHandle);
+    }
+    REGISTER_MESSAGE_HANDLER(removeVuSubscription)
+
+    void handle_imageList(int replyTo, json_reader *pReader)
+    {
+        this->Reply(replyTo, "imageList", imageList);
+    }
+    REGISTER_MESSAGE_HANDLER(imageList)
+
+    void handle_getFavorites(int replyTo, json_reader *pReader)
+    {
+        std::map<std::string, bool> favorites = this->model.GetFavorites();
+        this->Reply(replyTo, "getFavorites", favorites);
+    }
+    REGISTER_MESSAGE_HANDLER(getFavorites)
+
+    void handle_setFavorites(int replyTo, json_reader *pReader)
+    {
+        std::map<std::string, bool> favorites;
+        pReader->read(&favorites);
+        this->model.SetFavorites(favorites);
+    }
+    REGISTER_MESSAGE_HANDLER(setFavorites)
+
+    void handle_setUpdatePolicy(int replyTo, json_reader *pReader)
+    {
+        int iPolicy;
+        pReader->read(&iPolicy);
+
+        this->model.SetUpdatePolicy((UpdatePolicyT)iPolicy);
+    }
+    REGISTER_MESSAGE_HANDLER(setUpdatePolicy)
+
+    void handle_forceUpdateCheck(int replyTo, json_reader *pReader)
+    {
+        this->model.ForceUpdateCheck();
+    }
+    REGISTER_MESSAGE_HANDLER(forceUpdateCheck)
+
+    void handle_setSystemMidiBindings(int replyTo, json_reader *pReader)
+    {
+        std::vector<MidiBinding> bindings;
+        pReader->read(&bindings);
+        this->model.SetSystemMidiBindings(bindings);
+    }
+    REGISTER_MESSAGE_HANDLER(setSystemMidiBindings)
+
+    void handle_getSystemMidiBindings(int replyTo, json_reader *pReader)
+    {
+        std::vector<MidiBinding> bindings = this->model.GetSystemMidiBidings();
+        this->Reply(replyTo, "getSystemMidiBindings", bindings);
+    }
+    REGISTER_MESSAGE_HANDLER(getSystemMidiBindings)
+
+    void handle_requestFileList(int replyTo, json_reader *pReader)
+    {
+        throw std::runtime_error("No longer implemented.");
+    }
+    REGISTER_MESSAGE_HANDLER(requestFileList)
+
+    void handle_requestFileList2(int replyTo, json_reader *pReader)
+    {
+        FileRequestArgs requestArgs;
+        pReader->read(&requestArgs);
+        FileRequestResult result = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
+        this->Reply(replyTo, "requestFileList2", result);
+    }
+    REGISTER_MESSAGE_HANDLER(requestFileList2)
+
+    void handle_newPreset(int replyTo, json_reader *pReader)
+    {
+        int64_t presetId = this->model.CreateNewPreset();
+        this->Reply(replyTo, "newPreset", presetId);
+    }
+    REGISTER_MESSAGE_HANDLER(newPreset)
+
+    void handle_deleteUserFile(int replyTo, json_reader *pReader)
+    {
+        std::string fileName;
+        pReader->read(&fileName);
+
+        this->model.DeleteSampleFile(fileName);
+        this->Reply(replyTo, "deleteUserFile", true);
+    }
+    REGISTER_MESSAGE_HANDLER(deleteUserFile)
+
+    void handle_createNewSampleDirectory(int replyTo, json_reader *pReader)
+    {
+        CreateNewSampleDirectoryArgs args;
+        pReader->read(&args);
+
+        std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_, args.uiFileProperty_);
+        this->Reply(replyTo, "createNewSampleDirectory", newFileName);
+    }
+    REGISTER_MESSAGE_HANDLER(createNewSampleDirectory)
+
+    void handle_renameFilePropertyFile(int replyTo, json_reader *pReader)
+    {
+        RenameSampleFileArgs args;
+        pReader->read(&args);
+
+        std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_);
+        this->Reply(replyTo, "renameFilePropertyFile", newFileName);
+    }
+    REGISTER_MESSAGE_HANDLER(renameFilePropertyFile)
+
+    void handle_copyFilePropertyFile(int replyTo, json_reader *pReader)
+    {
+        CopySampleFileArgs args;
+        pReader->read(&args);
+
+        std::string newFileName = this->model.CopyFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_, args.overwrite_);
+        this->Reply(replyTo, "copyFilePropertyFile", newFileName);
+    }
+    REGISTER_MESSAGE_HANDLER(copyFilePropertyFile)
+
+    void handle_getFilePropertyDirectoryTree(int replyTo, json_reader *pReader)
+    {
+        GetFilePropertyDirectoryTreeArgs args;
+        pReader->read(&args);
+        FilePropertyDirectoryTree::ptr result =
+            model.GetFilePropertydirectoryTree(
+                args.fileProperty_,
+                args.selectedPath_);
+        this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
+    }
+    REGISTER_MESSAGE_HANDLER(getFilePropertyDirectoryTree)
+
+    void handle_moveAudioFile(int replyTo, json_reader *pReader)
+    {
+        MoveAudioFileArgs args;
+        pReader->read(&args);
+        this->model.MoveAudioFile(args.path_, args.from_, args.to_);
+        bool result = true;
+        this->Reply(replyTo, "moveAudioFile", result);
+    }
+    REGISTER_MESSAGE_HANDLER(moveAudioFile)
+
+    void handle_setOnboarding(int replyTo, json_reader *pReader)
+    {
+        bool value;
+        pReader->read(&value);
+        this->model.SetOnboarding(value);
+    }
+    REGISTER_MESSAGE_HANDLER(setOnboarding)
+
+    void handle_getWifiRegulatoryDomains(int replyTo, json_reader *pReader)
+    {
+        auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
+        this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
+    }
+    REGISTER_MESSAGE_HANDLER(getWifiRegulatoryDomains)
+
+    void handle_setAlsaSequencerConfiguration(int replyTo, json_reader *pReader)
+    {
+        AlsaSequencerConfiguration config;
+        pReader->read(&config);
+        this->model.SetAlsaSequencerConfiguration(config);
+        this->Reply(replyTo, "setAlsaSequencerConfiguration");
+    }
+    REGISTER_MESSAGE_HANDLER(setAlsaSequencerConfiguration)
+
+    void handle_getAlsaSequencerConfiguration(int replyTo, json_reader *pReader)
+    {
+        AlsaSequencerConfiguration config = this->model.GetAlsaSequencerConfiguration();
+        this->Reply(replyTo, "getAlsaSequencerConfiguration", config);
+    }
+    REGISTER_MESSAGE_HANDLER(getAlsaSequencerConfiguration)
+
+    void handle_getAlsaSequencerPorts(int replyTo, json_reader *pReader)
+    {
+        std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
+        this->Reply(replyTo, "getAlsaSequencerPorts", result);
+    }
+    REGISTER_MESSAGE_HANDLER(getAlsaSequencerPorts)
+
+    void handle_requestBankPresets(int replyTo, json_reader *pReader)
+    {
+        RequestBankPresetsBody args;
+        pReader->read(&args);
+        auto result = this->model.RequestBankPresets(args.bankInstanceId_);
+        this->Reply(replyTo, "requestBankPresets", result);
+    }
+    REGISTER_MESSAGE_HANDLER(requestBankPresets)
+
+    void handle_importPresetsFromBank(int replyTo, json_reader *pReader)
+    {
+        ImportPresetsFromBankBody args;
+        pReader->read(&args);
+        auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
+        this->Reply(replyTo, "importPresetsFromBank", result);
+    }
+    REGISTER_MESSAGE_HANDLER(importPresetsFromBank)
+
+    void handle_copyPresetsToBank(int replyTo, json_reader *pReader)
+    {
+        CopyPresetsToBankBody args;
+        pReader->read(&args);
+        auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
+        this->Reply(replyTo, "copyPresetsToBank", result);
+    }
+    REGISTER_MESSAGE_HANDLER(copyPresetsToBank)
+
+    void handle_getChannelRouterSettings(int replyTo, json_reader *pReader)
+    {
+        ChannelRouterSettings::ptr result = this->model.GetChannelRouterSettings();
+        this->Reply(replyTo, "getChannelRouterSettings", result);
+    }
+    REGISTER_MESSAGE_HANDLER(getChannelRouterSettings)
+
+    void handle_setChannelRouterSettings(int replyTo, json_reader *pReader)
+    {
+        ChannelRouterSettings::ptr args;
+        pReader->read(&args);
+        this->model.SetChannelRouterSettings(this->clientId, args);
+    }
+    REGISTER_MESSAGE_HANDLER(setChannelRouterSettings)
+
+    void handle_DownloadModelsFromTone3000(int replyTo, json_reader *pReader)
+    {
+
+        DownloadModelsFromTone3000Body body;
+        pReader->read(&body);
+        auto result = this->model.DownloadModelsFromTone3000(
+            body.responseUri_,
+            body.tone3000PckceParams_,
+            body.downloadPath_,
+            body.downloadType());
+
+        this->Reply(replyTo, "downloadModelsFromTone3000", result);
+    }
+    REGISTER_MESSAGE_HANDLER(DownloadModelsFromTone3000)
+
+    void handle_cancelTone3000Download(int replyTo, json_reader *pReader)
+    {
+        int64_t handle = -1;
+        pReader->read(&handle);
+        model.CancelTone3000Download(clientId, handle);
+    }
+    REGISTER_MESSAGE_HANDLER(cancelTone3000Download)
+
+    void handle_pingTone3000Server(int replyTo, json_reader *pReader)
+    {
+        std::shared_ptr<PiPedalSocketHandler> this_ = shared_from_this();
+        model.Post([this_, replyTo]()
+                   {
+            bool result = this_->PingTone3000Server();
+            this_->Reply(replyTo,"pingTone3000Server",result); });
+    }
+    REGISTER_MESSAGE_HANDLER(pingTone3000Server)
+
     void handleMessage(int reply, int replyTo, const std::string &message, json_reader *pReader)
     {
         if (reply != -1)
@@ -1135,724 +2182,15 @@ public:
         {
             this->SendError(replyTo, "Server has shut down.");
         }
-        if (message == "setControl")
-        {
-            ControlChangedBody message;
-            pReader->read(&message);
-            this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        }
-        else if (message == "previewControl")
-        {
-            ControlChangedBody message;
-            pReader->read(&message);
-            this->model.PreviewControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        }
-        else if (message == "setControl")
-        {
-            ControlChangedBody message;
-            pReader->read(&message);
-            this->model.SetControl(message.clientId_, message.instanceId_, message.symbol_, message.value_);
-        }
-        else if (message == "setInputVolume")
-        {
-            float value;
-            pReader->read(&value);
-            this->model.SetInputVolume(value);
-        }
-        else if (message == "setOutputVolume")
-        {
-            float value;
-            pReader->read(&value);
-            this->model.SetOutputVolume(value);
-        }
-        else if (message == "previewInputVolume")
-        {
-            float value;
-            pReader->read(&value);
-            this->model.PreviewInputVolume(value);
-        }
-        else if (message == "previewOutputVolume")
-        {
-            float value;
-            pReader->read(&value);
-            this->model.PreviewOutputVolume(value);
-        }
 
-        else if (message == "listenForMidiEvent")
+        auto ffHandler = socket_messageHandlers.find(message);
+        if (ffHandler != socket_messageHandlers.end())
         {
-            ListenForMidiEventBody body;
-            pReader->read(&body);
-            this->model.ListenForMidiEvent(this->clientId, body.handle_);
+            (this->*(ffHandler->second))(replyTo, pReader);
+            return;
         }
-        else if (message == "cancelListenForMidiEvent")
-        {
-            uint64_t handle;
-            pReader->read(&handle);
-            this->model.CancelListenForMidiEvent(this->clientId, handle);
-        }
-        else if (message == "monitorPatchProperty")
-        {
-            MonitorPatchPropertyBody body;
-            pReader->read(&body);
-            this->model.MonitorPatchProperty(this->clientId, body.clientHandle_, body.instanceId_, body.propertyUri_);
-        }
-        else if (message == "cancelMonitorPatchProperty")
-        {
-            int64_t handle;
-            pReader->read(&handle);
-            this->model.CancelMonitorPatchProperty(this->clientId, handle);
-        }
-        else if (message == "getUpdateStatus")
-        {
-            UpdateStatus updateStatus = model.GetUpdateStatus();
-            this->Reply(replyTo, "getUpdateStatus", updateStatus);
-        }
-        else if (message == "getHasWifi")
-        {
-            bool result = model.GetHasWifi();
-            this->Reply(replyTo, "getHasWifi", result);
-        }
-        else if (message == "updateNow")
-        {
-            std::string updateUrl;
-            pReader->read(&updateUrl);
-            model.UpdateNow(updateUrl);
-            bool result = true;
-            this->Reply(replyTo, "updateNow", result);
-        }
-        else if (message == "getJackStatus")
-        {
-            JackHostStatus status = model.GetJackStatus();
-            this->Reply(replyTo, "getJackStatus", status);
-        }
-        else if (message == "getAlsaDevices")
-        {
-            std::vector<AlsaDeviceInfo> devices = model.GetAlsaDevices();
-            this->Reply(replyTo, "getAlsaDevices", devices);
-        }
-        else if (message == "getKnownWifiNetworks")
-        {
-            std::vector<std::string> channels = this->model.GetKnownWifiNetworks();
-            this->Reply(replyTo, "getWifiChannels", channels);
-        }
-        else if (message == "getWifiChannels")
-        {
-            std::string country;
-            pReader->read(&country);
-            std::vector<WifiChannelSelector> channels = pipedal::getWifiChannelSelectors(country.c_str());
-            this->Reply(replyTo, "getWifiChannels", channels);
-        }
-        else if (message == "getPluginPresets")
-        {
-            std::string uri;
-            pReader->read(&uri);
-            this->Reply(replyTo, "getPluginPresets", this->model.GetPluginUiPresets(uri));
-        }
-        else if (message == "loadPluginPreset")
-        {
-            LoadPluginPresetBody body;
-            pReader->read(&body);
-            this->model.LoadPluginPreset(body.pluginInstanceId_, body.presetInstanceId_);
-        }
-        else if (message == "setJackServerSettings")
-        {
-            JackServerSettings jackServerSettings;
-            pReader->read(&jackServerSettings);
-            this->model.SetJackServerSettings(jackServerSettings);
-            this->Reply(replyTo, "setJackserverSettings");
-        }
-        else if (message == "setGovernorSettings")
-        {
-            std::string governor;
-            pReader->read(&governor);
-            std::string fromAddress = this->getFromAddress();
-            // if (!IsOnLocalSubnet(fromAddress))
-            // {
-            //     throw PiPedalException("Permission denied. Not on local subnet.");
-            // }
-            this->model.SetGovernorSettings(governor);
-            this->Reply(replyTo, "setGovernorSettings");
-        }
-        else if (message == "setWifiConfigSettings")
-        {
-            WifiConfigSettings wifiConfigSettings;
-            pReader->read(&wifiConfigSettings);
-            if (!GetAdminClient().CanUseAdminClient())
-            {
-                throw PiPedalException("Can't change server settings when running interactively.");
-            }
-            std::string fromAddress = this->getFromAddress();
-            // if (!IsOnLocalSubnet(fromAddress))
-            // {
-            //     throw PiPedalException("Permission denied. Not on local subnet.");
-            // }
-
-            this->model.SetWifiConfigSettings(wifiConfigSettings);
-            this->Reply(replyTo, "setWifiConfigSettings");
-        }
-        else if (message == "getWifiConfigSettings")
-        {
-            this->Reply(replyTo, "getWifiConfigSettings", model.GetWifiConfigSettings());
-        }
-        else if (message == "setWifiDirectConfigSettings")
-        {
-            WifiDirectConfigSettings wifiDirectConfigSettings;
-            pReader->read(&wifiDirectConfigSettings);
-            if (!GetAdminClient().CanUseAdminClient())
-            {
-                throw PiPedalException("Can't change server settings when running interactively.");
-            }
-            std::string fromAddress = this->getFromAddress();
-            // if (!IsOnLocalSubnet(fromAddress))
-            // {
-            //     throw PiPedalException("Permission denied. Not on local subnet.");
-            // }
-
-            this->model.SetWifiDirectConfigSettings(wifiDirectConfigSettings);
-            this->Reply(replyTo, "setWifiDirectConfigSettings");
-        }
-        else if (message == "getWifiDirectConfigSettings")
-        {
-            this->Reply(replyTo, "getWifiDirectConfigSettings", model.GetWifiDirectConfigSettings());
-        }
-
-        else if (message == "getGovernorSettings")
-        {
-            this->Reply(replyTo, "getGovernorSettings", model.GetGovernorSettings());
-        }
-
-        else if (message == "getJackServerSettings")
-        {
-            this->Reply(replyTo, "getJackServerSettings", model.GetJackServerSettings());
-        }
-        else if (message == "getBankIndex")
-        {
-            BankIndex bankIndex = model.GetBankIndex();
-            this->Reply(replyTo, "getBankIndex", bankIndex);
-        }
-        else if (message == "getJackConfiguration")
-        {
-            JackConfiguration configuration = this->model.GetJackConfiguration();
-            this->Reply(replyTo, "getJackConfiguration", configuration);
-        }
-        else if (message == "getJackSettings")
-        {
-            JackChannelSelection selection = this->model.GetJackChannelSelection();
-            this->Reply(replyTo, "getJackSettings", selection);
-        }
-        else if (message == "saveCurrentPreset")
-        {
-            this->model.SaveCurrentPreset(this->clientId);
-        }
-        else if (message == "saveCurrentPresetAs")
-        {
-            SaveCurrentPresetAsBody body;
-            pReader->read(&body);
-            int64_t result = this->model.SaveCurrentPresetAs(this->clientId, body.bankInstanceId_,body.name_, body.saveAfterInstanceId_);
-            Reply(replyTo, "saveCurrentPresetsAs", result);
-        }
-        else if (message == "setSelectedPedalboardPlugin")
-        {
-            SetSelectedPedalboardPluginBody body;
-            pReader->read(&body);
-            this->model.SetSelectedPedalboardPlugin(body.clientId_,body.pluginInstanceId_);
-        }
-        else if (message == "savePluginPresetAs")
-        {
-            SavePluginPresetAsBody body;
-            pReader->read(&body);
-            int64_t result = this->model.SavePluginPresetAs(body.instanceId_, body.name_);
-            Reply(replyTo, "saveCurrentPresetsAs", result);
-        }
-        else if (message == "getPresets")
-        {
-            PresetIndex presets;
-            this->model.GetPresets(&presets);
-            Reply(replyTo, "getPresets", presets);
-        }
-        else if (message == "setPedalboardItemEnable")
-        {
-            PedalboardItemEnabledBody body;
-            pReader->read(&body);
-            model.SetPedalboardItemEnable(body.clientId_, body.instanceId_, body.enabled_);
-        }
-        else if (message == "setPedalboardItemUseModUi") {
-            PedalboardItemUseModGuiBody body;
-            pReader->read(&body);
-            model.SetPedalboardItemUseModUi(body.clientId_, body.instanceId_, body.useModUi_);
-        }
-        else if (message == "updateCurrentPedalboard")
-        {
-            {
-                UpdateCurrentPedalboardBody body;
-
-                pReader->read(&body);
-                this->model.UpdateCurrentPedalboard(body.clientId_, body.pedalboard_);
-            }
-        }
-        else if (message == "setSnapshot")
-        {
-            int64_t snapshotIndex = -1;
-            pReader->read(&snapshotIndex);
-            this->model.SetSnapshot(snapshotIndex);
-        }
-        else if (message == "setSnapshots")
-        {
-            SetSnapshotsBody body;
-            pReader->read(&body);
-            this->model.SetSnapshots(body.snapshots_, body.selectedSnapshot_);
-        }
-        else if (message == "currentPedalboard")
-        {
-            auto pedalboard = model.GetCurrentPedalboardCopy();
-            Reply(replyTo, "currentPedalboard", pedalboard);
-        }
-        else if (message == "plugins")
-        {
-            auto ui_plugins = model.GetPluginHost().GetUiPlugins();
-            Reply(replyTo, "plugins", ui_plugins);
-        }
-        else if (message == "pluginClasses")
-        {
-            auto classes = model.GetPluginHost().GetLv2PluginClass();
-            Reply(replyTo, "pluginClasses", classes);
-        }
-        else if (message == "hello")
-        {
-            this->model.AddNotificationSubscription(shared_from_this());
-            Reply(replyTo, "ehlo", clientId);
-        }
-        else if (message == "setJackSettings")
-        {
-            JackChannelSelection jackSettings;
-            pReader->read(&jackSettings);
-            this->model.SetJackChannelSelection(this->clientId, jackSettings);
-        }
-        else if (message == "setShowStatusMonitor")
-        {
-            bool showStatusMonitor;
-            pReader->read(&showStatusMonitor);
-            this->model.SetShowStatusMonitor(showStatusMonitor);
-        }
-        else if (message == "getShowStatusMonitor")
-        {
-            Reply(replyTo, "getShowStatusMonitor", this->model.GetShowStatusMonitor());
-        }
-        else if (message == "version")
-        {
-            PiPedalVersion version(this->model);
-
-            Reply(replyTo, "version", version);
-        }
-        else if (message == "loadPreset")
-        {
-            int64_t instanceId = 0;
-            pReader->read(&instanceId);
-            model.LoadPreset(this->clientId, instanceId);
-        }
-        else if (message == "updatePresets")
-        {
-            PresetIndex newIndex;
-            pReader->read(&newIndex);
-            bool result = model.UpdatePresets(this->clientId, newIndex);
-            this->Reply(replyTo, "updatePresets", result);
-        }
-        else if (message == "updatePluginPresets")
-        {
-            PluginUiPresets pluginPresets;
-            pReader->read(&pluginPresets);
-            model.UpdatePluginPresets(pluginPresets);
-            this->Reply(replyTo, "updatePluginPresets", true);
-        }
-        else if (message == "moveBank")
-        {
-            FromToBody body;
-            pReader->read(&body);
-            model.MoveBank(this->clientId, body.from_, body.to_);
-            this->Reply(replyTo, "moveBank");
-        }
-        else if (message == "shutdown")
-        {
-            model.RequestShutdown(false);
-            this->Reply(replyTo, "shutdown");
-        }
-        else if (message == "restart")
-        {
-            model.RequestShutdown(true);
-            this->Reply(replyTo, "restart");
-        }
-        else if (message == "deletePresetItems")
-        {
-            std::vector<int64_t> items;
-            pReader->read(&items);
-            int64_t result = model.DeletePresets(this->clientId, items);
-            this->Reply(replyTo, "deletePresetItems", result);
-        }
-        else if (message == "deleteBankItem")
-        {
-            int64_t instanceId = 0;
-            pReader->read(&instanceId);
-            uint64_t result = model.DeleteBank(this->clientId, instanceId);
-            this->Reply(replyTo, "deleteBankItem", result);
-        } else if (message == "getHasTone3000Auth") 
-        {
-            bool result = model.HasTone3000Auth();
-            this->Reply(replyTo, "getHasTone3000Auth", result);
-        }
-        else if (message == "renameBank")
-        {
-            RenameBankBody body;
-            pReader->read(&body);
-
-            std::stringstream tOut;
-            json_writer tWriter(tOut);
-            tWriter.write(body.newName_);
-            std::string tJson = tOut.str();
-            std::stringstream tIn(tJson);
-            json_reader tReader(tIn);
-            std::string tResult;
-            tReader.read(&tResult);
-
-            body.newName_ = tResult;
-
-            try
-            {
-                model.RenameBank(this->clientId, body.bankId_, body.newName_);
-                this->Reply(replyTo, "renameBank");
-            }
-            catch (const std::exception &e)
-            {
-                this->SendError(replyTo, std::string(e.what()));
-            }
-        }
-        else if (message == "openBank")
-        {
-            int64_t bankId = -1;
-            pReader->read(&bankId);
-            try
-            {
-                model.OpenBank(this->clientId, bankId);
-                ;
-                this->Reply(replyTo, "openBank");
-            }
-            catch (const std::exception &e)
-            {
-                this->SendError(replyTo, std::string(e.what()));
-            }
-        }
-        else if (message == "saveBankAs")
-        {
-            RenameBankBody body;
-            pReader->read(&body);
-            try
-            {
-                int64_t newId = model.SaveBankAs(this->clientId, body.bankId_, body.newName_);
-                this->Reply(replyTo, "saveBankAs", newId);
-            }
-            catch (const std::exception &e)
-            {
-                this->SendError(replyTo, std::string(e.what()));
-            }
-        }
-        else if (message == "nextBank")
-        {
-            model.NextBank();
-        }
-        else if (message == "previousBank")
-        {
-            model.PreviousBank();
-        }
-        else if (message == "nextPreset")
-        {
-            model.NextPreset();
-        }
-        else if (message == "previousPreset")
-        {
-            model.PreviousPreset();
-        }
-
-        else if (message == "renamePresetItem")
-        {
-            RenamePresetBody body;
-            pReader->read(&body);
-
-            bool result = model.RenamePreset(body.clientId_, body.instanceId_, body.name_);
-            this->Reply(replyTo, "renamePresetItem", result);
-        }
-        else if (message == "copyPreset")
-        {
-            CopyPresetBody body;
-            pReader->read(&body);
-            int64_t result = model.CopyPreset(body.clientId_, body.fromId_, body.toId_);
-            this->Reply(replyTo, "copyPreset", result);
-        }
-        else if (message == "copyPluginPreset")
-        {
-            CopyPluginPresetBody body;
-            pReader->read(&body);
-            uint64_t result = model.CopyPluginPreset(body.pluginUri_, body.instanceId_);
-            this->Reply(replyTo, "copyPluginPreset", result);
-        }
-        else if (message == "setPatchProperty")
-        {
-            SetPatchPropertyBody body;
-            pReader->read(&body);
-            model.SendSetPatchProperty(clientId, body.instanceId_, body.propertyUri_, body.value_, [this, replyTo]()
-                                       { this->JsonReply(replyTo, "setPatchProperty", "true"); }, [this, replyTo](const std::string &error)
-                                       { this->SendError(replyTo, error.c_str()); });
-        }
-        else if (message == "setPedalboardItemTitle")
-        {
-            SetPedalboardItemTitleBody body;
-            pReader->read(&body);
-            model.SetPedalboardItemTitle(body.instanceId_, body.title_, body.colorKey_);
-        }
-        else if (message == "getPatchProperty")
-        {
-            GetPatchPropertyBody body;
-            pReader->read(&body);
-
-            model.SendGetPatchProperty(
-                this->clientId,
-                body.instanceId_,
-                body.propertyUri_,
-                [this, replyTo](const std::string &jsonResult)
-                {
-                    this->JsonReply(replyTo, "getPatchProperty", jsonResult.c_str());
-                },
-                [this, replyTo](const std::string &error)
-                {
-                    this->SendError(replyTo, error.c_str());
-                });
-        }
-        else if (message == "monitorPort")
-        {
-
-            MonitorPortBody body;
-            pReader->read(&body);
-
-            MonitorPort(replyTo, body);
-        }
-        else if (message == "unmonitorPort")
-        {
-            int64_t subscriptionHandle;
-            pReader->read(&subscriptionHandle);
-            {
-                {
-                    std::lock_guard guard(activePortMonitorsMutex);
-                    for (auto i = this->activePortMonitors.begin(); i != this->activePortMonitors.end(); ++i)
-                    {
-                        if ((*i)->subscriptionHandle == subscriptionHandle)
-                        {
-                            auto subscription = (*i);
-                            subscription->Close();
-
-                            this->activePortMonitors.erase(i);
-                            break;
-                        }
-                    }
-                }
-                model.UnmonitorPort(subscriptionHandle);
-            }
-        }
-        else if (message == "addVuSubscription")
-        {
-            int64_t instanceId = -1;
-
-            pReader->read(&instanceId);
-
-            int64_t subscriptionHandle = model.AddVuSubscription(instanceId);
-
-            {
-                std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-                activeVuSubscriptions.push_back(VuSubscription{subscriptionHandle, instanceId});
-            }
-            this->Reply(replyTo, "addVuSubscription", subscriptionHandle);
-        }
-        else if (message == "removeVuSubscription")
-        {
-            int64_t subscriptionHandle = -1;
-            pReader->read(&subscriptionHandle);
-            {
-                std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-
-                for (auto i = activeVuSubscriptions.begin(); i != activeVuSubscriptions.end(); ++i)
-                {
-                    if (i->subscriptionHandle == subscriptionHandle)
-                    {
-                        activeVuSubscriptions.erase(i);
-                        break;
-                    }
-                }
-            }
-            model.RemoveVuSubscription(subscriptionHandle);
-        }
-        else if (message == "imageList")
-        {
-
-            this->Reply(replyTo, "imageList", imageList);
-        }
-        else if (message == "getFavorites")
-        {
-            std::map<std::string, bool> favorites = this->model.GetFavorites();
-            this->Reply(replyTo, "getFavorites", favorites);
-        }
-        else if (message == "setFavorites")
-        {
-            std::map<std::string, bool> favorites;
-            pReader->read(&favorites);
-            this->model.SetFavorites(favorites);
-        }
-        else if (message == "setUpdatePolicy")
-        {
-            int iPolicy;
-            pReader->read(&iPolicy);
-
-            this->model.SetUpdatePolicy((UpdatePolicyT)iPolicy);
-        }
-        else if (message == "forceUpdateCheck")
-        {
-            this->model.ForceUpdateCheck();
-        }
-        else if (message == "setSystemMidiBindings")
-        {
-            std::vector<MidiBinding> bindings;
-            pReader->read(&bindings);
-            this->model.SetSystemMidiBindings(bindings);
-        }
-        else if (message == "getSystemMidiBindings")
-        {
-            std::vector<MidiBinding> bindings = this->model.GetSystemMidiBidings();
-            this->Reply(replyTo, "getSystemMidiBindings", bindings);
-        }
-        else if (message == "requestFileList")
-        {
-            throw std::runtime_error("No longer implemented.");
-        }
-        else if (message == "requestFileList2")
-        {
-            FileRequestArgs requestArgs;
-            pReader->read(&requestArgs);
-            FileRequestResult result = this->model.GetFileList2(requestArgs.relativePath_, requestArgs.fileProperty_);
-            this->Reply(replyTo, "requestFileList2", result);
-        }
-        else if (message == "newPreset")
-        {
-            int64_t presetId = this->model.CreateNewPreset();
-            this->Reply(replyTo, "newPreset", presetId);
-        }
-        else if (message == "deleteUserFile")
-        {
-            std::string fileName;
-            pReader->read(&fileName);
-
-            this->model.DeleteSampleFile(fileName);
-            this->Reply(replyTo, "deleteUserFile", true);
-        }
-        else if (message == "createNewSampleDirectory")
-        {
-            CreateNewSampleDirectoryArgs args;
-            pReader->read(&args);
-
-            std::string newFileName = this->model.CreateNewSampleDirectory(args.relativePath_, args.uiFileProperty_);
-            this->Reply(replyTo, "createNewSampleDirectory", newFileName);
-        }
-        else if (message == "renameFilePropertyFile")
-        {
-            RenameSampleFileArgs args;
-            pReader->read(&args);
-
-            std::string newFileName = this->model.RenameFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_);
-            this->Reply(replyTo, "renameFilePropertyFile", newFileName);
-        }
-        else if (message == "copyFilePropertyFile")
-        {
-            CopySampleFileArgs args;
-            pReader->read(&args);
-
-            std::string newFileName = this->model.CopyFilePropertyFile(args.oldRelativePath_, args.newRelativePath_, args.uiFileProperty_, args.overwrite_);
-            this->Reply(replyTo, "copyFilePropertyFile", newFileName);
-        }
-        else if (message == "getFilePropertyDirectoryTree")
-        {
-            GetFilePropertyDirectoryTreeArgs args;
-            pReader->read(&args);
-            FilePropertyDirectoryTree::ptr result =
-                model.GetFilePropertydirectoryTree(
-                    args.fileProperty_,
-                    args.selectedPath_);
-            this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
-        }
-        else if (message == "getFilePropertyDirectoryTree")
-        {
-            GetFilePropertyDirectoryTreeArgs args;
-            pReader->read(&args);
-            FilePropertyDirectoryTree::ptr result =
-                model.GetFilePropertydirectoryTree(
-                    args.fileProperty_,
-                    args.selectedPath_);
-            this->Reply(replyTo, "GetFilePropertydirectoryTree", result);
-        }
-
-        else if (message == "moveAudioFile")
-        {
-            MoveAudioFileArgs args;
-            pReader->read(&args);
-            this->model.MoveAudioFile(args.path_, args.from_, args.to_);
-            bool result = true;
-            this->Reply(replyTo,"moveAudioFile", result);   
-        }
-        else if (message == "setOnboarding")
-        {
-            bool value;
-            pReader->read(&value);
-            this->model.SetOnboarding(value);
-        }
-        else if (message == "getWifiRegulatoryDomains")
-        {
-            auto regulatoryDomains = this->model.GetWifiRegulatoryDomains();
-            this->Reply(replyTo, "getWifiRegulatoryDomains", regulatoryDomains);
-        } else if (message == "setAlsaSequencerConfiguration")
-        {
-            AlsaSequencerConfiguration config;
-            pReader->read(&config);
-            this->model.SetAlsaSequencerConfiguration(config);
-            this->Reply(replyTo, "setAlsaSequencerConfiguration");
-        }
-        else if (message == "getAlsaSequencerConfiguration")
-        {
-            AlsaSequencerConfiguration config = this->model.GetAlsaSequencerConfiguration();
-            this->Reply(replyTo, "getAlsaSequencerConfiguration", config);
-        }
-        else if (message == "getAlsaSequencerPorts")
-        {
-            std::vector<AlsaSequencerPortSelection> result = model.GetAlsaSequencerPorts();
-            this->Reply(replyTo,"getAlsaSequencerPorts", result);
-        } else if (message == "requestBankPresets") {
-            
-            RequestBankPresetsBody    args;
-            pReader->read(&args);
-            auto result = this->model.RequestBankPresets(args.bankInstanceId_);
-            this->Reply(replyTo,"requestBankPresets",result);
-
-        }
-        else if (message == "importPresetsFromBank") {
-            ImportPresetsFromBankBody args;
-            pReader->read(&args);
-            auto result = this->model.ImportPresetsFromBank(args.bankInstanceId_, args.presets_);
-            this->Reply(replyTo,"importPresetsFromBank",result);
-        }
-        else if (message == "copyPresetsToBank") {
-            CopyPresetsToBankBody args;
-            pReader->read(&args);
-            auto result = this->model.CopyPresetsToBank(args.bankInstanceId_, args.presets_);
-            this->Reply(replyTo,"copyPresetsToBank",result);
-        }
-        else
-        {
-            Lv2Log::error("Unknown message received: %s", message.c_str());
-            SendError(replyTo, std::string("Unknown message: ") + message);
-        }
+        Lv2Log::error("Unknown message received: %s", message.c_str());
+        SendError(replyTo, std::string("Unknown message: ") + message);
     }
 
 protected:
@@ -1964,15 +2302,38 @@ private:
         {
         }
     }
-    virtual void OnTone3000AuthChanged(bool value) 
-    {
-        Send("onTone3000AuthChanged", value);
-    }
 
     virtual void OnErrorMessage(const std::string &message)
     {
         Send("onErrorMessage", message);
     }
+
+    virtual void OnTone3000DownloadStarted(int64_t handle, const std::string &title) override
+    {
+        Tone3000DownloadStartedBody body;
+        body.handle_ = handle;
+        body.title_ = title;
+        Send("onTone3000DownloadStarted", body);
+    }
+
+    virtual void OnTone3000DownloadProgress(const Tone3000DownloadProgress &progress) override
+    {
+        Send("onTone3000DownloadProgress", progress);
+    }
+
+    virtual void OnTone3000DownloadComplete(int64_t handle, const std::string &resultPath) override
+    {
+        Send("onTone3000DownloadComplete", resultPath);
+    }
+
+    virtual void OnTone3000DownloadError(int64_t handle, const std::string &errorMessage) override
+    {
+        Tone3000DownloadErrorBody body;
+        body.handle_ = handle;
+        body.errorMessage_ = errorMessage;
+        Send("onTone3000DownloadError", body);
+    }
+
     // virtual void OnPatchPropertyChanged(int64_t clientId, int64_t instanceId,const std::string& propertyUri,const json_variant& value)
     // {
     //     PatchPropertyChangedBody body;
@@ -1998,11 +2359,9 @@ private:
         Send("onShowStatusMonitorChanged", show);
     }
 
-    virtual void OnChannelSelectionChanged(int64_t clientId, const JackChannelSelection &channelSelection)
+    virtual void OnChannelRouterSettingsChanged(int64_t clientId, const ChannelRouterSettings &channelRouterSettings)
     {
-        ChannelSelectionChangedBody body;
-        body.clientId_ = clientId;
-        body.jackChannelSelection_ = const_cast<JackChannelSelection *>(&channelSelection);
+        ChannelRouterSettingsChangedBody body(clientId, channelRouterSettings);
         Send("onChannelSelectionChanged", body);
     }
 
@@ -2051,15 +2410,15 @@ private:
     int updateRequestOutstanding = 0;
     bool vuUpdateDropped = false;
 
-    virtual void OnVuMeterUpdate(const std::vector<VuUpdate> &updates)
+    virtual void OnVuMeterUpdate(const std::vector<VuUpdateX> &updates)
     {
         std::lock_guard<std::recursive_mutex> guard(subscriptionMutex);
-        if (updateRequestOutstanding < 5) // throttle to accomodate a web page that can't keep up.
+        if (updateRequestOutstanding < 1) // throttle to accomodate a web page that can't keep up.
         {
             vuUpdateDropped = false;
             for (int i = 0; i < updates.size(); ++i)
             {
-                const VuUpdate &vuUpdate = updates[i];
+                const VuUpdateX &vuUpdate = updates[i];
                 bool interested = false;
                 for (int i = 0; i < this->activeVuSubscriptions.size(); ++i)
                 {
@@ -2072,7 +2431,7 @@ private:
                 if (interested)
                 {
                     updateRequestOutstanding++;
-                    this->Request<bool, VuUpdate>(
+                    this->Request<bool, VuUpdateX>(
                         "onVuUpdate",
                         vuUpdate,
                         [this](const bool &result)
@@ -2326,7 +2685,6 @@ private:
         body.enabled_ = enabled;
         Send("onUseItemModUiChanged", body);
     }
-
 };
 
 std::atomic<uint64_t> PiPedalSocketHandler::nextClientId = 0;
@@ -2354,11 +2712,28 @@ public:
     }
     virtual std::shared_ptr<SocketHandler> CreateHandler(const uri &request)
     {
-        return std::make_shared<PiPedalSocketHandler>(model);
+        return std::shared_ptr<PiPedalSocketHandler>(new PiPedalSocketHandler(model));
     }
 };
 
 std::shared_ptr<ISocketFactory> pipedal::MakePiPedalSocketFactory(PiPedalModel &model)
 {
     return std::make_shared<PiPedalSocketFactory>(model);
+}
+
+bool PiPedalSocketHandler::PingTone3000Server()
+{
+    constexpr const char *TONE3000_PING_URL = "https://www.tone3000.com/robots.txt";
+    std::vector<std::string> output;
+    std::vector<std::string> headers;
+    try
+    {
+        int result = CurlGet(TONE3000_PING_URL, output, &headers);
+        return result == 200;
+    }
+    catch (const std::exception &e)
+    {
+        Lv2Log::error("PingTone3000Server: %s", e.what());
+        return false;
+    }
 }

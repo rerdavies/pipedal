@@ -45,6 +45,7 @@ private:
     bool logHttpRequests_ = false;
     int logLevel_ = 0;
     uint64_t maxUploadSize_ = 1024*1024;
+    bool tone3000A2Models_ = true;
     std::string accessPointGateway_;
     std::string accessPointServerAddress_;
     bool isVst3Enabled_ = true;
@@ -67,6 +68,7 @@ public:
     bool GetMLock() const { return mlock_; }
     uint64_t GetMaxUploadSize() const { return maxUploadSize_; }
 
+    bool GetTone3000A2Models() const { return tone3000A2Models_; }
     LogLevel GetLogLevel() const { return (LogLevel)this->logLevel_; }
 
     bool LogHttpRequests() const { return this->logHttpRequests_; }

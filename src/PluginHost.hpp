@@ -43,6 +43,7 @@
 #include "PiPedalUI.hpp"
 #include "MapPathFeature.hpp"
 #include "ModGui.hpp"
+#include "ChannelRouterSettings.hpp"
 
 namespace pipedal
 {
@@ -54,6 +55,7 @@ namespace pipedal
     class PluginHost;
     class JackConfiguration;
     class JackChannelSelection;
+    class ChannelRouterSettings;
 
 #ifndef LV2_PROPERTY_GETSET
 #define LV2_PROPERTY_GETSET(name)             \
@@ -224,6 +226,7 @@ namespace pipedal
 
         bool mod_momentaryOffByDefault_ = false;
         bool mod_momentaryOnByDefault_ = false;
+        bool is_expensive_ = false;
         bool pipedal_graphicEq_ = false;
 
         bool not_on_gui_ = false;
@@ -302,6 +305,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
         LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOffByDefault);
         LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOnByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(is_expensive);
         LV2_PROPERTY_GETSET_SCALAR(pipedal_graphicEq);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
@@ -589,6 +593,7 @@ namespace pipedal
               integer_property_(pPort->integer_property()),
               mod_momentaryOffByDefault_(pPort->mod_momentaryOffByDefault()),
               mod_momentaryOnByDefault_(pPort->mod_momentaryOnByDefault()),
+              is_expensive_(pPort->is_expensive()),
               pipedal_graphicEq_(pPort->pipedal_graphicEq()),
 
               enumeration_property_(pPort->enumeration_property()),
@@ -639,6 +644,7 @@ namespace pipedal
 
         bool mod_momentaryOffByDefault_ = false;
         bool mod_momentaryOnByDefault_ = false;
+        bool is_expensive_ = false;
         bool pipedal_graphicEq_ = false;
 
         bool enumeration_property_ = false;
@@ -669,6 +675,10 @@ namespace pipedal
         LV2_PROPERTY_GETSET_SCALAR(display_priority);
         LV2_PROPERTY_GETSET_SCALAR(is_logarithmic);
         LV2_PROPERTY_GETSET_SCALAR(integer_property);
+        LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOffByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(mod_momentaryOnByDefault);
+        LV2_PROPERTY_GETSET_SCALAR(is_expensive);
+        LV2_PROPERTY_GETSET_SCALAR(pipedal_graphicEq);
         LV2_PROPERTY_GETSET_SCALAR(enumeration_property);
         LV2_PROPERTY_GETSET_SCALAR(toggled_property);
         LV2_PROPERTY_GETSET_SCALAR(trigger_property);
@@ -796,6 +806,7 @@ namespace pipedal
             AutoLilvNode core__isSideChain;
             AutoLilvNode portprops__not_on_gui_property_uri;
             AutoLilvNode portprops__trigger;
+            AutoLilvNode portprops__expensive;
             AutoLilvNode midi__event;
             AutoLilvNode core__designation;
             AutoLilvNode portgroups__group;
@@ -893,8 +904,8 @@ namespace pipedal
         size_t maxBufferSize = 1024;
         size_t maxAtomBufferSize = 16 * 1024;
         bool hasMidiInputChannel;
-        int numberOfAudioInputChannels = 1;
-        int numberOfAudioOutputChannels = 1;
+        ChannelSelection channelSelection;
+
         double sampleRate = 48000;
 
         std::string vst3CachePath;
@@ -955,13 +966,12 @@ namespace pipedal
 
     private:
         // IHost implementation.
-        virtual void SetMaxAudioBufferSize(size_t size) { maxBufferSize = size; }
-        virtual size_t GetMaxAudioBufferSize() const { return maxBufferSize; }
-        virtual size_t GetAtomBufferSize() const { return maxAtomBufferSize; }
-        virtual bool HasMidiInputChannel() const { return hasMidiInputChannel; }
-        virtual int GetNumberOfInputAudioChannels() const { return numberOfAudioInputChannels; }
-        virtual int GetNumberOfOutputAudioChannels() const { return numberOfAudioOutputChannels; }
-        virtual LV2_Feature *const *GetLv2Features() const { return (LV2_Feature *const *)&(this->lv2Features[0]); }
+        virtual void SetMaxAudioBufferSize(size_t size) override { maxBufferSize = size; }
+        virtual size_t GetMaxAudioBufferSize() const override { return maxBufferSize; }
+        virtual size_t GetAtomBufferSize() const override { return maxAtomBufferSize; }
+        virtual bool HasMidiInputChannel() const override  { return hasMidiInputChannel; }
+        virtual LV2_Feature *const *GetLv2Features() const override { return (LV2_Feature *const *)&(this->lv2Features[0]); }
+        virtual const ChannelSelection &GetChannelSelection() const override { return this->channelSelection; }
 
     public:
         virtual MapFeature &GetMapFeature() override { return this->mapFeature; }
@@ -1027,7 +1037,8 @@ namespace pipedal
         Urids *urids = nullptr;
         ModGuiUris *mod_gui_uris = nullptr;
 
-        void OnConfigurationChanged(const JackConfiguration &configuration, const JackChannelSelection &settings);
+        void OnConfigurationChanged(const JackConfiguration &configuration, const ChannelSelection &channelSelection);
+
 
         std::shared_ptr<Lv2PluginClass> GetPluginClass(const std::string &uri) const;
         bool is_a(const std::string &class_, const std::string &target_class);

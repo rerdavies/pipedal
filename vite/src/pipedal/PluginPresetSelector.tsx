@@ -23,29 +23,30 @@ import { PiPedalModel, PiPedalModelFactory, PluginPresetsChangedHandle } from '.
 import { Theme } from '@mui/material/styles';
 import WithStyles from './WithStyles';
 import { withStyles } from "tss-react/mui";
-import {createStyles} from './WithStyles';
+import { createStyles } from './WithStyles';
 
 import PluginPresetsDialog from './PluginPresetsDialog';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Fade from '@mui/material/Fade';
 import RenameDialog from './RenameDialog'
-import {PluginUiPresets} from './PluginPreset';
+import { PluginUiPresets } from './PluginPreset';
 
 import Divider from "@mui/material/Divider";
 
 import PluginPresetsIcon from "./svg/ic_pluginpreset.svg?react";
 import PluginPresetIcon from "./svg/ic_pluginpreset2.svg?react";
+import { Pedalboard, PedalboardItem } from './Pedalboard';
 
 interface PluginPresetSelectorProps extends WithStyles<typeof styles> {
-    pluginUri?: string;
+    pedalboardItem: PedalboardItem | null;
     instanceId: number;
 }
 
 
 interface PluginPresetSelectorState {
-    presets : PluginUiPresets;
-    enabled: boolean;
+    presets: PluginUiPresets;
+    //enabled: boolean;
     presetChanged: boolean;
     showPresetsDialog: boolean;
     showEditPresetsDialog: boolean;
@@ -57,6 +58,10 @@ interface PluginPresetSelectorState {
     renameDialogOnOk?: (name: string) => void;
 
     saveAsName: string;
+
+    isVisible: boolean;
+    hasPresets: boolean;
+    isPastePluginEnabled: boolean;
 }
 
 
@@ -65,14 +70,16 @@ const styles = (theme: Theme) => createStyles({
         width: 24, height: 24, marginRight: "4px", opacity: 0.6
     },
     pluginIcon: {
-        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary
+        width: 24, height: 24, opacity: 0.6, fill: theme.palette.text.primary
     },
     pluginMenuIcon: {
-        width: 24, height: 24, opacity: 0.6,fill: theme.palette.text.primary,marginRight: 4
+        width: 24, height: 24, opacity: 0.6, fill: theme.palette.text.primary, marginRight: 4
     }
 
 });
 
+
+let pluginClipboardContents: PedalboardItem | null = null;
 
 const PluginPresetSelector =
     withStyles(
@@ -85,7 +92,7 @@ const PluginPresetSelector =
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
                     presets: new PluginUiPresets(),
-                    enabled: false,
+                    isVisible: this.isVisible(props.pedalboardItem),
                     presetChanged: false,
                     showPresetsDialog: false,
                     showEditPresetsDialog: false,
@@ -94,26 +101,44 @@ const PluginPresetSelector =
                     renameDialogDefaultName: "",
                     renameDialogActionName: "",
                     renameDialogOnOk: undefined,
-                    saveAsName: ""
+                    saveAsName: "",
+                    hasPresets: this.hasPresets(this.props.pedalboardItem),
+                    isPastePluginEnabled: pluginClipboardContents !== null
+
 
                 };
                 this.handleDialogClose = this.handleDialogClose.bind(this);
                 this.handlePresetsMenuClose = this.handlePresetsMenuClose.bind(this);
             }
 
-            handleLoadPluginPreset(instanceId: number)
-            {
-                this.handlePresetsMenuClose();
-                this.model.loadPluginPreset(this.props.instanceId,instanceId);
-                let presetName = this.getPresetName(instanceId);
-                this.setState({saveAsName: presetName});
+            hasPresets(pedalboardItem: PedalboardItem | null): boolean {
+                if (pedalboardItem === null) return false;
+                if (!pedalboardItem.uri) return false;
+                if (pedalboardItem.isStart() || pedalboardItem.isEnd() 
+                    || pedalboardItem.isEmpty() || pedalboardItem.isSplit()) {
+                    return false;
+                }
+                return true;
             }
-            getPresetName(instanceId: number)
-            {
-                for (let preset of this.state.presets.presets)
-                {
-                    if (preset.instanceId === instanceId)
-                    {
+            isVisible(pedalboardItem: PedalboardItem | null): boolean {
+                if (pedalboardItem === null) return false;
+                if (!pedalboardItem.uri) return false;
+                if (pedalboardItem.isStart() || pedalboardItem.isEnd() 
+                    || pedalboardItem.isSplit()) {
+                    return false;
+                }
+                return true;
+            }
+
+            handleLoadPluginPreset(instanceId: number) {
+                this.handlePresetsMenuClose();
+                this.model.loadPluginPreset(this.props.instanceId, instanceId);
+                let presetName = this.getPresetName(instanceId);
+                this.setState({ saveAsName: presetName });
+            }
+            getPresetName(instanceId: number) {
+                for (let preset of this.state.presets.presets) {
+                    if (preset.instanceId === instanceId) {
                         return preset.label;
                     }
                 }
@@ -135,8 +160,8 @@ const PluginPresetSelector =
 
                 this.renameDialogOpen(name, "Save As")
                     .then((newName) => {
-                        this.setState({saveAsName: newName});
-                        return this.model.saveCurrentPluginPresetAs(this.props.instanceId,newName);
+                        this.setState({ saveAsName: newName });
+                        return this.model.saveCurrentPluginPresetAs(this.props.instanceId, newName);
                     })
                     .then((newInstanceId) => {
                         // s'fine. dealt with by updates, but we do need error handling.
@@ -170,60 +195,62 @@ const PluginPresetSelector =
                 return result;
             }
 
-            loadPresets():void {
-                if (!this.currentUri) return;
-                let captureUri: string = this.currentUri;
+            loadPresets(): void {
+                if (this.props.pedalboardItem === null) return;
+                if (!this.hasPresets(this.props.pedalboardItem)) return;   
+                let captureUri: string = this.props.pedalboardItem.uri;
                 this.model.getPluginPresets(captureUri)
-                .then((presets: PluginUiPresets) => {
-                    if (captureUri === this.currentUri)
-                    {
-                        this.setState({presets: presets});
-                    }
-                })
-                .catch(error => { 
-                    if (captureUri === this.currentUri)
-                    {
-                        this.setState({presets: new PluginUiPresets()});
-                    }
-                });
+                    .then((presets: PluginUiPresets) => {
+                        if (captureUri === this.props.pedalboardItem?.uri) {
+                            this.setState({ presets: presets });
+                        }
+                    })
+                    .catch(error => {
+                        if (captureUri === this.props.pedalboardItem?.uri) {
+                            this.setState({ presets: new PluginUiPresets() });
+                        }
+                    });
             }
             onPluginPresetsChanged(pluginUri: string): void {
-                if (pluginUri === this.props.pluginUri)
-                {
+                if (pluginUri === this.props.pedalboardItem?.uri) {
                     this.loadPresets();
 
                 }
             }
             _pluginPresetsChangedHandle?: PluginPresetsChangedHandle;
 
-            componentDidMount()
-            {
+            componentDidMount() {
                 this._pluginPresetsChangedHandle = this.model.addPluginPresetsChangedListener(
                     (pluginUri: string) => {
                         this.onPluginPresetsChanged(pluginUri);
                     }
                 );
             }
-            componentWillUnmount()
-            {
-                if (this._pluginPresetsChangedHandle)
-                {
+            componentWillUnmount() {
+                if (this._pluginPresetsChangedHandle) {
                     this.model.removePluginPresetsChangedListener(this._pluginPresetsChangedHandle);
                     this._pluginPresetsChangedHandle = undefined;
                 }
             }
 
-            currentUri?: string = "";
-            componentDidUpdate()
+            currentPedalboard?: PedalboardItem;
+            componentDidUpdate(
+                prevProps: Readonly<PluginPresetSelectorProps>, 
+                prevState: Readonly<PluginPresetSelectorState>, 
+                snapshot?: any): void 
             {
-                if (this.currentUri !== this.props.pluginUri)
-                {
-                    this.currentUri = this.props.pluginUri;
-                    if (!this.props.pluginUri)
-                    {
-                        this.setState({presets: new PluginUiPresets()});
-                    } else {
-                        this.loadPresets();
+                if (this.props.pedalboardItem !== prevProps.pedalboardItem) {
+                    this.setState({ 
+                        isVisible: this.isVisible(this.props.pedalboardItem),
+                        hasPresets: this.hasPresets(this.props.pedalboardItem) });
+                    if (this.props.pedalboardItem) {
+                        if (this.props.pedalboardItem.isEmpty())
+                        {
+                            this.setState({ presets: new PluginUiPresets() });
+                        } else 
+                        {
+                            this.loadPresets();
+                        }
                     }
                 }
             }
@@ -244,8 +271,38 @@ const PluginPresetSelector =
 
             }
 
+            isMenuCopyPluginEnabled(): boolean {
+                return this.state.hasPresets;
+            }
+            handleMenuCopyPlugin(): void {
+                this.handlePresetsMenuClose();
+                let pedalboard: Pedalboard = this.model.pedalboard.get();;
 
-            handleMenuEditPluginPresets(): void {
+
+                let pedalboardItem: PedalboardItem | null = pedalboard.tryGetItem(this.props.instanceId);
+                if (pedalboardItem === null) {
+                    pluginClipboardContents = null;
+                    this.setState({ isPastePluginEnabled: false });
+                    return;
+                }
+                pluginClipboardContents = pedalboardItem.clone();
+                this.setState({ isPastePluginEnabled: true });
+
+            }
+
+            private isMenuPastePluginEnabled(): boolean {
+                return this.state.isPastePluginEnabled;
+            }
+            private handleMenuPastePlugin(): void {
+                this.handlePresetsMenuClose();
+
+                if (pluginClipboardContents) {
+                    this.model.replacePedalboarditem(this.props.instanceId, pluginClipboardContents.clone());
+                }
+            }
+
+
+            private handleMenuEditPluginPresets(): void {
                 this.handlePresetsMenuClose();
                 this.showEditPluginPresetsDialog(true);
             }
@@ -282,21 +339,50 @@ const PluginPresetSelector =
                 //this.model.loadPreset(event.target.value as number);
             }
 
+            buildMenuItems() {
+                let result : React.ReactNode[] = [];
+                if (this.state.hasPresets) {
+                    result.push((<MenuItem key="menuSaveAs" onClick={(e) => this.handlePluginPresetsMenuSaveAs(e)}>Save plugin preset...</MenuItem>));
+                    result.push((<MenuItem key="menuEdit" onClick={(e) => this.handleMenuEditPluginPresets()}>Manage plugin presets...</MenuItem>));
+                    result.push((<Divider key="divider1" />));
+                }
+                let hasPresets = false;
+                for (let preset of this.state.presets.presets) {
+                    result.push((
+                        <MenuItem key={preset.instanceId}
+                            onClick={(e) => this.handleLoadPluginPreset(preset.instanceId)}
+                        >
+                            <PluginPresetIcon className={this.props.classes?.pluginMenuIcon ?? ""} />
+
+                            {preset.label}</MenuItem>
+                        ));
+                    hasPresets = true;
+                }
+                if (hasPresets) {
+                    result.push((<Divider key="divider2" />));
+                }
+                result.push(
+                    <MenuItem key="menuCopy" disabled={!this.isMenuCopyPluginEnabled()} onClick={(e) => this.handleMenuCopyPlugin()}>Copy plugin</MenuItem>
+                );
+                result.push(
+                    <MenuItem key="menuPaste" disabled={!this.isMenuPastePluginEnabled()} style={{ opacity: this.isMenuPastePluginEnabled() ? 1 : 0.4 }} onClick={(e) => this.handleMenuPastePlugin()}>Paste plugin</MenuItem>
+                );
+                return result;
+            }
             render() {
                 const classes = withStyles.getClasses(this.props);
 
                 //const classes = withStyles.getClasses(this.props);
                 //const classes = withStyles.getClasses(this.props);
-                if ((!this.props.pluginUri))
-                {
-                    return (<div/>);
+                if (!this.state.isVisible) {
+                    return (<div />);
                 }
                 return (
                     <div >
-                        <IconButtonEx 
+                        <IconButtonEx
                             tooltip="Plugin presets"
-                            onClick={(e)=> this.handlePresetMenuClick(e)} size="large">
-                            <PluginPresetsIcon className={classes.pluginIcon}/>
+                            onClick={(e) => this.handlePresetMenuClick(e)} size="large">
+                            <PluginPresetsIcon className={classes.pluginIcon} />
                         </IconButtonEx>
                         <Menu
                             id="edit-plugin-presets-menu"
@@ -306,38 +392,28 @@ const PluginPresetSelector =
                             TransitionComponent={Fade}
                             MenuListProps={
                                 {
-                                    style: {minWidth: 180}
+                                    style: { minWidth: 180 }
                                 }
                             }
-                            
+
                         >
-                            <MenuItem onClick={(e) => this.handlePluginPresetsMenuSaveAs(e)}>Save plugin preset...</MenuItem>
-                            <MenuItem onClick={(e) => this.handleMenuEditPluginPresets()}>Manage plugin presets...</MenuItem>
-
-                            { this.state.presets.presets.length !== 0 && 
-                                (<Divider/>)
-                            }
                             {
-                                this.state.presets.presets.map((preset) => {
-                                    return (<MenuItem key={preset.instanceId}
-                                        onClick={(e) => this.handleLoadPluginPreset(preset.instanceId)}
-                                        >
-                                        <PluginPresetIcon className={classes.pluginMenuIcon}/>
-
-                                        {preset.label}</MenuItem>);
-                                })
+                                this.buildMenuItems()
                             }
                         </Menu>
-                        <PluginPresetsDialog 
+                        {this.state.hasPresets && this.state.showPresetsDialog && (
+                        <PluginPresetsDialog
                             instanceId={this.props.instanceId}
                             presets={this.state.presets}
                             show={this.state.showPresetsDialog}
-                            isEditDialog={this.state.showEditPresetsDialog} 
+                            isEditDialog={this.state.showEditPresetsDialog}
                             onDialogClose={() => this.handleDialogClose()} />
+                        )}
                         <RenameDialog open={this.state.renameDialogOpen}
                             title="Rename"
                             defaultName={this.state.renameDialogDefaultName}
                             acceptActionName={this.state.renameDialogActionName}
+                            useSafeFilenames={false}
                             onClose={() => this.handleRenameDialogClose()}
                             onOk={(name: string) => this.handleRenameDialogOk(name)} />
                     </div>
@@ -345,6 +421,6 @@ const PluginPresetSelector =
 
             }
         },
-    styles);
+        styles);
 
 export default PluginPresetSelector;

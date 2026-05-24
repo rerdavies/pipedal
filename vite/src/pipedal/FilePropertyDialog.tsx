@@ -21,8 +21,6 @@
 import React from 'react';
 import { createStyles } from './WithStyles';
 
-// import Tone3000Dialog from './Tone3000Dialog';
-
 import TextInfoDialog from './TextInfoDialog';
 import Tone3000HelpDialog from './Tone3000HelpDialog';
 import GuitarMLHelpDialog from './GuitarMlHelpDialog';
@@ -69,10 +67,17 @@ import OkCancelDialog from './OkCancelDialog';
 import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
 import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
+import Tone3000DownloadType from './Tone3000DownloadType';
 
 
 const ToobNamModelFileUrl = "http://two-play.com/plugins/toob-nam#modelFile";
 const ToobMlModelFileUrl = "http://two-play.com/plugins/toob-ml#modelFile";
+const ToobCabIrFileUrls = [
+    "http://two-play.com/plugins/toob-cab-ir#impulseFile",
+    "http://two-play.com/plugins/toob-cab-ir#impulseFile2",
+    "http://two-play.com/plugins/toob-cab-ir#impulseFile3",
+];
+
 
 const AUTOSCROLL_TICK_DELAY = 30;
 const AUTOSCROLL_THRESHOLD = 48;
@@ -172,11 +177,10 @@ export interface FilePropertyDialogState {
     previousSelection: string;
     multiSelect: boolean,
     selectedFiles: string[],
-    //openTone3000Dialog: boolean,
     openTone3000Help: boolean,
     openGuitarMlHelp: boolean,
 
-    textFileName? : string;
+    textFileName?: string;
 
 };
 
@@ -212,6 +216,7 @@ export default withStyles(
         constructor(props: FilePropertyDialogProps) {
             super(props);
 
+            this.handleTone3000DownloadComplete = this.handleTone3000DownloadComplete.bind(this);
 
             this.model = PiPedalModelFactory.getInstance();
 
@@ -249,7 +254,6 @@ export default withStyles(
                 previousSelection: this.props.selectedFile,
                 multiSelect: false,
                 selectedFiles: [],
-                //openTone3000Dialog: false,
                 openTone3000Help: false,
                 openGuitarMlHelp: false
             };
@@ -561,15 +565,34 @@ export default withStyles(
 
         private requestScroll: boolean = false;
 
+        handleTone3000DownloadComplete(resultPath: string) {
+            if (resultPath === "") {
+                // unknown state. Just refresh anyway.
+                this.requestFiles(this.state.navDirectory);
+                return;
+            }
+            if (resultPath.startsWith(this.state.navDirectory)) {
+                let selectedFile = resultPath;
+                if (selectedFile.endsWith("/")) {
+                    selectedFile = selectedFile.slice(0, -1);
+                }
+                this.setState({
+                    selectedFile: selectedFile,
+                });
+                this.requestFiles(this.state.navDirectory);
+            }
+        }
         componentDidMount() {
             super.componentDidMount();
             this.mounted = true;
             this.requestFiles(this.state.navDirectory)
+            this.model.onTone3000DownloadCompleteEvent.addEventHandler(this.handleTone3000DownloadComplete);
             this.requestScroll = true;
         }
         componentWillUnmount() {
             this.stopAutoScroll();
             this.cancelProgressTimeout();
+            this.model.onTone3000DownloadCompleteEvent.removeEventHandler(this.handleTone3000DownloadComplete);
 
             super.componentWillUnmount();
             this.mounted = false;
@@ -701,15 +724,14 @@ export default withStyles(
             }
             this.openSelectedFile();
         }
-        handleApply(fileProperty: UiFileProperty, selectedItem: string)
-        {
+        handleApply(fileProperty: UiFileProperty, selectedItem: string) {
             if (this.state.previousSelection == selectedItem) {
                 return;
             }
-            if (!this.isLicenseFile(selectedItem) && !this.isFolderArtwork(selectedItem)) {
+            if (!this.isTextFile(selectedItem) && !this.isFolderArtwork(selectedItem) && !this.isPdfFile(selectedItem)) {
                 this.props.onApply(fileProperty, selectedItem);
             }
-            this.setState({previousSelection: selectedItem});
+            this.setState({ previousSelection: selectedItem });
         }
 
 
@@ -1069,13 +1091,25 @@ export default withStyles(
                 () => { this.handleAutoScrollTick() }, AUTOSCROLL_TICK_DELAY);
         }
 
-        // handleTone3000Dialog(e: React.MouseEvent<HTMLButtonElement>) {
-        //     e.stopPropagation();
-        //     e.preventDefault();
+        handleTone3000Dialog(e: React.MouseEvent<HTMLButtonElement>) {
+            e.stopPropagation();
+            e.preventDefault();
+            // Popup launch MUST be done from javascript, not react to avoid default popup blockers in browers. 
+            // The dialog just provides a blocker dialog to cancel the popup if the TONE3000 Select APIs escape.
 
-        //     this.setState({ openTone3000Dialog: true });
-
-        // }
+            let downloadType: Tone3000DownloadType = Tone3000DownloadType.Nam;
+            if (this.props.fileProperty.patchProperty === ToobNamModelFileUrl) {
+                downloadType = Tone3000DownloadType.Nam;
+            } else if (ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty))
+            {
+                downloadType = Tone3000DownloadType.CabIr;
+            } else {
+                throw new Error("Unsupported file property for Tone3000 dialog");
+            }
+            this.model.showTone3000DownloadPopup(
+                downloadType, 
+                this.state.currentDirectory);
+        }
 
 
         handleGuitarMlHelp(e: React.MouseEvent<HTMLButtonElement>) {
@@ -1098,6 +1132,7 @@ export default withStyles(
         render() {
             const isTracksDirectory = this.isTracksDirectory();
             const isToobNamModelFile = this.props.fileProperty.patchProperty === ToobNamModelFileUrl;
+            const isToobCabIrFile =  ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty);
             const isToobMLModelFile = this.props.fileProperty.patchProperty === ToobMlModelFileUrl;
 
             const classes = withStyles.getClasses(this.props);
@@ -1519,125 +1554,131 @@ export default withStyles(
                         {(!this.state.reordering && !this.state.multiSelect) && (
                             <>
                                 <DialogActions style={{ justifyContent: "stretch", width: "100%" }}>
-                                    <div style={{display: "flex", flexFlow: "column nowrap", width: "100%", alignItems: "stretch", }}>
-                                    {isToobNamModelFile && (
-                                        <div style={{
-                                            display: "flex", flexFlow: "row nowrap", justifyContent: "center",
-                                            alignItems: "center", width: "100%"
-                                        }}>
-                                            <Typography variant="body2" >
-                                                Download model files from <LinkEx
-                                                    href="https://www.tone3000.com/search" target="_blank">TONE3000</LinkEx>
-                                            </Typography>
-                                            <IconButtonEx tooltip="Help"
-                                            onClick={(e) => { this.handleTone3000Help(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
-                                            >
-                                                <HelpOutlineIcon />
-                                            </IconButtonEx>
-                                        </div>
+                                    <div style={{ display: "flex", flexFlow: "column nowrap", width: "100%", alignItems: "stretch", }}>
+                                        {(isToobNamModelFile || isToobCabIrFile) && (
+                                            <div style={{
+                                                display: "flex", flexFlow: "row nowrap", justifyContent: "center",
+                                                alignItems: "center", width: "100%"
+                                            }}>
+                                                <Button
+                                                    onClick={(e) => { this.handleTone3000Dialog(e); }}
+                                                >
+                                                    {
+                                                        isToobNamModelFile
+                                                            ? "Download model files from TONE3000"
+                                                            : "Download I/R files from TONE3000"
+                                                    }
 
-                                    )}
-                                    {isToobMLModelFile && (
-                                        <div style={{
-                                            display: "flex", flexFlow: "row nowrap", justifyContent: "center", width: "100%",
-                                            alignItems: "center"
-                                        }}>
-                                            <Typography variant="body2" >
-                                                Download model files from <LinkEx
-                                                    href="https://github.com/GuitarML/ToneLibrary/releases/download/v1.0/Proteus_Tone_Packs.zip" target="_blank">GuitarML</LinkEx>
-                                            </Typography>
-                                            <IconButtonEx tooltip="Help"
-                                            onClick={(e) => { this.handleGuitarMlHelp(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
-                                            >
-                                                <HelpOutlineIcon />
-                                            </IconButtonEx>
-                                        </div>
-
-                                    )}
-
-
-                                    {this.state.windowWidth > 500 ? (
-                                        <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "column nowrap" }}>
-
-                                            <div style={{ flex: "1 1 100%", display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                                <IconButtonEx style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
-                                                    tooltip="Delete selected file or folder"
-                                                    disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
-                                                    onClick={() => this.handleDelete()} >
-                                                    <OldDeleteIcon fontSize='small' />
+                                                </Button>
+                                                <IconButtonEx tooltip="Help"
+                                                    onClick={(e) => { this.handleTone3000Help(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
+                                                >
+                                                    <HelpOutlineIcon />
                                                 </IconButtonEx>
-
-                                                <ButtonEx tooltip="Upload file" style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
-                                                    onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
-                                                >
-                                                    <div>Upload</div>
-                                                </ButtonEx>
-
-                                                <ButtonEx tooltip="Download file" style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
-                                                    onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
-                                                >
-                                                    <div>Download</div>
-                                                </ButtonEx>
-
-                                                <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
-
-                                                <Button variant="dialogSecondary" onClick={() => {
-                                                    this.handleApply(this.props.fileProperty, this.state.initialSelection);
-                                                    this.props.onCancel();
-                                                }} aria-label="cancel">
-                                                    Cancel
-                                                </Button>
-                                                <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
-                                                    onClick={() => { this.openSelectedFile(); }}
-
-                                                    disabled={(!canSelectFile)
-                                                    } aria-label="select"
-                                                >
-                                                    {okButtonText}
-                                                </Button>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ width: "100%" }}>
-                                            <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                                <IconButtonEx tooltip="Delete" style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
-                                                    disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
-                                                    onClick={() => this.handleDelete()} >
-                                                    <OldDeleteIcon fontSize='small' />
+
+                                        )}
+                                        {isToobMLModelFile && (
+                                            <div style={{
+                                                display: "flex", flexFlow: "row nowrap", justifyContent: "center", width: "100%",
+                                                alignItems: "center"
+                                            }}>
+                                                <Typography variant="body2" >
+                                                    Download model files from <LinkEx
+                                                        href="https://github.com/GuitarML/ToneLibrary/releases/download/v1.0/Proteus_Tone_Packs.zip" target="_blank">GuitarML</LinkEx>
+                                                </Typography>
+                                                <IconButtonEx tooltip="Help"
+                                                    onClick={(e) => { this.handleGuitarMlHelp(e); }} aria-label="help" edge="end" color="inherit" style={{ opacity: 0.6, marginLeft: 8 }}
+                                                >
+                                                    <HelpOutlineIcon />
                                                 </IconButtonEx>
-
-                                                <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
-                                                    onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
-                                                >
-                                                    <div>Upload</div>
-                                                </Button>
-
-                                                <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
-                                                    onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
-
-                                                >
-                                                    <div>Download</div>
-                                                </Button>
-
-                                                <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
                                             </div>
-                                            <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
-                                                <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
 
-                                                <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
-                                                    Cancel
-                                                </Button>
-                                                <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
-                                                    onClick={() => { this.openSelectedFile(); }}
+                                        )}
 
-                                                    disabled={!canSelectFile}
-                                                    aria-label="select"
-                                                >
-                                                    {okButtonText}
-                                                </Button>
+
+                                        {this.state.windowWidth > 500 ? (
+                                            <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "column nowrap" }}>
+
+                                                <div style={{ flex: "1 1 100%", display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                                    <IconButtonEx style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                                        tooltip="Delete selected file or folder"
+                                                        disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
+                                                        onClick={() => this.handleDelete()} >
+                                                        <OldDeleteIcon fontSize='small' />
+                                                    </IconButtonEx>
+
+                                                    <ButtonEx tooltip="Upload file" style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                                        onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
+                                                    >
+                                                        <div>Upload</div>
+                                                    </ButtonEx>
+
+                                                    <ButtonEx tooltip="Download file" style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                                        onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
+                                                    >
+                                                        <div>Download</div>
+                                                    </ButtonEx>
+
+                                                    <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+
+                                                    <Button variant="dialogSecondary" onClick={() => {
+                                                        this.handleApply(this.props.fileProperty, this.state.initialSelection);
+                                                        this.props.onCancel();
+                                                    }} aria-label="cancel">
+                                                        Cancel
+                                                    </Button>
+                                                    <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
+                                                        onClick={() => { this.openSelectedFile(); }}
+
+                                                        disabled={(!canSelectFile)
+                                                        } aria-label="select"
+                                                    >
+                                                        {okButtonText}
+                                                    </Button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        ) : (
+                                            <div style={{ width: "100%" }}>
+                                                <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                                    <IconButtonEx tooltip="Delete" style={{ visibility: (this.state.hasSelection ? "visible" : "hidden") }} aria-label="delete" component="label" color="primary"
+                                                        disabled={!this.state.hasSelection || this.state.selectedFile === "" || protectedItem}
+                                                        onClick={() => this.handleDelete()} >
+                                                        <OldDeleteIcon fontSize='small' />
+                                                    </IconButtonEx>
+
+                                                    <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileUploadIcon />}
+                                                        onClick={() => { this.setState({ openUploadFileDialog: true }) }} disabled={protectedDirectory}
+                                                    >
+                                                        <div>Upload</div>
+                                                    </Button>
+
+                                                    <Button style={{ flex: "0 0 auto" }} aria-label="upload" variant="text" startIcon={<FileDownloadIcon />}
+                                                        onClick={() => { this.handleDownloadFile(); }} disabled={protectedDirectory || !this.state.hasFileSelection}
+
+                                                    >
+                                                        <div>Download</div>
+                                                    </Button>
+
+                                                    <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+                                                </div>
+                                                <div style={{ display: "flex", width: "100%", alignItems: "center", flexFlow: "row nowrap" }}>
+                                                    <div style={{ flex: "1 1 auto" }}>&nbsp;</div>
+
+                                                    <Button variant="dialogSecondary" onClick={() => { this.props.onCancel(); }} aria-label="cancel">
+                                                        Cancel
+                                                    </Button>
+                                                    <Button variant="dialogPrimary" style={{ flex: "0 0 auto" }}
+                                                        onClick={() => { this.openSelectedFile(); }}
+
+                                                        disabled={!canSelectFile}
+                                                        aria-label="select"
+                                                    >
+                                                        {okButtonText}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </DialogActions>
                             </>
@@ -1698,6 +1739,7 @@ export default withStyles(
                                     onClose={() => { this.setState({ newFolderDialogOpen: false }); }}
                                     title="New folder"
                                     acceptActionName="OK"
+                                    useSafeFilenames={true}
                                 />
                             )
                         }
@@ -1708,6 +1750,7 @@ export default withStyles(
                                     onOk={(newName) => { this.setState({ renameDialogOpen: false }); this.onExecuteRename(newName) }}
                                     onClose={() => { this.setState({ renameDialogOpen: false }); }}
                                     acceptActionName="OK"
+                                    useSafeFilenames={true}
                                 />
 
                             )
@@ -1720,6 +1763,7 @@ export default withStyles(
                                         open={this.state.moveDialogOpen || this.state.copyDialogOpen}
                                         dialogTitle={this.state.moveDialogOpen ? "Move to" : "Copy Link to"}
                                         uiFileProperty={this.props.fileProperty}
+                                        useSafeFilenames={true}
                                         defaultPath={this.getDefaultPath()}
                                         selectedFile={this.state.selectedFile}
                                         excludeDirectory={
@@ -1742,16 +1786,11 @@ export default withStyles(
                                 )
                             )
                         }
-                        {/* {this.state.openTone3000Dialog && (
-                            <Tone3000Dialog
-                                open={this.state.openTone3000Dialog}
-                                onClose={() => this.setState({ openTone3000Dialog: false })}
-                            />
-                        )} */}
                         {this.state.openTone3000Help && (
                             <Tone3000HelpDialog
                                 open={this.state.openTone3000Help}
                                 onClose={() => this.setState({ openTone3000Help: false })}
+                                downloadType={isToobNamModelFile ? Tone3000DownloadType.Nam : Tone3000DownloadType.CabIr}
                             />
                         )}
                         {this.state.openGuitarMlHelp && (
@@ -1761,27 +1800,35 @@ export default withStyles(
                             />
                         )}
                         {this.state.textFileName !== undefined && (
-                            <TextInfoDialog open={true} 
+                            <TextInfoDialog open={true}
                                 title={pathFileNameOnly(this.state.textFileName)}
-                                fileName={this.state.textFileName} onClose={() => this.setState({ textFileName: undefined })} 
-                                />
+                                fileName={this.state.textFileName} onClose={() => this.setState({ textFileName: undefined })}
+                            />
                         )}
                     </DialogEx>
                 );
         }
-        isLicenseFile(fileName: string) {
+        isTextFile(fileName: string) {
             let extension = pathExtension(fileName);
-            if (extension === ".txt" || extension === ".md"){
-                return true;
-            } 
-            let fileNameOnly = pathFileNameOnly(fileName);
-            if (fileNameOnly.toUpperCase() === "LICENSE" || fileNameOnly.toUpperCase() === "README")
-            {
+            if (extension === ".txt" || extension === ".md") {
                 return true;
             }
             return false;
 
         }
+        isPdfFile(fileName: string) {
+            let extension = pathExtension(fileName);
+            if (extension === ".pdf") {
+                return true;
+            }
+            return false;
+
+        }
+        handleShowPdfFile(fileName: string) {
+            // open pdf in new tab
+            this.model.displayMediaFile(fileName);
+        }
+        
         handleShowTextFile(fileName: string) {
             this.setState({ textFileName: fileName });
         }
@@ -1797,7 +1844,9 @@ export default withStyles(
                 this.requestFiles(this.state.selectedFile);
                 this.setState({ navDirectory: this.state.selectedFile });
             } else {
-                if (this.isLicenseFile(this.state.selectedFile)) {
+                if (this.isPdfFile(this.state.selectedFile)) {
+                    this.handleShowPdfFile(this.state.selectedFile);
+                } else if (this.isTextFile(this.state.selectedFile)) {
                     this.handleShowTextFile(this.state.selectedFile);
                 } else {
                     this.props.onOk(this.props.fileProperty, this.state.selectedFile);

@@ -45,6 +45,7 @@ namespace pipedal
         uint8_t cc2_; 
     };
 
+
     enum class RingBufferCommand : int64_t
     {
         Invalid = 0,
@@ -94,6 +95,22 @@ namespace pipedal
 
         SendPathPropertyBuffer,
 
+    };
+
+    struct RealtimePedalboardItemIndex {
+        RealtimePedalboardItemIndex()
+            : index(-1)
+        {
+        }
+        RealtimePedalboardItemIndex(
+            int64_t index)
+            : index(index)
+        {
+        }
+        RealtimePedalboardItemIndex(const RealtimePedalboardItemIndex& other) = default;
+        RealtimePedalboardItemIndex& operator=(const RealtimePedalboardItemIndex& other) = default;
+
+        int64_t index = -1;
     };
 
     struct RealtimeMidiEventRequest
@@ -148,7 +165,7 @@ namespace pipedal
         }
         bool waitingForAcknowledge = false;
 
-        const std::vector<VuUpdate> *GetResult(size_t currentSample)
+        const std::vector<VuUpdateX> *GetResult(size_t currentSample)
         {
             for (size_t i = 0; i < vuUpdateWorkingData.size(); ++i)
             {
@@ -159,9 +176,9 @@ namespace pipedal
             return &vuUpdateResponseData;
         }
 
-        std::vector<int> enabledIndexes;
-        std::vector<VuUpdate> vuUpdateWorkingData;
-        std::vector<VuUpdate> vuUpdateResponseData;
+        std::vector<RealtimePedalboardItemIndex> enabledIndexes;
+        std::vector<VuUpdateX> vuUpdateWorkingData;
+        std::vector<VuUpdateX> vuUpdateResponseData;
 
         void Reset()
         {
@@ -468,7 +485,7 @@ namespace pipedal
             write(RingBufferCommand::SendMonitorPortUpdate, body);
         }
 
-        void SendVuUpdate(const std::vector<VuUpdate> *pUpdates)
+        void SendVuUpdate(const std::vector<VuUpdateX> *pUpdates)
         {
             write(RingBufferCommand::SendVuUpdate, pUpdates);
         }
@@ -521,16 +538,19 @@ namespace pipedal
             write(RingBufferCommand::ReplaceEffect, pedalboard);
         }
 
+        void EffectReplaced(Lv2Pedalboard *pedalboard)
+        {
+            write(RingBufferCommand::EffectReplaced, pedalboard);
+        }
+
+
+
         void AudioTerminatedAbnormally()
         {
             AudioStoppedBody body;
             write(RingBufferCommand::AudioTerminatedAbnormally, body);
         }
 
-        void EffectReplaced(Lv2Pedalboard *pedalboard)
-        {
-            write(RingBufferCommand::EffectReplaced, pedalboard);
-        }
 
         void FreeSnapshot(IndexedSnapshot *snapshot)
         {

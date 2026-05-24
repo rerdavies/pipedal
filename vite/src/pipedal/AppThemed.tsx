@@ -52,12 +52,12 @@ import PresetSelector from './PresetSelector';
 import SettingsDialog from './SettingsDialog';
 import AboutDialog from './AboutDialog';
 import BankDialog from './BankDialog';
+import {Tone3000DownloadStaus as Tone3000DownloadStatus} from './Tone3000Dialog';
 
 import { PiPedalModelFactory, PiPedalModel, State, ZoomedControlInfo, wantsReloadingScreen } from './PiPedalModel';
 import ZoomedUiControl from './ZoomedUiControl'
 import MainPage from './MainPage';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import ListSubheader from '@mui/material/ListSubheader';
 import { BankIndex, BankIndexEntry } from './Banks';
@@ -587,6 +587,7 @@ export
     }
 
     private beforeUnloadListener(e: Event) {
+        alert("BeforeUnload");
         this.model_.close();
         return undefined;
     }
@@ -601,7 +602,6 @@ export
 
         super.componentDidMount();
         window.addEventListener("beforeunload", this.beforeUnloadListener);
-        window.addEventListener("unload", this.unloadListener);
 
         this.model_.errorMessage.addOnChangedHandler(this.errorChangeHandler_);
         this.model_.state.addOnChangedHandler(this.stateChangeHandler_);
@@ -1038,6 +1038,7 @@ export
                                 defaultName={this.model_.banks.get().getSelectedEntryName()}
                                 title="Bank Name"
                                 acceptActionName={this.state.renameBankDialogOpen ? "Rename" : "Save as"}
+                                useSafeFilenames={false}
                                 onClose={() => {
                                     this.setState({
                                         renameBankDialogOpen: false,
@@ -1084,13 +1085,11 @@ export
                     aria-describedby="alert-dialog-description"
                 >
                     <DialogContent>
-                        <DialogContentText id="alert-dialog-description">
-                            <Typography variant="body2">
-                                {
-                                    this.state.alertDialogMessage
-                                }
-                            </Typography>
-                        </DialogContentText>
+                        <Typography variant="body2" id="alert-dialog-description">
+                            {
+                                this.state.alertDialogMessage
+                            }
+                        </Typography>
                     </DialogContent>
                     <DialogActions>
                         <Button variant="dialogPrimary" onClick={this.handleCloseAlert} color="primary" autoFocus>
@@ -1099,7 +1098,9 @@ export
                     </DialogActions>
                 </DialogEx>
 
-
+                {/* Status of TONE3000 download */}
+                <Tone3000DownloadStatus zindex={2000}/>
+                {/* Fatal error mask */}
                 <Modal open={this.state.displayState === State.Error}
                     aria-label="fatal-error"
                     aria-describedby="aria-error-text"

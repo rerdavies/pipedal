@@ -1,0 +1,5 @@
+#!/bin/bash
+rm -rf ./lv2/aarch64/*
+
+cp -R /usr/lib/lv2/ToobAmp.lv2/ ./lv2/aarch64/
+strip ./lv2/aarch64/ToobAmp.lv2/*.so

@@ -33,7 +33,9 @@ namespace pipedal
         bool isJackAudio_ = JACK_HOST ? true : false;
         bool rebootRequired_ = false;
         std::string alsaInputDevice_;
+        std::string alsaInputDeviceName_;
         std::string alsaOutputDevice_;
+        std::string alsaOutputDeviceName_;
         std::string alsaDevice_; // legacy
         uint64_t sampleRate_ = 0;
         uint32_t bufferSize_ = 64;
@@ -44,6 +46,7 @@ namespace pipedal
         JackServerSettings(
             const std::string &alsaInputDevice,
             const std::string &alsaOutputDevice,
+
             uint64_t sampleRate,
             uint32_t bufferSize,
             uint32_t numberOfBuffers)
@@ -55,39 +58,41 @@ namespace pipedal
               numberOfBuffers_(numberOfBuffers),
               isOnboarding_(false)
         {
+            FixUpDeviceNames();
         }
-
+        
         uint64_t GetSampleRate() const { return sampleRate_; }
 
         uint32_t GetBufferSize() const { return bufferSize_; }
         uint32_t GetNumberOfBuffers() const { return numberOfBuffers_; }
         const std::string &GetAlsaInputDevice()  const { return alsaInputDevice_; }
+        const std::string &GetAlsaInputDeviceName()  const { return alsaInputDeviceName_; }
         const std::string &GetAlsaOutputDevice() const { return alsaOutputDevice_; }
+        const std::string &GetAlsaOutputDeviceName() const { return alsaOutputDeviceName_; }
         const std::string &GetLegacyAlsaDevice() const { return alsaDevice_; } //legacy
 
-        void SetAlsaInputDevice(const std::string &d){ alsaInputDevice_ = d; }
-        void SetAlsaOutputDevice(const std::string &d){ alsaOutputDevice_ = d; }
+        void SetAlsaInputDevice(const std::string &id, const std::string&name){ alsaInputDevice_ = id; alsaInputDeviceName_ = name; }
+        void SetAlsaOutputDevice(const std::string &id, const std::string&name){ alsaOutputDevice_ = id; alsaOutputDeviceName_ = name; }
         void SetLegacyAlsaDevice(const std::string &d) { alsaDevice_ = d; }
         
         void UseDummyAudioDevice() {
             this->valid_ = true;
             if (sampleRate_ == 0) sampleRate_ = 48000;
-            this->alsaDevice_  = "dummy:channels_2";
-            this->alsaInputDevice_  = "dummy:channels_2";
-            this->alsaOutputDevice_  = "dummy:channels_2";
+            bufferSize_ = 256;
+            numberOfBuffers_  = 6;
+
+            this->alsaDevice_  = "";
+            this->alsaInputDevice_  = "null";
+            this->alsaInputDeviceName_ = "null";
+            this->alsaOutputDevice_  = "null";
+            this->alsaOutputDeviceName_ = "null";
         }
         bool IsDummyAudioDevice() const {
-            return 
-                this->alsaDevice_.starts_with("__DUMMY_AUDIO__")
-                || this->alsaDevice_.starts_with("dummy:")
-                || this->alsaInputDevice_.starts_with("dummy:");
+            return alsaInputDevice_ == "null" && alsaOutputDevice_ == "null";
         }
-
-        void ReadJackDaemonConfiguration();
 
         bool IsValid() const { return valid_; }
 
-        void WriteDaemonConfig(); // requires root perms.
         void SetRebootRequired(bool value)
         {
             rebootRequired_ = value;
@@ -106,6 +111,7 @@ namespace pipedal
                    this->bufferSize_       == other.bufferSize_ &&
                    this->numberOfBuffers_  == other.numberOfBuffers_;
         }
+        void FixUpDeviceNames();
 
         DECLARE_JSON_MAP(JackServerSettings);
     };

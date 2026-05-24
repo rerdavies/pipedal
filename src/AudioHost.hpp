@@ -32,6 +32,7 @@
 #include "Promise.hpp"
 #include "json_variant.hpp"
 #include "RealtimeMidiEventType.hpp"
+#include "ChannelRouterSettings.hpp"
 
 namespace pipedal
 {
@@ -157,8 +158,8 @@ namespace pipedal
     {
     public:
         virtual void OnNotifyLv2StateChanged(uint64_t instanceId) = 0;
-        virtual void OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
-        virtual void OnNotifyVusSubscription(const std::vector<VuUpdate> &updates) = 0;
+        virtual bool OnNotifyMaybeLv2StateChanged(uint64_t instanceId) = 0;
+        virtual void OnNotifyVusSubscription(const std::vector<VuUpdateX> &updates) = 0;
         virtual void OnNotifyMonitorPort(const MonitorPortUpdate &update) = 0;
         virtual void OnNotifyMidiValueChanged(int64_t instanceId, int portIndex, float value) = 0;
         virtual void OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2) = 0;
@@ -227,7 +228,7 @@ namespace pipedal
 
         virtual std::string AtomToJson(const LV2_Atom *atom) = 0;
 
-        virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection) = 0;
+        virtual void Open(const JackServerSettings &jackServerSettings, const ChannelSelection &channelSelection) = 0;
         virtual void Close() = 0;
 
         virtual void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration) = 0;
@@ -236,6 +237,8 @@ namespace pipedal
         virtual JackConfiguration GetServerConfiguration() = 0;
 
         virtual void SetPedalboard(const std::shared_ptr<Lv2Pedalboard> &pedalboard) = 0;
+
+
 
         virtual void SetControlValue(uint64_t instanceId, const std::string &symbol, float value) = 0;
         virtual void SetInputVolume(float value) = 0;

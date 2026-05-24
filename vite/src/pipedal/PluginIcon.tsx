@@ -40,6 +40,7 @@ import FxDistortionIcon from './svg/fx_distortion.svg?react';
 import FxFlangerIcon from './svg/fx_flanger.svg?react';
 import FxFilterHpIcon from './svg/fx_filter_hp.svg?react';
 import FxParametricEqIcon from './svg/fx_parametric_eq.svg?react';
+import FxMultibandEqIcon from './svg/fx_multiband_eq.svg?react';
 import FxEqIcon from './svg/fx_eq.svg?react';
 import FxUtilityIcon from './svg/fx_utility.svg?react';
 import FxCompressorIcon from './svg/fx_compressor.svg?react';
@@ -228,6 +229,7 @@ export function SelectSvgIcon(plugin_type: PluginType, className: string, size: 
         case PluginType.ParaEQPlugin:
             return <FxParametricEqIcon className={className} style={myStyle} />;
         case PluginType.MultiEQPlugin:
+            return <FxMultibandEqIcon className={className} style={myStyle} />;
         case PluginType.EQPlugin:
             return <FxEqIcon className={className} style={myStyle} />;
         case PluginType.UtilityPlugin:
@@ -317,6 +319,7 @@ export function SelectBaseIcon(plugin_type: PluginType): string {
         case PluginType.ParaEQPlugin:
             return "fx_parametric_eq.svg";
         case PluginType.MultiEQPlugin:
+            return "fx_multiband_eq.svg";
         case PluginType.EQPlugin:
             return "fx_eq.svg";
         case PluginType.UtilityPlugin:
@@ -335,7 +338,7 @@ export function SelectBaseIcon(plugin_type: PluginType): string {
         case PluginType.GatePlugin:
             return "fx_gate.svg";
         case PluginType.ConverterPlugin:
-            return "fx_converter.svg"
+            return "fx_converter.svg";
         case PluginType.GeneratorPlugin:
             return "fx_generator.svg";
         case PluginType.OscillatorPlugin:

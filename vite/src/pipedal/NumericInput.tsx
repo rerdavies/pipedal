@@ -163,6 +163,7 @@ export const NumericInput =
 
 
             render() {
+                
                 //const classes = withStyles.getClasses(this.props);
                 return (<Input style={{ width: 65 }}
                     inputProps={{

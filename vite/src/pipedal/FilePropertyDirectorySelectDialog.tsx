@@ -35,6 +35,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import HomeIcon from '@mui/icons-material/Home';
 import { isDarkMode } from './DarkMode';
 import IconButton from '@mui/material/IconButton';
+import {safeFilenameDecode} from './SafeFilename';
 
 
 
@@ -126,6 +127,7 @@ export interface FilePropertyDirectorySelectDialogProps {
     defaultPath: string,
     excludeDirectory: string,
     selectedFile: string,
+    useSafeFilenames: boolean,
     onOk: (path: string) => void,
     onClose: () => void
 };
@@ -260,6 +262,11 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
             selectBg = selected ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.0)";
         }
         let showToggle = directoryTree.canExpand() && directoryTree.path.length !== 0;
+        let name = directoryTree.name === "" ? "Home" : directoryTree.name;
+        if (this.props.useSafeFilenames) {
+            name = safeFilenameDecode(name);
+        }   
+
         return (
             <div key={directoryTree.path} style={{flexGrow: 1}}>
                 <div style={{ width: "100%", display: "flex", flexFlow: "row", flexWrap: "nowrap", justifyContent: "flex-start", alignItems: "center" }}>
@@ -292,7 +299,7 @@ export default class FilePropertyDirectorySelectDialog extends ResizeResponsiveC
                                 )
                             }
 
-                            <Typography noWrap style={{ marginLeft: 8, marginTop: 8, marginBottom: 8, textAlign: "left", flexGrow: 1, flexShrink: 1 }} variant="body2">{directoryTree.name === "" ? "Home" : directoryTree.name}</Typography>
+                            <Typography noWrap style={{ marginLeft: 8, marginTop: 8, marginBottom: 8, textAlign: "left", flexGrow: 1, flexShrink: 1 }} variant="body2">{name}</Typography>
                         </div>
                     </ButtonBase>
                 </div>

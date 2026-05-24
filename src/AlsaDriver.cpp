@@ -23,6 +23,7 @@
  */
 
 #include "pch.h"
+#include "PiPedalCommon.hpp"
 #include "util.hpp"
 #include <cmath>
 #include "Finally.hpp"
@@ -39,6 +40,7 @@
 #include "CrashGuard.hpp"
 #include <iostream>
 #include <iomanip>
+#include "ChannelRouterSettings.hpp"
 
 #include "CpuUse.hpp"
 
@@ -271,7 +273,7 @@ namespace pipedal
             auto inAvail = snd_pcm_avail_update(this->captureHandle);
             auto outAvail = snd_pcm_avail_update(this->playbackHandle);
 
-            auto total = (inAvail >= 0? inAvail: 0) + (outAvail >= 0 ? outAvail: 0) + framesInBuffer;
+            auto total = (inAvail >= 0 ? inAvail : 0) + (outAvail >= 0 ? outAvail : 0) + framesInBuffer;
             bufferTraces[bufferTraceIndex++] = {
                 time,
                 inAvail,
@@ -328,11 +330,20 @@ namespace pipedal
         bool inputSwapped = false;
         bool outputSwapped = false;
 
-        std::vector<float *> activeCaptureBuffers;
-        std::vector<float *> activePlaybackBuffers;
+        std::vector<std::vector<float>> allocatedBuffers;
 
-        std::vector<float *> captureBuffers;
-        std::vector<float *> playbackBuffers;
+        std::vector<float *> deviceCaptureBuffers;
+        std::vector<float *> devicePlaybackBuffers;
+        float *zeroInputBuffer = nullptr;
+        float *discardOutputBuffer = nullptr;
+        std::vector<float *> mainCaptureBuffers;
+        std::vector<float *> mainPlaybackBuffers;
+        std::vector<float *> mainVuPlaybackBuffers;
+
+        std::vector<float *> auxCaptureBuffers;
+        std::vector<float *> auxPlaybackBuffers;
+        std::vector<float *> auxVuPlaybackBuffers;
+
 
         std::vector<uint8_t> rawCaptureBuffer;
         std::vector<uint8_t> rawPlaybackBuffer;
@@ -342,7 +353,9 @@ namespace pipedal
         void validate_capture_handle()
         { // leftover debugging for a buffer overrun :-/
 #ifdef DEBUG
-            if (snd_pcm_type(captureHandle) != SND_PCM_TYPE_HW)
+            auto pcmType = snd_pcm_type(captureHandle);
+
+            if (pcmType != SND_PCM_TYPE_HW && pcmType != SND_PCM_TYPE_NULL)
             {
                 throw std::runtime_error("Capture handle has been overwritten");
             }
@@ -742,7 +755,7 @@ namespace pipedal
         {
             int32_t *p = getCaptureBuffer<int32_t>(rawCaptureBuffer);
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             for (size_t frame = 0; frame < frames; ++frame)
             {
@@ -760,7 +773,7 @@ namespace pipedal
         {
             float *p = getCaptureBuffer<float>(rawCaptureBuffer);
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             for (size_t frame = 0; frame < frames; ++frame)
             {
@@ -776,7 +789,7 @@ namespace pipedal
         {
             int16_t *p = getCaptureBuffer<int16_t>(rawCaptureBuffer);
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr double scale = 1.0f / (std::numeric_limits<int16_t>::max() + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -792,7 +805,7 @@ namespace pipedal
         {
             int16_t *p = getCaptureBuffer<int16_t>(rawCaptureBuffer);
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (std::numeric_limits<int16_t>::max() + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -809,7 +822,7 @@ namespace pipedal
         {
             int32_t *p = getCaptureBuffer<int32_t>(rawCaptureBuffer);
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -825,7 +838,7 @@ namespace pipedal
         {
             uint8_t *p = getCaptureBuffer<uint8_t>(rawCaptureBuffer);
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1LL);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -842,7 +855,7 @@ namespace pipedal
         {
             uint8_t *p = (uint8_t *)rawCaptureBuffer.data();
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1LL);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -859,7 +872,7 @@ namespace pipedal
         {
             int32_t *p = (int32_t *)rawCaptureBuffer.data();
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (0x00FFFFFFL + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -875,7 +888,7 @@ namespace pipedal
         {
             int32_t *p = (int32_t *)rawCaptureBuffer.data();
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (0x00FFFFFFL + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -891,7 +904,7 @@ namespace pipedal
         {
             int32_t *p = (int32_t *)rawCaptureBuffer.data();
 
-            std::vector<float *> &buffers = this->captureBuffers;
+            std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
             constexpr float scale = 1.0f / (std::numeric_limits<int32_t>::max() + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
@@ -907,7 +920,7 @@ namespace pipedal
         {
             int16_t *p = (int16_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr float scale = std::numeric_limits<int16_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
@@ -927,7 +940,7 @@ namespace pipedal
         {
             int16_t *p = (int16_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr float scale = std::numeric_limits<int16_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
@@ -947,7 +960,7 @@ namespace pipedal
         {
             int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
@@ -969,7 +982,7 @@ namespace pipedal
 
             int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr double scale = 0x00FFFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
@@ -991,7 +1004,7 @@ namespace pipedal
 
             int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr double scale = 0x00FFFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
@@ -1011,7 +1024,7 @@ namespace pipedal
         {
             int32_t *p = (int32_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
@@ -1031,7 +1044,7 @@ namespace pipedal
         {
             uint8_t *p = (uint8_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
@@ -1056,7 +1069,7 @@ namespace pipedal
         {
             uint8_t *p = (uint8_t *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             constexpr double scale = std::numeric_limits<int32_t>::max();
             for (size_t frame = 0; frame < frames; ++frame)
@@ -1082,7 +1095,7 @@ namespace pipedal
         {
             float *p = (float *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             for (size_t frame = 0; frame < frames; ++frame)
             {
@@ -1097,7 +1110,7 @@ namespace pipedal
         {
             float *p = (float *)rawPlaybackBuffer.data();
 
-            std::vector<float *> &buffers = this->playbackBuffers;
+            std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
             for (size_t frame = 0; frame < frames; ++frame)
             {
@@ -1110,27 +1123,9 @@ namespace pipedal
             }
         }
 
-    public:
-        void TestFormatEncodeDecode(snd_pcm_format_t captureFormat);
-
-    private:
-        void AllocateBuffers(std::vector<float *> &buffers, size_t n)
+        virtual void Open(const JackServerSettings &jackServerSettings, const ChannelSelection &channelSelection) override
         {
-            buffers.resize(n);
-            for (size_t i = 0; i < n; ++i)
-            {
-                buffers[i] = new float[this->bufferSize];
-                for (size_t j = 0; j < this->bufferSize; ++j)
-                {
-                    buffers[i][j] = 0;
-                }
-            }
-        }
-
-        JackChannelSelection channelSelection;
-        bool open = false;
-        virtual void Open(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
-        {
+            this->isDummyDriver = jackServerSettings.IsDummyAudioDevice();
             terminateAudio_ = false;
             if (open)
             {
@@ -1153,6 +1148,27 @@ namespace pipedal
                 throw;
             }
         }
+
+    public:
+        void TestFormatEncodeDecode(snd_pcm_format_t captureFormat);
+
+    private:
+        void AllocateBuffers(std::vector<float *> &buffers, size_t n)
+        {
+            buffers.resize(n);
+            for (size_t i = 0; i < n; ++i)
+            {
+                buffers[i] = new float[this->bufferSize];
+                for (size_t j = 0; j < this->bufferSize; ++j)
+                {
+                    buffers[i][j] = 0;
+                }
+            }
+        }
+
+        ChannelSelection channelSelection;
+
+        bool open = false;
 
         void RestartAlsa()
         {
@@ -1180,13 +1196,13 @@ namespace pipedal
                 throw std::runtime_error("Unable to restart the audio stream.");
             }
             int err;
-            
+
             if ((err = snd_pcm_start(captureHandle)) < 0)
             {
                 Lv2Log::error(SS("Unable to restart ALSA capture: " << snd_strerror(err)));
                 throw PiPedalStateException("Unable to restart ALSA capture.");
             }
-            TraceBufferPositions(0,'+');
+            TraceBufferPositions(0, '+');
             audioRunning = true;
         }
 
@@ -1249,7 +1265,7 @@ namespace pipedal
             rawCaptureBuffer.resize(captureFrameSize * bufferSize * 2);
             memset(rawCaptureBuffer.data(), 0, rawCaptureBuffer.size());
 
-            AllocateBuffers(captureBuffers, captureChannels);
+            AllocateBuffers(deviceCaptureBuffers, captureChannels);
         }
 
         virtual std::string GetConfigurationDescription()
@@ -1260,8 +1276,10 @@ namespace pipedal
                 << ", " << GetAlsaFormatDescription(this->captureFormat)
                 << ", " << this->sampleRate
                 << ", " << this->bufferSize << "x" << this->numberOfBuffers
-                << ", in: " << this->InputBufferCount() << "/" << this->captureChannels
-                << ", out: " << this->OutputBufferCount() << "/" << this->playbackChannels);
+                << ", " << "device: " << this->DeviceInputBufferCount() << "/" << this->DeviceOutputBufferCount()
+                << ", main: " << this->MainInputBufferCount() << "/" << this->MainOutputBufferCount()
+                << ", aux: " << this->AuxInputBufferCount() << "/" << this->AuxOutputBufferCount()
+            );
             return result;
         }
         void PreparePlaybackFunctions(snd_pcm_format_t playbackFormat)
@@ -1321,18 +1339,17 @@ namespace pipedal
             rawPlaybackBuffer.resize(playbackFrameSize * bufferSize);
             memset(rawPlaybackBuffer.data(), 0, playbackFrameSize * bufferSize);
 
-            AllocateBuffers(playbackBuffers, playbackChannels);
+            AllocateBuffers(devicePlaybackBuffers, playbackChannels);
         }
 
-        void OpenAudio(const JackServerSettings &jackServerSettings, const JackChannelSelection &channelSelection)
+        void OpenAudio(const JackServerSettings &jackServerSettings, const ChannelSelection &channelSelection)
         {
             std::lock_guard lock{restartMutex};
 
             int err;
 
-            std::string inputName  = jackServerSettings.GetAlsaInputDevice();
+            std::string inputName = jackServerSettings.GetAlsaInputDevice();
             std::string outputName = jackServerSettings.GetAlsaOutputDevice();
-
 
             this->numberOfBuffers = jackServerSettings.GetNumberOfBuffers();
             this->bufferSize = jackServerSettings.GetBufferSize();
@@ -1376,7 +1393,7 @@ namespace pipedal
                 {
                     snd_pcm_nonblock(playbackHandle, 0);
                 }
-                
+
                 this->alsa_device_name = inputName;
                 err = snd_pcm_open(&captureHandle, inputName.c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
 
@@ -1467,6 +1484,10 @@ namespace pipedal
 
             memset(rawPlaybackBuffer.data(), 0, rawPlaybackBuffer.size());
             int retry = 0;
+            if (this->isDummyDriver)
+            {
+                return; // dummy driver is insatiable.
+            }
             while (true)
             {
                 auto avail = snd_pcm_avail(this->playbackHandle);
@@ -1486,7 +1507,7 @@ namespace pipedal
                     {
                         throw PiPedalStateException(SS("Audio playback failed. " << snd_strerror(err)));
                     }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     continue;
                 }
                 if (avail == 0)
@@ -1631,7 +1652,7 @@ namespace pipedal
             auto frame_bytes = this->captureFrameSize;
             do
             {
-                TraceBufferPositions(framesRead,'1');
+                TraceBufferPositions(framesRead, '1');
 
                 framesRead = snd_pcm_readi(handle, buffer, frames);
                 if (framesRead < 0)
@@ -1649,7 +1670,7 @@ namespace pipedal
                 }
             } while (frames > 0);
 
-            TraceBufferPositions(framesRead,'2');
+            TraceBufferPositions(framesRead, '2');
 
             return framesRead;
         }
@@ -1700,6 +1721,7 @@ namespace pipedal
         }
 
     private:
+        bool isDummyDriver = false;
         long WriteBuffer(snd_pcm_t *handle, uint8_t *buf, size_t frames)
         {
             long framesRead;
@@ -1717,7 +1739,7 @@ namespace pipedal
             }
             return 0;
         }
-        void AudioThread()
+        PIPEDAL_NON_INLINE void AudioThread()
         {
             SetThreadName("alsaDriver");
 
@@ -1797,7 +1819,20 @@ namespace pipedal
 
                     cpuUse.AddSample(ProfileCategory::Execute);
 
+                    // Perform any neccessary mixing of outputs.
+                    for (auto&mixOp: this->mixOps)
+                    {
+                        mixOp(framesRead);
+                    }
+
+                    // final format conversion.
                     (this->*copyOutputFn)(framesRead);
+
+                    if (this->driverHost)
+                    {
+                        driverHost->OnRealtimeUpdateDeviceVus(framesRead);
+                    }
+
                     cpuUse.AddSample(ProfileCategory::Driver);
                     // process.
 
@@ -1809,6 +1844,10 @@ namespace pipedal
 
                         recover_from_output_underrun(captureHandle, playbackHandle, err, framesRead);
                         framesRead = 0;
+                    }
+                    if (isDummyDriver)
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
                     }
                     cpuUse.AddSample(ProfileCategory::Write);
                 }
@@ -1824,9 +1863,9 @@ namespace pipedal
             {
                 this->driverHost->OnAlsaDriverStopped();
                 // zero out input buffers.
-                for (size_t i = 0; i < this->captureBuffers.size(); ++i)
+                for (size_t i = 0; i < this->deviceCaptureBuffers.size(); ++i)
                 {
-                    float *pBuffer = captureBuffers[i];
+                    float *pBuffer = deviceCaptureBuffers[i];
                     for (size_t j = 0; j < this->bufferSize; ++j)
                     {
                         pBuffer[j] = 0;
@@ -1836,7 +1875,7 @@ namespace pipedal
                 {
                     while (!terminateAudio())
                     {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
                         this->driverHost->OnProcess(this->bufferSize);
                     }
                 }
@@ -1849,63 +1888,208 @@ namespace pipedal
 
         bool alsaActive = false;
 
-        static int IndexFromPortName(const std::string &s)
+        PIPEDAL_NON_INLINE void AllocateInputChannels(
+            const std::vector<int64_t> &channelSelection,
+            std::vector<float *> &channelBuffers)
         {
-            auto pos = s.find_last_of('_');
-            if (pos == std::string::npos)
+            size_t nChannels = channelSelection.size();
+            if (nChannels == 0)
             {
-                throw std::invalid_argument("Bad port name.");
+                channelBuffers.resize(0);
+                return;
             }
-            const char *p = s.c_str() + (pos + 1);
 
-            int v = atoi(p);
-            if (v < 0)
+            channelBuffers.resize(nChannels);
+            for (size_t i = 0; i < nChannels; ++i)
             {
-                throw std::invalid_argument("Bad port name.");
+                int64_t deviceChannel = channelSelection[i];
+                if (deviceChannel == -1 || deviceChannel >= captureChannels)
+                {
+                    channelBuffers[i] = zeroInputBuffer;
+                }
+                else
+                {
+                    channelBuffers[i] = deviceCaptureBuffers[deviceChannel];
+                }
             }
-            return v;
+        }
+        PIPEDAL_NON_INLINE void AllocateOutputChannels(
+            const std::vector<int64_t> &channelSelection,
+            std::vector<float *> &channelBuffers)
+        {
+            size_t nChannels = channelSelection.size();
+
+            if (nChannels == 0)
+            {
+                channelBuffers.resize(0);
+                return;
+            }
+            channelBuffers.resize(nChannels);
+            for (size_t i = 0; i < nChannels; ++i)
+            {
+                int64_t deviceChannel = channelSelection[i];
+                if (deviceChannel == -1)
+                {
+                    channelBuffers[i] = this->GetDiscardOutputBuffer();
+                    ;
+                }
+                else
+                {
+                    float *mixBuffer = AllocateAudioBuffer();
+                    channelBuffers[i] = mixBuffer;
+                }
+            }
+        }
+
+
+        PIPEDAL_NON_INLINE  void AllocateAuxChannels()
+        {
+            for (auto ix : channelSelection.auxInputChannels())
+            {
+                auxCaptureBuffers.push_back(this->deviceCaptureBuffers[ix]);
+            }
+            for (auto ix : channelSelection.auxOutputChannels())
+            {
+                auxPlaybackBuffers.push_back(this->devicePlaybackBuffers[ix]);
+            }
+        }
+
+        using MixOp = std::function<void(size_t nFrames)>;
+        std::vector<MixOp> mixOps;
+
+        PIPEDAL_NON_INLINE 
+        void AddMixCopyOp(float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
+                {
+                    pOut[i] = pIn[i];
+                }
+            });
+        }
+        PIPEDAL_NON_INLINE 
+        void AddMixAddOp(float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
+                {
+                    pOut[i] += pIn[i];
+                }
+            });
+        }
+        PIPEDAL_NON_INLINE 
+        void AddMixCopyOp(float scale, float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([scale,inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
+                {
+                    pOut[i] = scale*pIn[i];
+                }
+            });
+        }
+        PIPEDAL_NON_INLINE 
+        void AddMixAddOp(float scale, float*inputBuffer, float*outputBuffer)
+        {
+            mixOps.push_back([scale,inputBuffer,outputBuffer](size_t nFrames) {
+                float*PIPEDAL_RESTRICT pIn = inputBuffer;
+                float*PIPEDAL_RESTRICT pOut = outputBuffer;
+                for (size_t i = 0; i < nFrames; ++i)
+                {
+                    pOut[i] += scale*pIn[i];
+                }
+            });
+        }
+        PIPEDAL_NON_INLINE void AddMixOps() 
+        {
+            std::set<size_t> usedOutputChannels;
+
+            for (size_t i = 0; i < this->channelSelection.mainOutputChannels().size(); ++i) {
+                size_t outputChannel = this->channelSelection.mainOutputChannels()[i];
+                AddMixCopyOp(this->mainPlaybackBuffers[i],this->devicePlaybackBuffers[outputChannel]);
+                usedOutputChannels.insert(outputChannel);
+            }
+            if (channelSelection.auxInputChannels().size() <= channelSelection.auxOutputChannels().size())
+            {
+                for (size_t i = 0; i < this->channelSelection.auxOutputChannels().size(); ++i)
+                {
+                    size_t outputChannel = this->channelSelection.auxOutputChannels()[i];
+                    size_t inputChannel;
+                    if (this->channelSelection.auxInputChannels().size() == 0) break;
+                    if (i >= this->channelSelection.auxInputChannels().size()) {
+                        inputChannel = 0;
+                    } else {
+                        inputChannel = this->channelSelection.auxInputChannels()[i];
+                    }
+                    if (outputChannel >= this->devicePlaybackBuffers.size())
+                    {
+                        continue;
+                    }
+                    if (usedOutputChannels.contains(outputChannel))
+                    {
+                        AddMixAddOp(this->deviceCaptureBuffers[inputChannel],this->devicePlaybackBuffers[outputChannel]);
+                    } else {
+                        AddMixCopyOp(this->deviceCaptureBuffers[inputChannel],this->devicePlaybackBuffers[outputChannel]);
+                    }
+                    usedOutputChannels.insert(outputChannel);
+                }
+            } else if (channelSelection.auxInputChannels().size() >= 2 && channelSelection.auxOutputChannels().size() == 1) {
+                float scale = 1.0/channelSelection.auxInputChannels().size();
+                for (size_t i = 0; i < this->channelSelection.auxOutputChannels().size(); ++i)
+                {
+                    size_t outputChannel = this->channelSelection.auxOutputChannels()[i];
+                    if (usedOutputChannels.contains(outputChannel))
+                    {
+                        AddMixAddOp(scale,this->auxCaptureBuffers[0],this->devicePlaybackBuffers[outputChannel]);
+                    } else {
+                        AddMixCopyOp(scale,this->auxCaptureBuffers[0],this->devicePlaybackBuffers[outputChannel]);
+                    }
+                    usedOutputChannels.insert(outputChannel);
+                }
+            } 
         }
 
         bool activated = false;
-        virtual void Activate()
+        PIPEDAL_NON_INLINE virtual void Activate()
         {
             if (activated)
             {
                 throw PiPedalStateException("Already activated.");
             }
+
             activated = true;
 
-            this->activeCaptureBuffers.resize(channelSelection.GetInputAudioPorts().size());
+            // Reset previously allocated buffers.
+            allocatedBuffers.resize(0);
 
-            int ix = 0;
-            for (auto &x : channelSelection.GetInputAudioPorts())
+            // Allocate device capture buffers.
+            zeroInputBuffer = AllocateAudioBuffer();
+            deviceCaptureBuffers.resize(captureChannels);
+            for (size_t i = 0; i < captureChannels; ++i)
             {
-                int sourceIndex = IndexFromPortName(x);
-                if (sourceIndex >= captureBuffers.size())
-                {
-                    Lv2Log::error(SS("Invalid audio input port: " << x));
-                }
-                else
-                {
-                    this->activeCaptureBuffers[ix++] = this->captureBuffers[sourceIndex];
-                }
+                deviceCaptureBuffers[i] = AllocateAudioBuffer();
+            }
+            devicePlaybackBuffers.resize(playbackChannels);
+            for (size_t i = 0; i < playbackChannels; ++i)
+            {
+                devicePlaybackBuffers[i] = AllocateAudioBuffer();
             }
 
-            this->activePlaybackBuffers.resize(channelSelection.GetOutputAudioPorts().size());
 
-            ix = 0;
-            for (auto &x : channelSelection.GetOutputAudioPorts())
-            {
-                int sourceIndex = IndexFromPortName(x);
-                if (sourceIndex >= playbackBuffers.size())
-                {
-                    Lv2Log::error(SS("Invalid audio output port: " << x));
-                }
-                else
-                {
-                    this->activePlaybackBuffers[ix++] = this->playbackBuffers[sourceIndex];
-                }
-            }
+            AllocateInputChannels(
+                channelSelection.mainInputChannels(),
+                this->mainCaptureBuffers);
+            AllocateOutputChannels(
+                channelSelection.mainOutputChannels(),
+                this->mainPlaybackBuffers);
+
+            AllocateAuxChannels();                
+            AddMixOps();
 
             audioThread = std::make_unique<std::jthread>([this]()
                                                          { AudioThread(); });
@@ -1936,15 +2120,85 @@ namespace pipedal
         AlsaSequencer::ptr alsaSequencer;
 
     public:
+        virtual const ChannelSelection &GetChannelSelection() const override
+        {
+            return channelSelection;
+        }
+
         virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) override
         {
             this->alsaSequencer = alsaSequencer;
         }
 
-        virtual size_t InputBufferCount() const { return activeCaptureBuffers.size(); }
-        virtual float *GetInputBuffer(size_t channel) override
+        virtual size_t DeviceInputBufferCount() const override
         {
-            return activeCaptureBuffers[channel];
+            return deviceCaptureBuffers.size();
+        }
+        virtual size_t DeviceOutputBufferCount() const override
+        {
+            return devicePlaybackBuffers.size();
+        }
+
+        virtual float *GetDeviceInputBuffer(size_t channel) const override
+        {
+            if (channel >= deviceCaptureBuffers.size())
+                return nullptr;
+            return deviceCaptureBuffers[channel];
+        }
+        virtual float *GetDeviceOutputBuffer(size_t channel) const override
+        {
+            if (channel >= devicePlaybackBuffers.size())
+                return nullptr;
+            return devicePlaybackBuffers[channel];
+        }
+
+        virtual float *GetZeroInputBuffer()
+        {
+            if (zeroInputBuffer == nullptr)
+            {
+                zeroInputBuffer = AllocateAudioBuffer();
+            }
+            return zeroInputBuffer;
+        }
+        virtual float *GetDiscardOutputBuffer()
+        {
+            if (discardOutputBuffer == nullptr)
+            {
+                discardOutputBuffer = AllocateAudioBuffer();
+            }
+            return discardOutputBuffer;
+        }
+
+        virtual std::vector<float *> &DeviceInputBuffers() override { return this->deviceCaptureBuffers; }
+        virtual std::vector<float *> &DeviceOutputBuffers() override { return this->devicePlaybackBuffers; }
+
+        virtual std::vector<float *> &MainInputBuffers() override { return this->mainCaptureBuffers; }
+        virtual std::vector<float *> &MainOutputBuffers() override { return this->mainPlaybackBuffers; }
+
+        virtual std::vector<float *> &AuxInputBuffers() override { return this->auxCaptureBuffers; }
+        virtual std::vector<float *> &AuxOutputBuffers() override { return this->auxPlaybackBuffers; }
+
+        virtual size_t MainInputBufferCount() const { return mainCaptureBuffers.size(); }
+        virtual float *GetMainInputBuffer(size_t channel) override
+        {
+            if (channel >= (int64_t)mainCaptureBuffers.size())
+            {
+                throw std::runtime_error("Argument out of range.");
+            }
+            return mainCaptureBuffers[channel];
+        }
+        virtual size_t AuxInputBufferCount() const { return auxCaptureBuffers.size(); }
+        virtual float *GetAuxInputBuffer(size_t channel) override
+        {
+            return auxCaptureBuffers[channel];
+        }
+        virtual size_t AuxOutputBufferCount() const
+        {
+            return auxPlaybackBuffers.size();
+        }
+        virtual float *GetAuxOutputBuffer(size_t channel) override
+        {
+            return auxPlaybackBuffers[channel];
         }
 
         virtual size_t GetMidiInputEventCount() override
@@ -1956,27 +2210,28 @@ namespace pipedal
             return this->midiEvents.data();
         }
 
-        virtual size_t OutputBufferCount() const { return activePlaybackBuffers.size(); }
-        virtual float *GetOutputBuffer(size_t channel) override
+        virtual size_t MainOutputBufferCount() const { return mainPlaybackBuffers.size(); }
+        virtual float *GetMainOutputBuffer(size_t channel) override
         {
-            return activePlaybackBuffers[channel];
+            return mainPlaybackBuffers[channel];
         }
-
-        void FreeBuffers(std::vector<float *> &buffer)
+        float *AllocateAudioBuffer()
         {
-            for (size_t i = 0; i < buffer.size(); ++i)
-            {
-                delete[] buffer[i];
-                buffer[i] = 0;
-            }
-            buffer.clear();
+            std::vector<float> buffer;
+            buffer.resize(this->bufferSize);
+            float *pBuffer = buffer.data();
+            allocatedBuffers.push_back(std::move(buffer));
+            return pBuffer;
         }
         void DeleteBuffers()
         {
-            activeCaptureBuffers.clear();
-            activePlaybackBuffers.clear();
-            FreeBuffers(this->playbackBuffers);
-            FreeBuffers(this->captureBuffers);
+            mainCaptureBuffers.clear();
+            mainPlaybackBuffers.clear();
+            auxCaptureBuffers.clear();
+            auxPlaybackBuffers.clear();
+            zeroInputBuffer = nullptr;
+            discardOutputBuffer = nullptr;
+            allocatedBuffers.clear();
         }
         virtual void Close()
         {
@@ -2015,19 +2270,19 @@ namespace pipedal
                          std::vector<std::string> &inputAudioPorts,
                          std::vector<std::string> &outputAudioPorts)
     {
-        if (jackServerSettings.IsDummyAudioDevice())
-        {
-            auto nChannels = GetDummyAudioChannels(jackServerSettings.GetAlsaInputDevice());
+        // if (jackServerSettings.IsDummyAudioDevice())
+        // {
+        //     auto nChannels = GetDummyAudioChannels(jackServerSettings.GetAlsaInputDevice());
 
-            inputAudioPorts.clear();
-            outputAudioPorts.clear();
-            for (uint32_t i = 0; i < nChannels; ++i)
-            {
-                inputAudioPorts.push_back(std::string(SS("system::capture_" << i)));
-                outputAudioPorts.push_back(std::string(SS("system::playback_" << i)));
-            }
-            return true;
-        }
+        //     inputAudioPorts.clear();
+        //     outputAudioPorts.clear();
+        //     for (uint32_t i = 0; i < nChannels; ++i)
+        //     {
+        //         inputAudioPorts.push_back(std::string(SS("system::capture_" << i)));
+        //         outputAudioPorts.push_back(std::string(SS("system::playback_" << i)));
+        //     }
+        //     return true;
+        // }
 
         snd_pcm_t *playbackHandle = nullptr;
         snd_pcm_t *captureHandle = nullptr;
@@ -2241,7 +2496,7 @@ namespace pipedal
                 {
                     value += 1.0f * (c) / (128.0 * 256.0 * 256.0);
                 }
-                this->playbackBuffers[c][i] = value;
+                this->devicePlaybackBuffers[c][i] = value;
             }
         }
 
@@ -2257,14 +2512,14 @@ namespace pipedal
             for (size_t c = 0; c < captureChannels; ++c)
             {
                 float error =
-                    this->captureBuffers[c][i] - this->playbackBuffers[c][i];
+                    this->deviceCaptureBuffers[c][i] - this->devicePlaybackBuffers[c][i];
 
                 assert(std::abs(error) < 4e-5);
             }
         }
     }
 
-    void AlsaFormatEncodeDecodeTest(AudioDriverHost *testDriverHost)
+    void test::AlsaFormatEncodeDecodeTest(AudioDriverHost *testDriverHost)
     {
         static snd_pcm_format_t formats[] = {
             snd_pcm_format_t::SND_PCM_FORMAT_S16_LE,
@@ -2286,7 +2541,7 @@ namespace pipedal
             alsaDriver->TestFormatEncodeDecode(format);
         }
     }
-    void MidiDecoderTest()
+    void test::MidiDecoderTest()
     {
 #ifdef JUNK
         AlsaDriverImpl::AlsaMidiDeviceImpl midiState;
@@ -2355,37 +2610,41 @@ namespace pipedal
     {
         using namespace std;
         int savedPrecision = cout.precision();
-        auto  savedFlags = cout.flags();
+        auto savedFlags = cout.flags();
 
         size_t ix = bufferTraceIndex;
         if (ix < nEntries)
         {
-            ix = ix + bufferTraces.size()-nEntries;
-        } else {
+            ix = ix + bufferTraces.size() - nEntries;
+        }
+        else
+        {
             ix -= nEntries;
         }
         uint64_t t0;
-        if (bufferTraceIndex == 0) {
-            t0 = bufferTraces[bufferTraces.size()-1].time;
-        } else {
-            t0 = bufferTraces[bufferTraceIndex-1].time;
+        if (bufferTraceIndex == 0)
+        {
+            t0 = bufferTraces[bufferTraces.size() - 1].time;
+        }
+        else
+        {
+            t0 = bufferTraces[bufferTraceIndex - 1].time;
         }
         while (ix != bufferTraceIndex)
         {
-            auto&bufferTrace = bufferTraces[ix];
+            auto &bufferTrace = bufferTraces[ix];
 
             if (bufferTrace.time != 0)
             {
                 int64_t dt = (int64_t)bufferTrace.time - (int64_t)t0;
 
-
-                cout << bufferTrace.code << " " 
-                    << fixed << setprecision(3) << dt*0.001
-                    << " " << "inAvail: " << bufferTrace.inAvail
-                    << " " << "outAvail: " << bufferTrace.outAvail
-                    << " " << "buffered: " << bufferTrace.buffered
-                    << " " << "total: " << bufferTrace.total
-                    << endl;
+                cout << bufferTrace.code << " "
+                     << fixed << setprecision(3) << dt * 0.001
+                     << " " << "inAvail: " << bufferTrace.inAvail
+                     << " " << "outAvail: " << bufferTrace.outAvail
+                     << " " << "buffered: " << bufferTrace.buffered
+                     << " " << "total: " << bufferTrace.total
+                     << endl;
             }
 
             ++ix;
@@ -2397,6 +2656,53 @@ namespace pipedal
 
         cout.precision(savedPrecision);
         cout.flags(savedFlags);
+    }
+
+    AlsaDeviceInfo MakeDummyDeviceInfo(uint32_t channels)
+    {
+        AlsaDeviceInfo result;
+        constexpr int DUMMY_DEVICE_ID_OFFSET = 100974;
+        result.cardId_ = DUMMY_DEVICE_ID_OFFSET + channels;
+        result.id_ = SS("dummy:channels_" << channels);
+        result.name_ = SS("Dummy Device (" << channels << " channels)");
+        result.longName_ = result.name_;
+        result.sampleRates_.push_back(44100);
+        result.sampleRates_.push_back(48000);
+        result.minBufferSize_ = 16;
+        result.maxBufferSize_ = 1024;
+        result.supportsCapture_ = true;
+        result.supportsPlayback_ = true;
+        return result;
+    }
+
+    uint32_t GetDummyAudioChannels(const std::string &deviceName)
+    {
+        uint32_t channels;
+        int pos = deviceName.find_last_of('_');
+        if (pos == std::string::npos)
+        {
+            throw std::runtime_error("Invalid dummy device name");
+        }
+        std::istringstream ss(deviceName.substr(pos + 1));
+        ss >> channels;
+        return channels;
+    }
+    AudioDriver *CreateDummyAudioDriver(AudioDriverHost *driverHost, const JackServerSettings &jackServerSettings, const ChannelSelection &channelSelection)
+    {
+        auto dummyServerSettings = jackServerSettings;
+        dummyServerSettings.UseDummyAudioDevice();
+        auto dummyChannelSelection = channelSelection;
+        AudioDriver *driver = new AlsaDriverImpl(driverHost);
+        try
+        {
+            driver->Open(jackServerSettings, channelSelection);
+            return driver;
+        }
+        catch (const std::exception &e)
+        {
+            delete driver;
+            throw;
+        }
     }
 
 } // namespace

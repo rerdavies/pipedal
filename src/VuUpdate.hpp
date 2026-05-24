@@ -20,10 +20,11 @@
 #pragma once
 
 #include "json.hpp"
+#include "Pedalboard.hpp"
 
 namespace pipedal
 {
-    class VuUpdate
+    class VuUpdateX
     {
     public:
         int64_t instanceId_ = 0;
@@ -45,7 +46,10 @@ namespace pipedal
         
         void AccumulateVu(float *value,float *input, uint32_t samples)
         {
-                        
+            if (input == nullptr) {
+                *value = 0;
+                return;               
+            }
             float v = *value;
             for (uint32_t i = 0; i < samples; ++i)
             {
@@ -65,7 +69,6 @@ namespace pipedal
         {
             AccumulateVu(&inputMaxValueL_,inputL,samples);
             AccumulateVu(&inputMaxValueR_,inputR,samples);
-
         }
         void AccumulateOutputs(float* output, uint32_t samples)
         {
@@ -78,6 +81,6 @@ namespace pipedal
             AccumulateVu(&outputMaxValueR_,outputR,samples);
         }
 
-        DECLARE_JSON_MAP(VuUpdate);
+        DECLARE_JSON_MAP(VuUpdateX);
     };
 }

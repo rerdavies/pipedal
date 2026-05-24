@@ -32,6 +32,8 @@
 #include <map>
 #include "FilePropertyDirectoryTree.hpp"
 #include "AlsaSequencer.hpp"
+#include "ChannelRouterSettings.hpp"
+
 
 
 namespace pipedal {
@@ -75,7 +77,6 @@ private:
     BankIndex bankIndex;
     BankFile currentBank;
     PluginPresetIndex pluginPresetIndex;
-    std::string tone3000Auth;
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
@@ -90,7 +91,6 @@ private:
     std::filesystem::path GetChannelSelectionFileName();
     std::filesystem::path GetAlsaSequencerConfigurationFileName();
     std::filesystem::path GetCurrentPresetPath() const;
-    std::filesystem::path GetTone3000AuthPath() const;
 
     void LoadBankIndex();
     void SaveBankIndex();
@@ -98,7 +98,7 @@ private:
     void LoadCurrentBank();
     void SaveCurrentBank();
 
-    void LoadChannelSelection();
+    void LoadJackChannelSelection();
     void SaveChannelSelection();
 
     void LoadAlsaSequencerConfiguration();
@@ -117,6 +117,15 @@ private:
     WifiDirectConfigSettings wifiDirectConfigSettings;
 
     UserSettings userSettings;
+
+    ChannelRouterSettings::ptr channelRouterSettings;
+    ChannelSelection channelSelection;
+
+    void UpgradeChannelRouterSettings();
+    std::filesystem::path GetChannelRouterSettingsPath() const;
+    void SaveChannelRouterSettings(ChannelRouterSettings::ptr settings);
+    ChannelRouterSettings::ptr LoadChannelRouterSettings();
+
 public:
     Storage();
     void Initialize();
@@ -124,8 +133,8 @@ public:
 
     void SetDataRoot(const std::filesystem::path& path);
     void SetConfigRoot(const std::filesystem::path& path);
-    const std::filesystem::path&GetConfigRoot();
-    const std::filesystem::path&GetDataRoot();
+    const std::filesystem::path&GetConfigRoot() const;
+    const std::filesystem::path&GetDataRoot() const;
 
     const std::filesystem::path &GetPluginUploadDirectory() const;
 
@@ -206,6 +215,11 @@ public:
     void SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration);
     AlsaSequencerConfiguration GetAlsaSequencerConfiguration() const;
 
+    void SetChannelRouterSettings(ChannelRouterSettings::ptr settings);
+    ChannelRouterSettings::ptr GetChannelRouterSettings();
+
+    const ChannelSelection& GetChannelSelection() const;
+
 
     //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);
 
@@ -267,9 +281,6 @@ public:
         bool overwrite = false);
     FilePropertyDirectoryTree::ptr GetFilePropertydirectoryTree(const UiFileProperty&uiFileProperty,const std::filesystem::path&selectedPath);
 
-    void LoadTone3000Auth();
-    void SetTone3000Auth(const std::string&apiKey);
-    std::string GetTone3000Auth() const;
 
     std::vector<PresetIndexEntry> RequestBankPresets(int64_t bankInstanceId);
     int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);

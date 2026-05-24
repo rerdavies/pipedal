@@ -469,6 +469,7 @@ const BankDialog = withStyles(
                                                     title={this.state.filenameSaveAs ? "Save Bank As" : "Bank Name"}
                                                     acceptActionName={this.state.filenameSaveAs ? "SAVE AS" : "RENAME"}
                                                     onClose={() => { this.setState({ filenameDialogOpen: false }) }}
+                                                    useSafeFilenames={false}
                                                     onOk={(text: string) => {
                                                         if (this.state.filenameSaveAs) {
                                                             this.handleSaveAsOk(text);

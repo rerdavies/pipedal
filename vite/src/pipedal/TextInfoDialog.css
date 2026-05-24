@@ -1,0 +1,53 @@
+
+.text-info-dialog-content #user-content-tone3000_float {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: justify;
+    margin-top: 8px;
+    margin-bottom: 32px;
+}
+
+.text-info-dialog-content #user-content-tone3000_float_content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+
+}
+
+.text-info-dialog-content #user-content-tone3000_title {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding: 0;    
+}
+.text-info-dialog-content #user-content-tone3000_subtitle {
+    font-size: 0.8em;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 0;
+}
+
+.text-info-dialog-content #user-content-cc_img {
+    width: 16px;
+    height: 16px;
+    margin: 1px;
+    opacity: 0.6;
+    vertical-align: middle;
+}
+.text-info-dialog-content #user-content-tone3000_thumbnail {
+    width: 130px;
+    height: auto;
+    object-fit: contain;
+    margin-right: 24px;
+    border: 1px solid var(--pd-border-color);
+    border-radius: 6px;
+    align-self: flex-start;
+}
+@media (max-width: 600px) {
+    .text-info-dialog-content #user-content-tone3000_thumbnail {
+        width: 80px;
+        margin-right: 20px;
+    }
+}

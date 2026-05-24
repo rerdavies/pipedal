@@ -40,7 +40,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 73 ;
+        lv2:microVersion 78 ;
         rdfs:comment """
 TooB Tuner is a chromatic guitar tuner.
 """ ;
@@ -150,6 +150,7 @@ TooB Tuner is a chromatic guitar tuner.
 
     lv2:extensionData uiext::idle ;
     lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:showInterface ;
     lv2:extensionData uiext:idleInterface;
     lv2:requiredFeature uiext:idleInterface ;
     .

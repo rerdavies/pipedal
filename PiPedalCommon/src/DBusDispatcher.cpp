@@ -208,8 +208,9 @@ void DBusDispatcher::WaitForClose()
             serviceThread.join();
         }
     }
-    catch (const std::exception &)
+    catch (const std::exception &e)
     {
+        std::cout << "DBusDispatcher: " << e.what() << std::endl;
     }
     if (eventFd != -1)
     {

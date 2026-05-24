@@ -416,6 +416,7 @@ const PluginPresetsDialog = withStyles(
                                                     title="Rename"
                                                     open={this.state.renameOpen}
                                                     defaultName={this.getSelectedName()}
+                                                    useSafeFilenames={false}
                                                     acceptActionName={"Rename"}
                                                     onClose={() => { this.setState({ renameOpen: false }) }}
                                                     onOk={(text: string) => {

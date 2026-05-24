@@ -206,6 +206,7 @@ static void print_device_info(snd_ctl_t* handle, int card, int device) {
         // Print basic info
         std::cout << "\n  Subdevice: " << name << " - " << device_name << std::endl;
         std::cout << "  ID: " << snd_pcm_info_get_id(pcminfo) << std::endl;
+        std::cout << "  Name: " << snd_pcm_info_get_name(pcminfo) << std::endl;
         std::cout << "  Capabilities:";
         if (has_playback) std::cout << " PLAYBACK";
         if (has_capture) std::cout << " CAPTURE";

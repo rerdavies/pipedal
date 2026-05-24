@@ -103,7 +103,8 @@
         "locale": "cpp",
         "stdfloat": "cpp",
         "text_encoding": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "*.bak": "cpp"
     },
     "cSpell.words": [
         "Alsa",
@@ -170,7 +171,7 @@
     "cSpell.ignoreWords": [
         "nammodel"
     ],
-    "cSpell.enabled": false,
+    "cSpell.enabled": true,
     
     // Disable all automatic completion suggestions - only show when Ctrl+Space is pressed
     "editor.quickSuggestions": {
@@ -190,5 +191,8 @@
     
     // Disable parameter hints popup (optional)
     "editor.parameterHints.enabled": false,
+    "cSpell.enabledFileTypes": {
+        "markdown": true
+    },
     
 }

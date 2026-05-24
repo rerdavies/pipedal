@@ -27,14 +27,30 @@ import { withStyles } from "tss-react/mui";
 
 import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel, ListenHandle, State } from "./PiPedalModel";
-import { PedalboardItem,ControlValue } from './Pedalboard';
+import { PedalboardItem, ControlValue } from './Pedalboard';
 import PluginControlView, { ICustomizationHost, ControlGroup, ControlViewCustomization } from './PluginControlView';
-import { UiPlugin,UiControl, ControlType } from './Lv2Plugin';
+import { UiPlugin, UiControl, ControlType } from './Lv2Plugin';
 
 
-const TOOB_NAM__MODEL_METADATA = "http://two-play.com/plugins/toob-nam#model_metadata";
+const TOOB_NAM__MODEL_METADATA_URI = "http://two-play.com/plugins/toob-nam#model_metadata";
 
+
+enum NamModelType {
+    None = 0,
+    A1 = 1,
+    A2 = 2
+};
+
+function floatToModelType(value: number): NamModelType {
+    switch (value) {
+        case 0: return NamModelType.None;
+        case 1: return NamModelType.A1;
+        case 2: return NamModelType.A2;
+        default: return NamModelType.None;
+    }
+}
 // offset 0: an integer with the folloing bits set.
+// Must match ToobAmp/src/NeuralAmpModeler_Lv2Extensions.hpp enum TOOB_NAM_METADATA_OFFSETS
 class TOOB_NAM_METADATA_OFFSETS {
     static readonly flags = 0;
     static readonly preset_version = 1;
@@ -42,7 +58,10 @@ class TOOB_NAM_METADATA_OFFSETS {
     static readonly gain = 3;
     static readonly input_level_dbu = 4;
     static readonly output_level_dbu = 5;
-    static readonly max_medatadata = 6;
+    static readonly has_slimmable_weights = 6;
+    static readonly model_weight = 7;
+    static readonly model_type = 8;
+    static readonly max_medatadata = 9;
 };
 
 
@@ -55,10 +74,9 @@ class TOOB_NAM_METADATA_FLAGS {
 };
 
 class ModelMetadata {
-    constructor(metadataValues?: number[]) 
-    {
+    constructor(metadataValues?: number[]) {
 
-        
+
         if (metadataValues) {
             let flags = metadataValues[TOOB_NAM_METADATA_OFFSETS.flags];
             this.hasModel = (flags & TOOB_NAM_METADATA_FLAGS.has_model) !== 0;
@@ -72,6 +90,9 @@ class ModelMetadata {
             this.inputlevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.input_level_dbu];
             this.outputlevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.output_level_dbu];
             this.preset_version = metadataValues[TOOB_NAM_METADATA_OFFSETS.preset_version];
+            this.hasSlimmableWeights = metadataValues[TOOB_NAM_METADATA_OFFSETS.has_slimmable_weights] !== 0;
+            this.modelWeight = metadataValues[TOOB_NAM_METADATA_OFFSETS.model_weight];
+            this.modelType = floatToModelType(metadataValues[TOOB_NAM_METADATA_OFFSETS.model_type]);
         } else {
             this.hasModel = false;
             this.hasLoudness = false;
@@ -81,19 +102,23 @@ class ModelMetadata {
 
             this.loudness = 0;
             this.gain = 0;
+            this.hasSlimmableWeights = false;
             this.inputlevelDBU = 0;
             this.outputlevelDBU = 0;
             this.preset_version = 1;
+            this.modelWeight = -1;
         }
     }
 
     preset_version: number;
-
-    hasModel: boolean;
-    hasLoudness: boolean;
-    hasGain: boolean;
-    hasInputLevelDBU: boolean;
-    hasOutputLevelDBU: boolean;
+    hasSlimmableWeights: boolean = false;
+    modelWeight: number = 1.0;
+    modelType: NamModelType = NamModelType.None;
+    hasModel: boolean = false;
+    hasLoudness: boolean = false;
+    hasGain: boolean = false;
+    hasInputLevelDBU: boolean = false;
+    hasOutputLevelDBU: boolean = false;
 
     loudness: number;
     gain: number;
@@ -114,8 +139,10 @@ interface ToobNamViewProps extends WithStyles<typeof styles> {
 interface ToobNamViewState {
     showEqSection: boolean;
     enableCalibration: boolean;
+    showCalibration: boolean;
     enableOutputNormalization: boolean;
     modelMetadata: ModelMetadata;
+    modelWeight: number,
 }
 
 const ToobNamView =
@@ -133,18 +160,18 @@ const ToobNamView =
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
                     showEqSection: false,
+                    showCalibration: false,
                     enableCalibration: false,
                     enableOutputNormalization: false,
-                    modelMetadata: new ModelMetadata()
+                    modelMetadata: new ModelMetadata(),
+                    modelWeight: -1
                 }
                 let pluginInfo: UiPlugin | null = this.model.getUiPlugin(this.props.item.uri);
-                if (pluginInfo === null)
-                {
+                if (pluginInfo === null) {
                     throw new Error("Plugin not fouund.");
                 }
                 let inputCalibrationControl = pluginInfo.getControl("inputCalibrationMode");
-                if (!inputCalibrationControl)
-                {
+                if (!inputCalibrationControl) {
                     throw new Error("Control not found.");
                 }
                 let patchedInputControl = new UiControl().deserialize(inputCalibrationControl);
@@ -152,14 +179,13 @@ const ToobNamView =
                 this.patchedInputControl = patchedInputControl
 
                 let outputCalibrationControl = pluginInfo.getControl("outputCalibration");
-                if (!outputCalibrationControl)
-                {
+                if (!outputCalibrationControl) {
                     throw new Error("Control not found.");
                 }
                 let patchedOutputControl = new UiControl().deserialize(outputCalibrationControl);
                 patchedOutputControl.controlType = ControlType.Select;
                 this.noCalibrationOutputControl = patchedOutputControl
-                this.noCalibrationOutputControl.scale_points.splice(1,1);
+                this.noCalibrationOutputControl.scale_points.splice(1, 1);
             }
 
             private patchedInputControl: UiControl;
@@ -171,7 +197,7 @@ const ToobNamView =
             disableControl(control: React.ReactNode, key: string) {
                 return (
                     <div style={{ opacity: 0.3, pointerEvents: "none" }}
-                       key={key}
+                        key={key}
 
                         onPointerDownCapture={(e) => {
                             e.stopPropagation();
@@ -188,42 +214,51 @@ const ToobNamView =
             }
 
             modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[] {
-                let EqPos = 7;
-                let CalibrationGroupPos = 8;
+                const ModelWeightControlPos = 3;
+                const EqPos = 8;
+                const CalibrationGroupPos = 9;
+
 
                 let calibrationGroup = controls[CalibrationGroupPos] as ControlGroup;
 
-                calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl,this.props.item.controlValues);
 
-                if (this.state.enableCalibration)
-                {
-                    calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl,this.props.item.controlValues);
+                if (this.state.showCalibration) {
+                    calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl, this.props.item.controlValues);
 
-                } else  {
-                    calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl,
-                        [ new ControlValue("inputCalibrationMode",0.0)]
-                    );
-                    calibrationGroup.controls[0] = this.disableControl(calibrationGroup.controls[0], "cg_01d");
-                    calibrationGroup.controls[1] = this.disableControl(calibrationGroup.controls[1], "cg_02d");
+                    if (this.state.enableCalibration) {
+                        calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl, this.props.item.controlValues);
 
-                    if (this.state.enableOutputNormalization)
-                    {
-                        calibrationGroup.controls[2] = host.makeStandardControl(this.noCalibrationOutputControl, this.props.item.controlValues);
                     } else {
-                        let tControl: UiControl = this.noCalibrationOutputControl.clone();
-                        tControl.symbol = "_disabled_output";
-                        calibrationGroup.controls[2] = host.makeStandardControl(
-                            tControl, 
-                            [ new ControlValue("_disabled_output",2.0)]);
-                        calibrationGroup.controls[2] = this.disableControl(calibrationGroup.controls[2], "cg_03d");
+                        calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl,
+                            [new ControlValue("inputCalibrationMode", 0.0)]
+                        );
+                        calibrationGroup.controls[0] = this.disableControl(calibrationGroup.controls[0], "cg_01d");
+                        calibrationGroup.controls[1] = this.disableControl(calibrationGroup.controls[1], "cg_02d");
 
+                        if (this.state.enableOutputNormalization) {
+                            calibrationGroup.controls[2] = host.makeStandardControl(this.noCalibrationOutputControl, this.props.item.controlValues);
+                        } else {
+                            let tControl: UiControl = this.noCalibrationOutputControl.clone();
+                            tControl.symbol = "_disabled_output";
+                            calibrationGroup.controls[2] = host.makeStandardControl(
+                                tControl,
+                                [new ControlValue("_disabled_output", 2.0)]);
+                            calibrationGroup.controls[2] = this.disableControl(calibrationGroup.controls[2], "cg_03d");
+
+                        }
                     }
+                } else {
+                    controls[CalibrationGroupPos] = null;
                 }
                 if (!this.state.showEqSection) {
-                    controls.splice(EqPos, 1);
+                    controls[EqPos] = null;
+                }
+                if (!this.state.modelMetadata.hasSlimmableWeights) {
+                    controls[ModelWeightControlPos] = null;
                 }
                 return controls;
             }
+
 
             private handleConnectionStateChanged(state: State) {
                 if (state === State.Ready) {
@@ -235,11 +270,16 @@ const ToobNamView =
             handleModelMetadata(atomData: any) {
                 if (atomData && atomData.otype_ === "Vector" && atomData.value) {
                     let metadata = new ModelMetadata(atomData.value as number[]);
-                    this.setState({ 
+                    metadata.hasInputLevelDBU || metadata.hasOutputLevelDBU
+                    this.setState({
                         modelMetadata: metadata,
                         showEqSection: metadata.preset_version === 0,
+                        showCalibration: (
+                            metadata.hasInputLevelDBU || metadata.hasOutputLevelDBU ||
+                            (metadata.hasLoudness && metadata.hasGain)) && metadata.hasModel,
                         enableCalibration: metadata.hasInputLevelDBU && metadata.hasModel,
-                        enableOutputNormalization: metadata.hasLoudness && metadata.hasModel
+                        enableOutputNormalization: metadata.hasLoudness && metadata.hasModel,
+                        modelWeight: metadata.modelWeight
                     });
                 }
             }
@@ -248,13 +288,13 @@ const ToobNamView =
                 this.subscribedId = this.props.instanceId;
                 this.listenHandle = this.model.monitorPatchProperty(
                     this.props.instanceId,
-                    TOOB_NAM__MODEL_METADATA,
+                    TOOB_NAM__MODEL_METADATA_URI,
                     (instanceId, propertyUri, atomData) => {
                         this.handleModelMetadata(atomData);
                     });
                 this.model.getPatchProperty(
                     this.props.instanceId,
-                    TOOB_NAM__MODEL_METADATA
+                    TOOB_NAM__MODEL_METADATA_URI
                 ).then((atomData) => {
                     this.handleModelMetadata(atomData);
                 }).catch((e) => {

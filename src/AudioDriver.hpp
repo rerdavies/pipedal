@@ -27,6 +27,7 @@
 #include <functional>
 #include "AlsaSequencer.hpp"
 #include "MidiEvent.hpp"
+#include "DeviceVus.hpp"
 
 
 
@@ -35,15 +36,16 @@ namespace pipedal {
 
     using ProcessCallback = std::function<void (size_t)>;
 
+    class ChannelSelection;
 
     class AudioDriverHost {
     public:
         virtual void OnProcess(size_t nFrames) = 0;
+        virtual bool OnRealtimeUpdateDeviceVus(size_t nFrames) = 0;
+
         virtual void OnUnderrun() = 0;
         virtual void OnAlsaDriverStopped() = 0;
         virtual void OnAudioTerminated() = 0;
-
-
     };
     class AudioDriver {
     public:
@@ -58,14 +60,39 @@ namespace pipedal {
         virtual size_t GetMidiInputEventCount() = 0;
         virtual MidiEvent*GetMidiEvents() = 0;
 
-        virtual size_t InputBufferCount() const = 0;
-        virtual float*GetInputBuffer(size_t channel) = 0;
+        virtual const ChannelSelection &GetChannelSelection() const = 0;
 
 
-        virtual size_t OutputBufferCount() const = 0;
-        virtual float*GetOutputBuffer(size_t channe) = 0;
+        virtual std::vector<float*> &DeviceInputBuffers() = 0;
+        virtual size_t DeviceInputBufferCount() const = 0;
+        virtual float* GetDeviceInputBuffer(size_t channel) const = 0;
 
-        virtual void Open(const JackServerSettings & jackServerSettings,const JackChannelSelection &channelSelection) = 0;
+        virtual std::vector<float*> &DeviceOutputBuffers() = 0;
+        virtual size_t DeviceOutputBufferCount() const = 0;
+        virtual float* GetDeviceOutputBuffer(size_t channel) const = 0;
+
+        virtual std::vector<float*> &MainInputBuffers() = 0;
+        virtual size_t MainInputBufferCount() const = 0;
+        virtual float*GetMainInputBuffer(size_t channel) = 0;
+
+        virtual std::vector<float*> &MainOutputBuffers() = 0;
+        virtual size_t MainOutputBufferCount() const = 0;
+        virtual float*GetMainOutputBuffer(size_t channel) = 0;
+
+        
+        virtual std::vector<float*>&AuxInputBuffers() = 0;
+        virtual std::vector<float*>&AuxOutputBuffers() = 0;
+        virtual size_t AuxInputBufferCount() const = 0;
+        
+        virtual float*GetAuxInputBuffer(size_t channel) = 0;
+        virtual size_t AuxOutputBufferCount() const = 0;
+        virtual float*GetAuxOutputBuffer(size_t channel) = 0;
+
+
+        virtual float*GetZeroInputBuffer() = 0;
+        virtual float*GetDiscardOutputBuffer() = 0;
+
+        virtual void Open(const JackServerSettings & jackServerSettings,const ChannelSelection &channelSelection) = 0;
         virtual void SetAlsaSequencer(AlsaSequencer::ptr alsaSequencer) = 0;
         virtual void Activate() = 0;
         virtual void Deactivate() = 0;

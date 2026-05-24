@@ -25,6 +25,7 @@
 import { Component, SyntheticEvent } from 'react';
 import { Theme } from '@mui/material/styles';
 import { css } from '@emotion/react';
+import ToolTipEx from './ToolTipEx';
 
 import { UiFileProperty } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
@@ -33,14 +34,15 @@ import ButtonBase from '@mui/material/ButtonBase'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { PedalboardItem } from './Pedalboard';
 import { isDarkMode } from './DarkMode';
-
-
-export const StandardItemSize = { width: 80, height: 140 }
+import {safeFilenameDecode} from './SafeFilename';
 
 
 import { withStyles } from "tss-react/mui";
 import WithStyles from './WithStyles';
 import { withTheme } from './WithStyles';
+
+
+export const StandardItemSize = { width: 80, height: 140 }
 
 const styles = (theme: Theme) => {
     return {
@@ -209,11 +211,13 @@ const FilePropertyControl =
             let fileProperty = this.props.fileProperty;
 
             let value = "\u00A0";
+            let toolTipText: string | null = null;
             if (this.state.hasValue) {
                 if (this.state.value.length === 0) {
                     value = "<none>";
                 } else {
-                    value = this.fileNameOnly(this.state.value);
+                    value = safeFilenameDecode(this.fileNameOnly(this.state.value));
+                    toolTipText = value;
                 }
             }
 
@@ -233,7 +237,7 @@ const FilePropertyControl =
                     {/* CONTROL SECTION */}
 
                     <div className={classes.midSection} style={{ width: "100%", paddingLeft: 8 }}>
-
+                        <ToolTipEx title={toolTipText}>
                         <ButtonBase style={{ width: "100%", borderRadius: "4px 4px 0px 0px", overflow: "hidden" }} onClick={() => { this.onFileClick() }} >
                             <div style={{
                                 width: "100%", background:
@@ -249,6 +253,7 @@ const FilePropertyControl =
                                 <div style={{ height: "1px", width: "100%", background: this.props.theme.palette.text.secondary }}>&nbsp;</div>
                             </div>
                         </ButtonBase>
+                        </ToolTipEx>
                     </div>
 
                     {/* LABEL/EDIT SECTION*/}

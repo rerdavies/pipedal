@@ -60,6 +60,9 @@ export class ObservableProperty<VALUE_TYPE> {
 
     set(value: VALUE_TYPE) : void
     {
+        if (this._value_type === value) {
+            return;
+        }
         this._value_type = value;
 
         let t = this._on_changed_handlers; // take an copy in case removes happen while iteratiing.

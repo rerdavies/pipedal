@@ -23,6 +23,7 @@
 
 import { pathConcat, pathParentDirectory, pathFileName } from "./FileUtils";
 import { PiPedalModel } from "./PiPedalModel";
+import { safeFilenameDecode } from "./SafeFilename";
 
 export class ThumbnailType {
     static Unknown = 0;
@@ -38,13 +39,12 @@ function getVersionSuffix(filePath: string): string | null {
     return match ? match[1] : null;
 }
 
-
 export function getTrackTitle(pathname: string, metadata: AudioFileMetadata | null | undefined): string {
     if (!metadata) {
-        return pathFileName(pathname);
+        return safeFilenameDecode(pathFileName(pathname));
     }
     if (metadata.title === "") {
-        return pathFileName(pathname);
+        return safeFilenameDecode(pathFileName(pathname));
     }
     let trackDisplay = "";
     if (metadata.track > 0) {
@@ -56,7 +56,7 @@ export function getTrackTitle(pathname: string, metadata: AudioFileMetadata | nu
     }
     let result = trackDisplay + metadata.title;
     if (result === "") {
-        result = pathFileName(pathname);
+        result = safeFilenameDecode(pathFileName(pathname));
     }
     let versionSuffix = getVersionSuffix(pathname);
     if (versionSuffix) {

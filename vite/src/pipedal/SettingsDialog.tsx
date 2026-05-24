@@ -20,11 +20,13 @@
 
 import React, { SyntheticEvent, Component } from 'react';
 import Switch from "@mui/material/Switch";
+import ChannelRouterSettings from './ChannelRouterSettings';
+import ChannelRouterSettingsDialog from './ChannelRouterSettingsDialog';
 import OkCancelDialog from './OkCancelDialog';
 import RadioSelectDialog from './RadioSelectDialog';
 import IconButtonEx from './IconButtonEx';
 import Typography from '@mui/material/Typography';
-import {isDarkMode} from './DarkMode';
+import { isDarkMode } from './DarkMode';
 import { PiPedalModel, PiPedalModelFactory, State } from './PiPedalModel';
 import { ColorTheme } from './DarkMode';
 import ButtonBase from "@mui/material/ButtonBase";
@@ -75,7 +77,8 @@ interface SettingsDialogState {
     showStatusMonitor: boolean;
     showStatusMonitorDialog: boolean;
     jackConfiguration: JackConfiguration;
-    jackSettings: JackChannelSelection;
+    jackSettings: JackChannelSelection | null;
+    channelRouterSettings: ChannelRouterSettings | null;
     jackServerSettings: JackServerSettings;
     alsaSequencerConfiguration: AlsaSequencerConfiguration;
     keepScreenOn: boolean;
@@ -98,6 +101,7 @@ interface SettingsDialogState {
     showMidiSelectDialog: boolean;
     showThemeSelectDialog: boolean;
     showJackServerSettingsDialog: boolean;
+    showChannelRouterSettingsDialog: boolean;
     shuttingDown: boolean;
     restarting: boolean;
     isAndroidHosted: boolean;
@@ -190,6 +194,7 @@ const SettingsDialog = withStyles(
                 showStatusMonitorDialog: false,
 
                 jackServerSettings: this.model.jackServerSettings.get(),
+                channelRouterSettings: this.model.channelRouterSettings.get(),
                 jackConfiguration: this.model.jackConfiguration.get(),
                 jackStatus: undefined,
                 jackSettings: this.model.jackSettings.get(),
@@ -210,6 +215,7 @@ const SettingsDialog = withStyles(
                 showMidiSelectDialog: false,
                 showThemeSelectDialog: false,
                 showJackServerSettingsDialog: false,
+                showChannelRouterSettingsDialog: false,
                 shuttingDown: false,
                 restarting: false,
                 showShutdownOkDialog: false,
@@ -222,6 +228,7 @@ const SettingsDialog = withStyles(
             this.handleAlsaSequencerConfigurationChanged = this.handleAlsaSequencerConfigurationChanged.bind(this);
             this.handleJackSettingsChanged = this.handleJackSettingsChanged.bind(this);
             this.handleJackServerSettingsChanged = this.handleJackServerSettingsChanged.bind(this);
+            this.handleChannelRouterSettingsChanged = this.handleChannelRouterSettingsChanged.bind(this);
             this.handleWifiConfigSettingsChanged = this.handleWifiConfigSettingsChanged.bind(this);
             this.handleWifiDirectConfigSettingsChanged = this.handleWifiDirectConfigSettingsChanged.bind(this);
             this.handleGovernorSettingsChanged = this.handleGovernorSettingsChanged.bind(this);
@@ -323,6 +330,12 @@ const SettingsDialog = withStyles(
                 continueDisabled: !this.model.jackServerSettings.get().valid
             });
         }
+        handleChannelRouterSettingsChanged(): void {
+            this.setState({
+                channelRouterSettings: this.model.channelRouterSettings.get(),
+                continueDisabled: !this.model.channelRouterSettings.get().configured
+            });
+        }
 
         handleJackConfigurationChanged(): void {
             this.setState({
@@ -365,6 +378,7 @@ const SettingsDialog = withStyles(
                     this.model.jackConfiguration.addOnChangedHandler(this.handleJackConfigurationChanged);
                     this.model.alsaSequencerConfiguration.addOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
                     this.model.jackServerSettings.addOnChangedHandler(this.handleJackServerSettingsChanged);
+                    this.model.channelRouterSettings.addOnChangedHandler(this.handleChannelRouterSettingsChanged);
                     this.model.wifiConfigSettings.addOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.wifiDirectConfigSettings.addOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
                     this.model.governorSettings.addOnChangedHandler(this.handleGovernorSettingsChanged);
@@ -387,6 +401,7 @@ const SettingsDialog = withStyles(
                     this.handleJackSettingsChanged();
                     this.handleShowStatusMonitorChanged();
                     this.handleJackServerSettingsChanged();
+                    this.handleChannelRouterSettingsChanged();
                     this.handleWifiConfigSettingsChanged();
                     this.handleWifiDirectConfigSettingsChanged();
                     this.setState({ hasWifiDevice: this.model.hasWifiDevice.get() });
@@ -405,6 +420,7 @@ const SettingsDialog = withStyles(
                     this.model.alsaSequencerConfiguration.removeOnChangedHandler(this.handleAlsaSequencerConfigurationChanged);
                     this.model.jackSettings.removeOnChangedHandler(this.handleJackSettingsChanged);
                     this.model.jackServerSettings.removeOnChangedHandler(this.handleJackServerSettingsChanged);
+                    this.model.channelRouterSettings.removeOnChangedHandler(this.handleChannelRouterSettingsChanged);
                     this.model.wifiConfigSettings.removeOnChangedHandler(this.handleWifiConfigSettingsChanged);
                     this.model.wifiDirectConfigSettings.removeOnChangedHandler(this.handleWifiDirectConfigSettingsChanged);
                     this.model.governorSettings.removeOnChangedHandler(this.handleGovernorSettingsChanged);
@@ -503,28 +519,10 @@ const SettingsDialog = withStyles(
         }
 
         handleSelectChannelsDialogResult(channels: string[] | null): void {
-            if (channels) {
-                let newSelection = this.state.jackSettings.clone();
-                if (this.state.showInputSelectDialog) {
-                    newSelection.inputAudioPorts = channels;
-                } else {
-                    newSelection.outputAudioPorts = channels;
-                }
-                this.setState({
-                    jackSettings: newSelection,
-                    showInputSelectDialog: false,
-                    showOutputSelectDialog: false
-
-                });
-                this.model.setJackSettings(newSelection);
-            } else {
-                this.setState({
-                    showInputSelectDialog: false,
-                    showOutputSelectDialog: false
-
-                });
-
-            }
+            this.setState({
+                showInputSelectDialog: false,
+                showOutputSelectDialog: false
+            });
         }
 
         midiSummary(): string {
@@ -595,10 +593,16 @@ const SettingsDialog = withStyles(
             const classes = withStyles.getClasses(this.props);
 
             let isConfigValid = this.state.jackConfiguration.isValid;
-            let selectedChannels: string[] = this.state.showInputSelectDialog ? this.state.jackSettings.inputAudioPorts : this.state.jackSettings.outputAudioPorts;
+            let selectedChannels: string[] =
+                this.state.jackSettings === null ? [] :
+                    this.state.showInputSelectDialog ? this.state.jackSettings.inputAudioPorts : this.state.jackSettings.outputAudioPorts;
             let disableShutdown = this.state.shuttingDown || this.state.restarting;
 
             let canKeepScreenOn = this.model.canKeepScreenOn;
+            let hasAudioConfig = isConfigValid
+                && this.state.jackConfiguration.inputAudioPorts.length >= 1
+                && this.state.jackConfiguration.outputAudioPorts.length >= 1;
+
 
             return (
                 <DialogEx tag="settings" fullScreen open={this.props.open}
@@ -663,8 +667,8 @@ const SettingsDialog = withStyles(
                                     {(!isConfigValid) ?
                                         (
                                             <div className={classes.cpuStatusColor} style={{ paddingLeft: 48, position: "relative", top: -12 }}>
-                                                <Typography display="block" variant="caption" color="textSecondary">Status: 
-                                                    <span style={{ color: isDarkMode() ? "#F88" :  "#F00" }}>Not configured.</span></Typography>
+                                                <Typography display="block" variant="caption" color="textSecondary">Status:
+                                                    <span style={{ color: isDarkMode() ? "#F88" : "#F00" }}>Not configured.</span></Typography>
                                                 {(!this.props.onboarding) && (
                                                     <Typography display="block" variant="caption" color="inherit">Governor: </Typography>
                                                 )}
@@ -693,47 +697,82 @@ const SettingsDialog = withStyles(
                                 </Typography>
                                 <ButtonBase className={classes.setting} onClick={() => this.handleJackServerSettings()}
                                 >
-                                    <SelectHoverBackground selected={false} showHover={true} />
+                                    <SelectHoverBackground selected={false} showHover={true}  />
                                     <div style={{ width: "100%" }}>
                                         <Typography display="block" variant="body2" noWrap>Audio device</Typography>
                                         <Typography display="block" variant="caption" noWrap color="textSecondary">{this.state.jackServerSettings.getSummaryText()}</Typography>
                                     </div>
                                 </ButtonBase>
-                                <JackServerSettingsDialog
-                                    open={this.state.showJackServerSettingsDialog}
-                                    jackServerSettings={this.state.jackServerSettings}
-                                    onClose={() => this.setState({ showJackServerSettingsDialog: false })}
-                                    onApply={(jackServerSettings) => {
+                                {this.state.showChannelRouterSettingsDialog && (
+                                    <ChannelRouterSettingsDialog
+                                        open={this.state.showChannelRouterSettingsDialog}
+                                        onClose={() => this.setState({ showChannelRouterSettingsDialog: false })}
+                                    />
+                                )}
+                                {this.state.showJackServerSettingsDialog && (
+
+                                    <JackServerSettingsDialog
+                                        open={this.state.showJackServerSettingsDialog}
+                                        jackServerSettings={this.state.jackServerSettings}
+                                        onClose={() => this.setState({ showJackServerSettingsDialog: false })}
+                                        onApply={(jackServerSettings) => {
+                                            this.setState({
+                                                jackServerSettings: jackServerSettings
+                                            });
+                                            this.model.setJackServerSettings(jackServerSettings);
+                                        }}
+                                    />
+                                )}
+
+                                <ButtonBase className={classes.setting}
+                                    onClick={() => {
                                         this.setState({
-                                            jackServerSettings: jackServerSettings
+                                            showChannelRouterSettingsDialog: true
                                         });
-                                        this.model.setJackServerSettings(jackServerSettings);
                                     }}
-                                />
-
-
-
-                                <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()}
-                                    disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
-                                    style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
-
+                                    disabled={!hasAudioConfig}
+                                    style={{ opacity: (!hasAudioConfig) ? 0.6 : 1.0 }}
                                 >
                                     <SelectHoverBackground selected={false} showHover={true} />
                                     <div style={{ width: "100%" }}>
-                                        <Typography display="block" variant="body2" noWrap>Input channels</Typography>
-                                        <Typography display="block" variant="caption" color="textSecondary" noWrap>{this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
+                                        <Typography display="block" variant="body2" noWrap>Channel Routing</Typography>
+                                        <Typography display="block" variant="caption" 
+                                        color={
+                                            this.state.channelRouterSettings?.isValid(this.state.jackConfiguration) ?? false
+                                             ?  "textSecondary": "error"} noWrap>{
+                                            this.state.channelRouterSettings?.getDescription(this.state.jackConfiguration)??""}</Typography>
                                     </div>
                                 </ButtonBase>
-                                <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()}
-                                    disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
-                                    style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
-                                >
-                                    <SelectHoverBackground selected={false} showHover={true} />
-                                    <div style={{ width: "100%" }}>
-                                        <Typography display="block" variant="body2" noWrap>Output channels</Typography>
-                                        <Typography display="block" variant="caption" color="textSecondary" noWrap>{this.state.jackSettings.getAudioOutputDisplayValue(this.state.jackConfiguration)}</Typography>
-                                    </div>
-                                </ButtonBase>
+
+
+                                {/* Old Input and Output selection 
+
+                                    <ButtonBase className={classes.setting} onClick={() => this.handleInputSelection()}
+                                        disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
+                                        style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
+
+                                    >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography display="block" variant="body2" noWrap>Input channels</Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary" noWrap>{
+                                                this.state.jackSettings == null ? "" :
+                                                    this.state.jackSettings.getAudioInputDisplayValue(this.state.jackConfiguration)}</Typography>
+                                        </div>
+                                    </ButtonBase>
+                                    <ButtonBase className={classes.setting} onClick={() => this.handleOutputSelection()}
+                                        disabled={!isConfigValid || this.state.jackConfiguration.outputAudioPorts.length <= 1}
+                                        style={{ opacity: !isConfigValid ? 0.6 : 1.0 }}
+                                    >
+                                        <SelectHoverBackground selected={false} showHover={true} />
+                                        <div style={{ width: "100%" }}>
+                                            <Typography display="block" variant="body2" noWrap>Output channels</Typography>
+                                            <Typography display="block" variant="caption" color="textSecondary" noWrap>{
+                                                this.state.jackSettings == null ? "" : 
+                                                    this.state.jackSettings.getAudioOutputDisplayValue(this.state.jackConfiguration)}</Typography>
+                                        </div>
+                                    </ButtonBase>
+                                    */}
                                 <Divider />
                                 <div >
                                     <Typography className={classes.sectionHead} display="block" variant="caption" color="secondary">MIDI</Typography>

@@ -33,7 +33,9 @@
     "logLevel": 3,
 
     /* Maximum filesize to allow when uploading */
-    "maxUploadSize": 536870912  // 512MiB
+    "maxUploadSize": 536870912,  // 512MiB
 
+    /* false-> Download A1 models; true -> Download A2 models */
+    "tone3000A2Models": true
 
 }
