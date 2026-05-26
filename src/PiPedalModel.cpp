@@ -1576,9 +1576,9 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
             throw std::runtime_error("Audio configuration not valid.");
         }
 
-        const auto &channelSelection = this->storage.GetChannelSelection();
+        auto channelSelection = this->storage.GetChannelSelection();
 
-        this->audioHost->Open(jackServerSettings, channelSelection);
+        this->audioHost->Open(jackServerSettings, channelSelection); 
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
 

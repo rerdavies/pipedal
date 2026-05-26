@@ -39,6 +39,8 @@ PiPedal 2.0 can now be installed as a Progressive Web Application (PWA). This al
 
 - Split controls now support double-tap to reset to a default value. (Other controls already support this feature).
 
+- Runtime detection and use of AVX extensions for TooB plugins. Reduces CPU use of TooB NAM by 50% on most x86_64/amd64 computers.
+
 ## PiPedal 1.5.99 Beta
 
 ### Bug Fixes

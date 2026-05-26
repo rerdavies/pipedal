@@ -84,6 +84,7 @@ namespace pipedal
         std::vector<int64_t> &auxInputChannels() { return auxInputChannels_; }
         std::vector<int64_t> &auxOutputChannels() { return auxOutputChannels_; }
 
+        bool IsValid() const;
     private:
         void normalizeChannelSelection();
 
