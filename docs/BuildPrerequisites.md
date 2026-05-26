@@ -10,8 +10,7 @@ Run the following commands to install build tools required by the PiPedal build.
 The PiPedal build process also requires version 12 or later of `node.js`. Type `node --version` to see if you have a version 
 of `node.js` installed already. Otherwise run the following commands as root to install a current version of version of `node.js`: 
 
-
-   sudo apt install nodejs npm curl
+    sudo apt install nodejs npm curl
 
 
 If your distribution doesn't provide a suitable version of nodejs, 
@@ -27,7 +26,7 @@ Run the following commands to install dependent libraries required by the PiPeda
         authbind libavahi-client-dev  libnm-dev libicu-dev \
         libsdbus-c++-dev libzip-dev google-perftools \
         libgoogle-perftools-dev \
-        libpipewire-0.3-dev libbz2-dev libssl-dev
+        libpipewire-0.3-dev libbz2-dev libssl-dev librsvg2-dev
     
 
 ### Installing Sources
