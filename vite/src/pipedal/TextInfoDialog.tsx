@@ -33,6 +33,7 @@ import rehypeSanitize, {defaultSchema} from 'rehype-sanitize';
 import rehypeExternalLinks from 'rehype-external-links'
 import remarkGfm from 'remark-gfm';
 import { PiPedalError } from './PiPedalError';
+import { rewriteT3kUrls } from './TextInfo_RewriteT3kUrls';
 
 // Extend the default schema to allow target and rel attributes on anchor tags
 const extendedSchema = {
@@ -72,6 +73,7 @@ interface TextInfoDialogProps  {
     fileName: string;
     title: string;
     onClose: () => void;
+    onT3kLinkClick?: (href: string) => boolean;
 };
 
 interface TextInfoDialogState {
@@ -162,6 +164,13 @@ const TextInfoDialog = class extends ResizeResponsiveComponent<TextInfoDialogPro
         this.props.onClose();
     }
 
+    handleT3kLinkClick = (href: string): boolean => {
+        if (this.props.onT3kLinkClick) {
+            return this.props.onT3kLinkClick(href);
+        }
+        return false;
+    }
+
 
     render() {
         return (
@@ -204,7 +213,11 @@ const TextInfoDialog = class extends ResizeResponsiveComponent<TextInfoDialogPro
                                         [remarkGfm],
                                         [rehypeRaw],
                                         [rehypeSanitize, extendedSchema],
-                                        [rehypeExternalLinks, {target: '_blank'}]
+                                        [rehypeExternalLinks, {target: '_blank'}],
+                                        [rewriteT3kUrls, {
+                                            prefixUrl: 'https://tone3000.com/',
+                                            onT3kLinkClick: this.handleT3kLinkClick
+                                        }]
                                     ]}>
                                     {this.state.textFileContent}
                                 </ReactMarkdown>
