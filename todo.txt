@@ -1,9 +1,9 @@
-A2 Questions
+Create Factory Model.piBank.
 
-Does A2 support Callibration?
-input_level_dbu, output_level_dbu accessors on NeuralAmpModelerCore DSP
-slimmable_weights accessors on NeuralAmpModelerCore DSP
-standard values for slimmable_weights? 
+Install procedure for upgrading of Factory Preset. 
+
+
+T3k links in the readme files. Can we start a Popup Flow from the given links?
 
 Implement NAM Model Weight selection UI
 
