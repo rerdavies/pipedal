@@ -1129,6 +1129,28 @@ export default withStyles(
 
         }
 
+        handleT3kLinkClick(href: string): boolean {
+            if (!href.startsWith("https://tone3000.com/")) {
+                return false;
+            }
+            return false;
+            // STUB: Waiting for a way to do a popup flow starting with a tone or user home page.
+            // let uri = new URL(href);
+            // if (uri.pathname.split("/").filter(segment => segment.length > 0).length === 1) {
+            //     // It's a username. Launch a select flow with username as a filter.
+            //     let username = uri.pathname.split("/").filter(segment => segment.length > 0)[0];
+            //     this.model.showTone3000DownloadPopup(
+            //         Tone3000DownloadType.Nam,
+            //         this.state.currentDirectory,
+            //         {
+            //             username: username
+            //         }
+            //     );
+            // }
+            
+            return true;
+        }
+
         render() {
             const isTracksDirectory = this.isTracksDirectory();
             const isToobNamModelFile = this.props.fileProperty.patchProperty === ToobNamModelFileUrl;
@@ -1803,6 +1825,9 @@ export default withStyles(
                             <TextInfoDialog open={true}
                                 title={pathFileNameOnly(this.state.textFileName)}
                                 fileName={this.state.textFileName} onClose={() => this.setState({ textFileName: undefined })}
+                                onT3kLinkClick={(href) => {
+                                    return this.handleT3kLinkClick(href); }
+                                }
                             />
                         )}
                     </DialogEx>

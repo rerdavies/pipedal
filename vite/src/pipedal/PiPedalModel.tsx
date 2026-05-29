@@ -773,7 +773,10 @@ export class PiPedalModel //implements PiPedalModel
 
     showTone3000DownloadPopup(
         downloadType: Tone3000DownloadType,
-        downloadPath: string
+        downloadPath: string,
+        options?:  {
+            userName?: string;
+        }
     ): void {
         if (this.tone3000DownloadHandler === null) {
             this.tone3000DownloadHandler = new Tone3000DownloadHandler(this);
@@ -781,7 +784,7 @@ export class PiPedalModel //implements PiPedalModel
         this.tone3000DownloadHandler.launchTone3000Popup(
             downloadType,
             downloadPath,
-        );
+            options);
 
     };
 
@@ -1375,6 +1378,7 @@ export class PiPedalModel //implements PiPedalModel
             }
             this.debug = !!data.debug;
             let { socket_server_port, socket_server_address, max_upload_size } = data;
+
             if ((!socket_server_address) || socket_server_address === "*") {
                 socket_server_address = window.location.hostname;
             }
