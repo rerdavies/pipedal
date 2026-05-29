@@ -164,7 +164,7 @@ export async function startSelectFlowPopup(
     redirectUri: string,
     options?: {
         gears?: string; platform?: string; menubar?: boolean, loginHint?: string, architecture?: number
-        width?: number, height?: number
+        width?: number, height?: number, userName?: string;
     }
 ): Promise<Window | null> {
     // Set before window.open so the popup inherits this flag via sessionStorage copy;

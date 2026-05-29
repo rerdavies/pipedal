@@ -49,7 +49,7 @@ function floatToModelType(value: number): NamModelType {
         default: return NamModelType.None;
     }
 }
-// offset 0: an integer with the folloing bits set.
+// offset 0: an integer with the following bits set.
 // Must match ToobAmp/src/NeuralAmpModeler_Lv2Extensions.hpp enum TOOB_NAM_METADATA_OFFSETS
 class TOOB_NAM_METADATA_OFFSETS {
     static readonly flags = 0;
@@ -61,7 +61,7 @@ class TOOB_NAM_METADATA_OFFSETS {
     static readonly has_slimmable_weights = 6;
     static readonly model_weight = 7;
     static readonly model_type = 8;
-    static readonly max_medatadata = 9;
+    static readonly max_metadata = 9;
 };
 
 
@@ -87,8 +87,8 @@ class ModelMetadata {
 
             this.loudness = metadataValues[TOOB_NAM_METADATA_OFFSETS.loudness];
             this.gain = metadataValues[TOOB_NAM_METADATA_OFFSETS.gain];
-            this.inputlevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.input_level_dbu];
-            this.outputlevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.output_level_dbu];
+            this.inputLevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.input_level_dbu];
+            this.outputLevelDBU = metadataValues[TOOB_NAM_METADATA_OFFSETS.output_level_dbu];
             this.preset_version = metadataValues[TOOB_NAM_METADATA_OFFSETS.preset_version];
             this.hasSlimmableWeights = metadataValues[TOOB_NAM_METADATA_OFFSETS.has_slimmable_weights] !== 0;
             this.modelWeight = metadataValues[TOOB_NAM_METADATA_OFFSETS.model_weight];
@@ -103,8 +103,8 @@ class ModelMetadata {
             this.loudness = 0;
             this.gain = 0;
             this.hasSlimmableWeights = false;
-            this.inputlevelDBU = 0;
-            this.outputlevelDBU = 0;
+            this.inputLevelDBU = 0;
+            this.outputLevelDBU = 0;
             this.preset_version = 1;
             this.modelWeight = -1;
         }
@@ -122,8 +122,8 @@ class ModelMetadata {
 
     loudness: number;
     gain: number;
-    inputlevelDBU: number;
-    outputlevelDBU: number;
+    inputLevelDBU: number;
+    outputLevelDBU: number;
 
 }
 
@@ -138,7 +138,7 @@ interface ToobNamViewProps extends WithStyles<typeof styles> {
 }
 interface ToobNamViewState {
     showEqSection: boolean;
-    enableCalibration: boolean;
+    enableInputCalibration: boolean;
     showCalibration: boolean;
     enableOutputNormalization: boolean;
     modelMetadata: ModelMetadata;
@@ -161,14 +161,14 @@ const ToobNamView =
                 this.state = {
                     showEqSection: false,
                     showCalibration: false,
-                    enableCalibration: false,
+                    enableInputCalibration: false,
                     enableOutputNormalization: false,
                     modelMetadata: new ModelMetadata(),
                     modelWeight: -1
                 }
                 let pluginInfo: UiPlugin | null = this.model.getUiPlugin(this.props.item.uri);
                 if (pluginInfo === null) {
-                    throw new Error("Plugin not fouund.");
+                    throw new Error("Plugin not found.");
                 }
                 let inputCalibrationControl = pluginInfo.getControl("inputCalibrationMode");
                 if (!inputCalibrationControl) {
@@ -225,7 +225,7 @@ const ToobNamView =
                 if (this.state.showCalibration) {
                     calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl, this.props.item.controlValues);
 
-                    if (this.state.enableCalibration) {
+                    if (this.state.enableInputCalibration) {
                         calibrationGroup.controls[0] = host.makeStandardControl(this.patchedInputControl, this.props.item.controlValues);
 
                     } else {
@@ -263,7 +263,7 @@ const ToobNamView =
             private handleConnectionStateChanged(state: State) {
                 if (state === State.Ready) {
                     this.unsubscribeFromMetadata();
-                    this.subscribeToMetdata();
+                    this.subscribeToMetadata();
                 }
             }
 
@@ -276,15 +276,15 @@ const ToobNamView =
                         showEqSection: metadata.preset_version === 0,
                         showCalibration: (
                             metadata.hasInputLevelDBU || metadata.hasOutputLevelDBU ||
-                            (metadata.hasLoudness && metadata.hasGain)) && metadata.hasModel,
-                        enableCalibration: metadata.hasInputLevelDBU && metadata.hasModel,
+                            metadata.hasLoudness) && metadata.hasModel,
+                        enableInputCalibration: metadata.hasInputLevelDBU && metadata.hasModel,
                         enableOutputNormalization: metadata.hasLoudness && metadata.hasModel,
                         modelWeight: metadata.modelWeight
                     });
                 }
             }
 
-            subscribeToMetdata() {
+            subscribeToMetadata() {
                 this.subscribedId = this.props.instanceId;
                 this.listenHandle = this.model.monitorPatchProperty(
                     this.props.instanceId,
@@ -315,7 +315,7 @@ const ToobNamView =
                 if (super.componentDidMount) {
                     super.componentDidMount();
                 }
-                this.subscribeToMetdata();
+                this.subscribeToMetadata();
                 this.model.state.addOnChangedHandler(this.handleConnectionStateChanged);
             }
             componentWillUnmount() {
@@ -331,7 +331,7 @@ const ToobNamView =
             componentDidUpdate() {
                 if (this.props.instanceId !== this.subscribedId) {
                     this.unsubscribeFromMetadata();
-                    this.subscribeToMetdata();
+                    this.subscribeToMetadata();
                 }
             }
 

@@ -467,17 +467,10 @@ export class Tone3000DownloadHandler {
     private popupWindow: Window | null = null;
 
     private redirectUrl(): string {
-        let hostname = window.location.hostname;
-        let port = window.location.port;
-        let protocol = window.location.protocol;
+        let varServerURL = new URL(this.model.varServerUrl);
+        
         let serverUrl: string;
-        if (protocol === "http:" && (port === "80" || port === "")) {
-            serverUrl = `${protocol}//${hostname}`;
-        } else if (protocol === "https:" && (port === "443" || port === "")) {
-            serverUrl = `${protocol}//${hostname}`;
-        } else {
-            serverUrl = `${protocol}//${hostname}:${port}`;
-        }
+        serverUrl = varServerURL.origin;
         return `${serverUrl}/html/t3k_response.html`;
         // return `${serverUrl}/t3k_response.html`; // for a debuggable react version of the page
     }
@@ -519,7 +512,9 @@ export class Tone3000DownloadHandler {
     public async launchTone3000Popup(
         downloadType: Tone3000DownloadType,
         downloadPath: string,
-
+        options?:  {
+            userName?: string;
+        }
     ): Promise<void> {
         if (this.progress.transferring) {
             return;
@@ -584,6 +579,7 @@ export class Tone3000DownloadHandler {
                     menubar: true,
                     width: popupWidth,
                     height: popupHeight,
+                    userName: options?.userName
                 },
 
             );
