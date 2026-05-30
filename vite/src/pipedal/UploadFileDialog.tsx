@@ -173,7 +173,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
         for (let upload of this.uploadList) {
             if (upload.status === FileUploadStatus.Ready || upload.status === FileUploadStatus.Uploading) {
                 upload.status = FileUploadStatus.Cancelled;
-                upload.statusMessage = "Cancelled.";
+                upload.statusMessage = "Canceled.";
             }
             if (upload.abortController) {
                 upload.abortController.abort();

@@ -150,7 +150,7 @@ public:
     virtual const char *what() const noexcept override
     {
         std::exception::what();
-        return "Cancelled.";
+        return "Canceled.";
     }
 };
 
@@ -1124,7 +1124,7 @@ std::string Tone3000DownloaderImpl::DownloadTone3000Files(
     //     {
     //         if (isCancelled())
     //         {
-    //             throw std::runtime_error("Cancelled");
+    //             throw std::runtime_error("Canceled");
     //         }
     //         size_t thisTime = models.size() - downloadIndex;
     //         thisTime = Tone3000Throttler::instance().ReserveDownloadSlots(thisTime);
@@ -1159,7 +1159,7 @@ std::string Tone3000DownloaderImpl::DownloadTone3000Files(
 
     //             if (isCancelled())
     //             {
-    //                 throw std::runtime_error("Cancelled");
+    //                 throw std::runtime_error("Canceled");
     //             }
 
     //             if (result != 200)
@@ -1198,7 +1198,7 @@ std::string Tone3000DownloaderImpl::DownloadTone3000Files(
     //                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     //                 if (isCancelled())
     //                 {
-    //                     throw std::runtime_error("Cancelled");
+    //                     throw std::runtime_error("Canceled");
     //                 }
     //             }
     //             if (CurlGet(imageUrl, imageFile.Path(), &imageHeaders) == 200)
