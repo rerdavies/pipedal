@@ -143,7 +143,7 @@ namespace
             {"full-rig", "Full rig"},
             {"pedal", "Pedal"},
             {"outboard", "Outboard"},
-            {"ir", "I/R"}};
+            {"ir", "IR"}};
 
     static std::string mdGear(const std::string &gear)
     {
@@ -356,7 +356,7 @@ namespace
     static std::map<std::string, std::string> platformEnumValues =
         {
             {"nam", "NAM"},
-            {"ir", "I/R"},
+            {"ir", "IR"},
             {"aida-x", "Aida X"},
             {"aa-snapshot", "aa-snapshot"},
             {"proteus", "Proteus"}};

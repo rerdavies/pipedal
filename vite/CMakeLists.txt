@@ -26,7 +26,7 @@ add_custom_command(
     public/css/roboto.css
     public/html/t3k_response.html
     public/var/current_pedalboard.json
-    public/var/config.json.disabled
+    public/var/config.json
     public/var/uiplugins.json
     public/var/plugin_classes.json
     public/testTone300Popup.html

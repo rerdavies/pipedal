@@ -1,2 +1,2 @@
 #!/bin/bash
-npm run dev -- --host 0.0.0.0 --host lothlorien.local
+npm run dev -- --host 0.0.0.0 

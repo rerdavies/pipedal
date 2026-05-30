@@ -29,7 +29,7 @@ interface DialogExState {
 interface DialogExProps extends DialogProps {
     tag: string;
     fullwidth?: boolean;
-    onEnterKey: () => void;
+    onEnterKey?: () => void;
     dlgRef?: (instance: HTMLDivElement | null) => void;
 }
 

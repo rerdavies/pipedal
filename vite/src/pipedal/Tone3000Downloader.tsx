@@ -211,6 +211,28 @@ export class Tone3000DownloadHandler {
         this.progress.transferring = false;
         this.model.onTone3000DownloadComplete(resultPath);
     }
+
+
+    private async maybeSelectModels(toneName: string, models: Model[]): Promise<Model[]> {
+        let result = new Promise<Model[]>((resolve, reject) => {
+            if (models.length < 12) {
+                resolve(models);
+                return;
+            }
+            this.model.showT3kModelSelectionDialog(
+                this.downloadType,
+                toneName, 
+                models, 
+                (models: Model[])=> {
+                    resolve(models);
+                },
+                () => {
+                    reject(new Error("canceled"));
+                });
+            }
+        );
+        return result;
+    }
     private async DownloadModelsFromTone3000(
         responseUri: string,
         tone3000PckceParams: Tone3000PkceParams,
@@ -292,6 +314,14 @@ export class Tone3000DownloadHandler {
                     break;
                 }
                 ++page;
+            }
+
+            try {
+                models = await this.maybeSelectModels(tone.title, models);
+            } catch (e) {
+                // canceled.
+                this.onTone3000DownloadComplete("");
+                return;
             }
             let uploadPath = this.downloadPath;
             let extension: string;

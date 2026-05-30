@@ -50,7 +50,8 @@ import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSe
 import { getDefaultModGuiPreference } from './ModGuiHost';
 import ChannelRouterSettings from './ChannelRouterSettings';
 import Tone3000DownloadProgress from './Tone3000DownloadProgress';
-import { Tone } from './t3k/types';
+import { Model, Tone } from './t3k/types';
+import { ModelSelectionDialogParams } from './ModelSelectionDialog';
 
 
 export enum State {
@@ -66,6 +67,11 @@ export enum State {
     HotspotChanging,
 };
 
+export interface T3kModelSelectionDialogListener {
+    onShowDialog: (
+        modelSelectionDialogParams: ModelSelectionDialogParams
+    ) => void;
+};
 export interface Tone3000PkceParams {
     publishableKey: string;
     redirectUrl: string;
@@ -708,19 +714,16 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    async makeTone3000Pkce(redirectUrl: string) : Promise<Tone3000PkceParams>
-    {
-        if (this.webSocket === undefined)
-        {
+    async makeTone3000Pkce(redirectUrl: string): Promise<Tone3000PkceParams> {
+        if (this.webSocket === undefined) {
             throw new Error("Server disconnected.");
         }
         return await this.webSocket.request<Tone3000PkceParams>(
             "makeTone3000Pkce", redirectUrl);
     }
 
-    async sha256Base64url(intput: string) : Promise<string> {
-        if (this.webSocket === undefined)
-        {
+    async sha256Base64url(intput: string): Promise<string> {
+        if (this.webSocket === undefined) {
             throw new Error("Server disconnected.");
         }
         return this.webSocket.request<string>(
@@ -774,7 +777,7 @@ export class PiPedalModel //implements PiPedalModel
     showTone3000DownloadPopup(
         downloadType: Tone3000DownloadType,
         downloadPath: string,
-        options?:  {
+        options?: {
             userName?: string;
         }
     ): void {
@@ -1336,7 +1339,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     async writeTone3000Readme(
-        filePath: string, 
+        filePath: string,
         tone: Tone,
         thumbnailUrl: string
 
@@ -3938,13 +3941,49 @@ export class PiPedalModel //implements PiPedalModel
         downloadType: Tone3000DownloadType
     ): void {
         if (this.webSocket) {
-            this.webSocket.send("DownloadModelsFromTone3000", { 
-                responseUri: responseUri, 
+            this.webSocket.send("DownloadModelsFromTone3000", {
+                responseUri: responseUri,
                 tone3000PckceParams: tone3000PckceParams,
                 downloadPath: downloadPath,
-                downloadType: downloadType === Tone3000DownloadType.Nam ? 0: 1
-             });
+                downloadType: downloadType === Tone3000DownloadType.Nam ? 0 : 1
+            });
         }
+    }
+    private t3kModelSelectionDialogListener?: T3kModelSelectionDialogListener = undefined;
+
+    setT3kModelSelectionDialogListener(
+        listener: T3kModelSelectionDialogListener | undefined
+    ) {
+        this.t3kModelSelectionDialogListener = listener;
+    }
+    showT3kModelSelectionDialog(
+        downloadType: Tone3000DownloadType,
+        toneName: string,
+        models: Model[],
+        onModelsSelected: (selectedModels: Model[]) => void,
+        onCancel: () => void
+    ) {
+        if (!this.t3kModelSelectionDialogListener) {
+            onCancel();
+            return;
+        }
+        this.tone3000Downloading.set(false);
+        this.t3kModelSelectionDialogListener.onShowDialog(
+            {
+                downloadType: downloadType,
+                toneName: toneName,
+                models: models,
+                onModelsSelected: (selectedModels: Model[]) => {
+                    this.tone3000Downloading.set(true);
+                    onModelsSelected(selectedModels);
+                },
+                onCancel: () => {
+                    this.tone3000Downloading.set(false);
+                    onCancel();
+
+                }
+            }
+        );
     }
 
 };
