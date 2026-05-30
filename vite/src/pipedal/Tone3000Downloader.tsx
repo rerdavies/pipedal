@@ -236,6 +236,11 @@ export class Tone3000DownloadHandler {
                 responseUri);
 
             if (!tokenResponse.ok) {
+                if (tokenResponse.canceled === true) 
+                {
+                    this.onTone3000DownloadComplete("");
+                    return;
+                }
                 throw new Error(tokenResponse.error);
             }
             if (tokenResponse.canceled) {

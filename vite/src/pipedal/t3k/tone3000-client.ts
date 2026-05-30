@@ -69,7 +69,7 @@ export interface T3KTokens {
 /** Result of handleOAuthCallback(). Always check `ok` before using fields. */
 export type OAuthCallbackResult =
     | { ok: true; tokens: T3KTokens; toneId?: string; modelId?: string; canceled?: boolean }
-    | { ok: false; error: string };
+    | { ok: false; error: string, canceled?: boolean };
 
 // ─── Internal PKCE helpers ────────────────────────────────────────────────────
 
@@ -216,7 +216,7 @@ export async function handleOAuthCallbackFromPopup(
     if (returnedState !== storedState) return { ok: false, error: 'state_mismatch' };
 
     // User closed without signing in — no code to exchange
-    if (canceled && !code) return { ok: false, error: 'canceled' };
+    if (canceled && !code) return { ok: false, error: 'canceled', canceled: true };
 
     if (error) return { ok: false, error };
     if (!code || !codeVerifier) return { ok: false, error: 'missing_code' };
@@ -496,7 +496,7 @@ export async function handleOAuthCallback(
 
     // User closed without signing in — no code to exchange
     if (canceled && !code) {
-        return { ok: false, error: 'canceled' };
+        return { ok: false, error: 'canceled', canceled: true };
     }
 
     // Access denied — e.g. model is private and user clicked "Back"
