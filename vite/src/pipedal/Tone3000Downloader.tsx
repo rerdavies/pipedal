@@ -26,6 +26,7 @@ const USE_SERVER_PCKE=true;
 const RUN_THROTTLER_TEST = true;
 const ALLOWED_DOWNLOADS_PER_MINUTE = 25;
 const THROTTLING_TRIGGGER_LEVEL = Math.floor(ALLOWED_DOWNLOADS_PER_MINUTE/2);
+const PROMPT_FOR_SELECT_THRESHOLD = 15;
 
 
 class DownloadThrottler {
@@ -215,7 +216,7 @@ export class Tone3000DownloadHandler {
 
     private async maybeSelectModels(toneName: string, models: Model[]): Promise<Model[]> {
         let result = new Promise<Model[]>((resolve, reject) => {
-            if (models.length < 12) {
+            if (models.length < PROMPT_FOR_SELECT_THRESHOLD) {
                 resolve(models);
                 return;
             }
