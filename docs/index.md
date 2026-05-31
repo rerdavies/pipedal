@@ -14,7 +14,7 @@ box-shadow: 1px 4px 12px rgba(0, 0, 0, 0.3);">
         <h2 style='font-weight: 300; font-family: "Roboto Light", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; font-weight: 400; font-size: 1.3em;line-height: 1.2em; padding-top: 0px; padding-bottom: 16px;margin-bottom: 8px'
         >Announcing <a href="PiPedal2.html">PiPedal 2.0</a></h2>
         <p>
-        The first public preview release of Pipedal version 2.0.102-alpha is now available! 
+        The first public preview release of Pipedal version 2.0.103-alpha is now available! 
         </p>
 
         <p>This release includes </p>
@@ -32,7 +32,7 @@ box-shadow: 1px 4px 12px rgba(0, 0, 0, 0.3);">
         Many other minor features, improvements, and bug fixes.</li>
         </ul>
 
-        <p>For more information, and to download PiPedal v2.0.102-alpha <a href="PiPedal2.html">click here</a>.
+        <p>For more information, and to download PiPedal v2.0.103-alpha <a href="PiPedal2.html">click here</a>.
         </p>
     </div>
 </div>

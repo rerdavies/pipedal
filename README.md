@@ -9,11 +9,11 @@
 <img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/>
 
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.102</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.103</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### Announcing PiPedal 2.0 (2.0.102 Alpha). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for information, and instructions on how to install Pipedal 2.0. New features include support for Neural Amp Modeler A2 models, integration with Tone3000.com services for easy downloading of Neural Amp Modeler A2 models and IIRs, a new Channel Routing dialog for global routing of auxiliary input channels, and unprocessed re-amp output channels, and many other minor features, improvements, and bug fixes. Pipedal 2.0 also adds support for running PiPedal as a Progressive Web Application (PWA), which allows you to launch Pipedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for instructions on how to install Pipedal on your desktop as a standalone app.
+#### Announcing PiPedal 2.0 (2.0.103). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for information, and instructions on how to install Pipedal 2.0. New features include support for Neural Amp Modeler A2 models, integration with Tone3000.com services for easy downloading of Neural Amp Modeler A2 models and IIRs, a new Channel Routing dialog for global routing of auxiliary input channels, and unprocessed re-amp output channels, and many other minor features, improvements, and bug fixes. Pipedal 2.0 also adds support for running PiPedal as a Progressive Web Application (PWA), which allows you to launch Pipedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for instructions on how to install Pipedal on your desktop as a standalone app.
 
 &nbsp;
 
