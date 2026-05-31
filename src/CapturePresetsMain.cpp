@@ -289,7 +289,7 @@ int main(int argc, const char *argv[])
 
         storage->SetConfigRoot("/etc/pipedal/config");
         storage->SetDataRoot("/var/pipedal");
-        storage->Initialize();
+        storage->Initialize(nullptr);
 
         const PluginPresetIndex &index = storage->GetPluginPresetIndex();
 

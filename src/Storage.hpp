@@ -41,6 +41,7 @@ namespace pipedal {
 class UiFileProperty;
 class Lv2PluginInfo;
 class UiFileProperty;
+class PiPedalModel;
 
 class CurrentPreset {
 public:
@@ -80,10 +81,14 @@ private:
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
+    int32_t GetInstallerPresetVersion();
+    int32_t GetVarPresetVersion();
+    void SetVarPresetVersion(int32_t version);
     void UpgradeV1FactoryPresets();
-    void UpgradeV2FactoryPresets();
-    void UpgradeFactoryPresets();
-    void MaybeCopyDefaultPresets();
+    void MoveExistingFactoryPresetsBank();
+    void InstallFactoryPresets();
+    void CopyFactoryPresetsToDefaultBank();
+    void ProvisionDefaultBanks();
     static std::string SafeEncodeName(const std::string& name);
     static std::string SafeDecodeName(const std::string& name);
     std::filesystem::path GetPresetsDirectory() const;
@@ -130,7 +135,7 @@ private:
 
 public:
     Storage();
-    void Initialize();
+    void Initialize(PiPedalModel *model);
     void CreateBank(const std::string & name);
 
     void SetDataRoot(const std::filesystem::path& path);
@@ -288,6 +293,7 @@ public:
     int64_t ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
     int64_t CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets);
 
+    PiPedalModel *model = nullptr;
 };
 
 

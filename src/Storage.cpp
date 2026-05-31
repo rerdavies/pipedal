@@ -47,6 +47,7 @@
 #include "util.hpp"
 
 using namespace pipedal;
+using namespace ::pipedal::implementation;
 namespace fs = std::filesystem;
 
 const char* BANK_EXTENSION = ".bank";
@@ -227,17 +228,6 @@ static void CopyDirectory(const std::filesystem::path& source, const std::filesy
     }
 }
 
-void Storage::MaybeCopyDefaultPresets()
-{
-    auto presetsDirectory = this->GetPresetsDirectory();
-    auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
-
-    if (!std::filesystem::exists(presetsDirectory / "index.banks"))
-    {
-        fs::copy(presetsConfigDirectory / "index.banks", presetsDirectory / "index.banks");
-        fs::copy(presetsConfigDirectory / "Default+Bank.bank", presetsDirectory / "Default+Bank.bank");
-    }
-}
 
 static void removeFileNoThrow(const std::filesystem::path& path)
 {
@@ -250,37 +240,148 @@ static void removeFileNoThrow(const std::filesystem::path& path)
     }
 }
 
-void Storage::UpgradeFactoryPresets()
+int32_t Storage::GetInstallerPresetVersion()
 {
-    UpgradeV1FactoryPresets();
-    UpgradeV2FactoryPresets();
+    auto installerConfiDirectory = this->configRoot / "default_presets" / "presets";
+    BrowserFilesVersionInfo versionInfo;
+    if (!versionInfo.Load(installerConfiDirectory / "banks.versionInfo"))
+    {
+        throw std::runtime_error("Can't open Installer banks.versionInfo file.");
+    }
+    return versionInfo.Version();
+}
+int32_t Storage::GetVarPresetVersion()
+{
+    auto presetsDirectory = this->GetPresetsDirectory();
+    BrowserFilesVersionInfo versionInfo;
+    versionInfo.Load(presetsDirectory / "banks.versionInfo");
+    return versionInfo.Version();
+
+}
+
+void Storage::SetVarPresetVersion(int32_t version)
+{
+    auto presetsDirectory = this->GetPresetsDirectory();
+    BrowserFilesVersionInfo versionInfo;
+    versionInfo.Load(presetsDirectory / "banks.versionInfo");
+    versionInfo.Version(version);
+    versionInfo.Save(presetsDirectory / "banks.versionInfo");
+
 }
 
 
-void Storage::UpgradeV2FactoryPresets()
+void Storage::MoveExistingFactoryPresetsBank()
 {
-    auto presetsDirectory = this->GetPresetsDirectory();
-    auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
-
-    using namespace ::pipedal::implementation;
-
-    BrowserFilesVersionInfo defaultConfigPresetsVersion;
-    fs::path defaultConfigPresetsVersionFile = presetsConfigDirectory / "banks.versionInfo";
-    defaultConfigPresetsVersion.Load(defaultConfigPresetsVersionFile);
-
-    BrowserFilesVersionInfo presetsVersion;
-    fs::path defaultPresetsVersionFile = presetsDirectory / "banks.versionInfo";
-    presetsVersion.Load(defaultPresetsVersionFile);
-
-    constexpr uint32_t V2_VERSION_NUMBER = 2;
-
-    // set the default banks.versionInfo value to 0 to force complete upgrade path
-
-    bool testUpgrade = (defaultConfigPresetsVersion.Version() == 0);
-    // Maybe install or upgrade Version 1 factory presets.
-    if ((V2_VERSION_NUMBER > presetsVersion.Version() && presetsVersion.Version() != 0) || testUpgrade)
+    BankIndexEntry* entry = bankIndex.getEntryByName("Factory Presets");
+    if (entry) 
     {
+        std::string newName = "Old Factory Presets";
+        int32_t nextVersionNumber = 2;
+        while (true)
+        {
+            if (bankIndex.getEntryByName(newName) == nullptr) 
+            {
+                break;
+            }
+            newName = SS("Old Factory Presets (" << nextVersionNumber << ")");
+        }
+
+        RenameBank(entry->instanceId(), newName);
         
+    }
+}
+
+
+namespace pipedal::implementation {
+    extern  int64_t ImportBankFile(PiPedalModel &model, const std::filesystem::path& filePath,uint64_t uploadAfter = -1);
+}
+
+void Storage::InstallFactoryPresets() 
+{
+    fs::path defaultBankFilePath =  this->configRoot / "default_presets" / "presets" / "Factory Presets.piBank";
+    try {
+        ImportBankFile(*this->model,defaultBankFilePath, -1);
+    } catch (const std::exception &e)
+    {
+        throw std::runtime_error(SS("Failed to install Factory Presets. " << e.what()));
+    }
+
+}
+
+void Storage::CopyFactoryPresetsToDefaultBank()
+{
+    
+    Lv2Log::info("Creating Default Bank");
+    auto defaultBankEntry = bankIndex.getEntryByName("Default Bank");
+    if (defaultBankEntry != nullptr)
+    {
+        throw std::runtime_error("Internal error: CopyFactoryPresetsToDefaultBank: Default Bank already exists.");
+    }
+    fs::path factoryPresetPath = GetBankFileName("Factory Presets");
+    fs::path defaultBankPath = GetBankFileName("Default Bank");
+    if (!fs::exists(factoryPresetPath)) {
+        throw std::runtime_error("Internal error: CopyFactoryPresetsToDefaultBank: Factory Presets file does not exist.");
+    }
+    auto instanceId = bankIndex.addBank(-2,"Default Bank");
+
+
+    fs::copy(factoryPresetPath, defaultBankPath);
+
+    bankIndex.selectedBank(instanceId);
+    SaveBankIndex();
+}
+
+
+void Storage::ProvisionDefaultBanks()
+{
+    fs::path indexFilename = this->GetIndexFileName();
+
+
+    this->bankIndex = BankIndex();
+
+
+    bool freshInstall = false; 
+    bool installFactoryPresets = false;
+
+    int32_t etcVersion = GetInstallerPresetVersion();
+    int32_t varPresetVersion = GetVarPresetVersion();
+
+    if (!std::filesystem::exists(indexFilename))
+    {
+        freshInstall = true;
+        installFactoryPresets = true;
+
+    } else {
+        freshInstall = false;
+        std::ifstream s;
+        s.open(indexFilename);
+        json_reader reader(s);
+        reader.read(&(this->bankIndex));
+    }
+
+    // Compare the Factory Preset verion in the /var directory with the one in the /etc directory,
+    // to decide whether the Factory bank needs to be provisions.
+
+    auto varPresetsDirectory = this->GetPresetsDirectory();
+    auto etcPresetsDirector = this->configRoot / "default_presets" / "presets";
+    
+    constexpr uint32_t V2_VERSION_NUMBER = 2; // first to have a Factory Presets
+    constexpr uint32_t V3_VERSION_NUMBER = 3; // New A2 Presets, completely replacing the previons version.
+
+    if (varPresetVersion < V3_VERSION_NUMBER) {
+        Lv2Log::info("Installing Factory Presets");
+
+        // Move the old factory presets bank out of the way. 
+        MoveExistingFactoryPresetsBank();
+        InstallFactoryPresets();
+        SetVarPresetVersion(V3_VERSION_NUMBER);
+        SaveBankIndex(); // checkpoint.
+    }
+    // Next time we will have to MERGE factor presets.
+    if (freshInstall)
+    {
+        CopyFactoryPresetsToDefaultBank();
+        SetVarPresetVersion(V3_VERSION_NUMBER);
     }
 
 }
@@ -308,7 +409,7 @@ void Storage::UpgradeV1FactoryPresets()
     // Maybe install or upgrade Version 1 factory presets.
     if ((V1_VERSION_NUMBER > presetsVersion.Version() && presetsVersion.Version() != 0) || testUpgrade)
     {
-        // remove TooB ML README.md
+        // Forces TooBMl to re-install V1 factory models (?)
         removeFileNoThrow("/usr/lib/lv2/ToobAmp.lv2/models/tones/README.md");
         removeFileNoThrow("/var/pipedal/audio_uploads/ToobMlModels/model.index");
 
@@ -403,19 +504,22 @@ void Storage::UpgradeV1FactoryPresets()
         presetsVersion.Save(defaultPresetsVersionFile);
     }
 }
-void Storage::Initialize()
+void Storage::Initialize(PiPedalModel *model)
 {
+    this->model = model;
     try
     {
         std::filesystem::create_directories(this->GetPresetsDirectory());
         std::filesystem::create_directories(this->GetPluginPresetsDirectory());
 
-        MaybeCopyDefaultPresets();
     }
     catch (const std::exception& e)
     {
         throw PiPedalStateException("Can't create presets directory. (" + (std::string)this->GetPresetsDirectory() + ") (" + e.what() + ")");
     }
+
+    ProvisionDefaultBanks();
+
     LoadPluginPresetIndex();
     LoadBankIndex();
     LoadCurrentBank();
@@ -432,7 +536,6 @@ void Storage::Initialize()
     LoadWifiDirectConfigSettings();
     this->channelRouterSettings = LoadChannelRouterSettings();
     LoadUserSettings();
-    UpgradeFactoryPresets();
     UpgradeChannelRouterSettings();
 }
 

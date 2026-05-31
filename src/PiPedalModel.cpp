@@ -220,7 +220,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     pluginHost.SetConfiguration(configuration);
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
-    storage.Initialize();
+    storage.Initialize(this);
     pluginHost.SetPluginStoragePath(storage.GetPluginUploadDirectory());
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
