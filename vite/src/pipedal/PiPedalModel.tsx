@@ -1802,9 +1802,7 @@ export class PiPedalModel //implements PiPedalModel
     setSnapshots(snapshots: (Snapshot | null)[], selectedSnapshot: number) {
         let pedalboard = this.pedalboard.get().clone();
         pedalboard.snapshots = snapshots;
-        if (selectedSnapshot !== -1) {
-            pedalboard.selectedSnapshot = selectedSnapshot;
-        }
+        pedalboard.selectedSnapshot = selectedSnapshot;
         this.pruneSnapshotValues(pedalboard);
 
         this.setModelPedalboard(pedalboard);

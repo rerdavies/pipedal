@@ -303,6 +303,7 @@ namespace pipedal
         Storage &GetStorage() { return storage; }
 
         virtual std::string Tone3000ThumbnailDirectory() override;
+        virtual std::string OldTone3000ThumbnailDirectory() override;
 
         bool GetHasWifi();
 

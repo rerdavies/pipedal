@@ -150,7 +150,8 @@ export default class SnapshotButton extends ResizeResponsiveComponent<SnapshotBu
                         if (!selected) ev.stopPropagation();
                     }}
 
-                    onClick={() => { if (snapshot) this.props.onSelectSnapshot(snapshotIndex); }}
+                    onClick={() => { 
+                        if (snapshot) this.props.onSelectSnapshot(snapshotIndex); }}
                 >
                     {/* select background mask*/}
                     <div style={{position: "absolute", left:0,top:0,right:0,bottom:0, visibility: this.props.selected ? "visible": "hidden",

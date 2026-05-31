@@ -729,7 +729,12 @@ void PiPedalModel::SetSnapshot(int64_t selectedSnapshot)
                 }
             }
             pedalboardChanged = true;
+        } else if (selectedSnapshot == -1) 
+        {
+            this->pedalboard.selectedSnapshot(-1);
+            pedalboardChanged = true;
         }
+
     }
     if (pedalboardChanged)
     {
@@ -3505,6 +3510,10 @@ void PiPedalModel::SetChannelRouterSettings(int64_t clientId, ChannelRouterSetti
 }
 
 std::string PiPedalModel::Tone3000ThumbnailDirectory()
+{
+    return "/var/pipedal/audio_uploads/tone3000_thumbnails";
+}
+std::string PiPedalModel::OldTone3000ThumbnailDirectory()
 {
     return "/var/pipedal/tone3000_thumbnails";
 }
