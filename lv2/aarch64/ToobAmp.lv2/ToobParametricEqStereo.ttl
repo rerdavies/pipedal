@@ -87,7 +87,7 @@ toob-parametric-eq-stereo:hfGroup
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 78 ;
+        lv2:microVersion 79 ;
 
         uiext:ui <http://two-play.com/plugins/toob-parametric-eq-stereo-ui>;                
 
@@ -138,7 +138,7 @@ TooB Parametric EQ provides a flexible 4-band parametric studio EQ that is up th
                 pg:group toob-parametric-eq-stereo:filterGroup;
 
                 lv2:default 21.000 ;
-                lv2:minimum 3.000 ;
+                lv2:minimum 1.000 ;
                 lv2:maximum 21.000 ;
                 lv2:portProperty epp:logarithmic;
                 units:unit units:khz;

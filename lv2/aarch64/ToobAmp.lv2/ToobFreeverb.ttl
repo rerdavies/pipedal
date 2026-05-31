@@ -41,7 +41,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 78 ;
+        lv2:microVersion 79 ;
         rdfs:comment """
 Toob Freeverb is an Lv2 implementation of the famous Freeverb reverb effect. FreeVerb delivers a well-balanced reverb with very little tonal coloration.
 
@@ -52,7 +52,7 @@ The TooB implementation is ported from the Synthesis Toolkit in C++ (STK), by Pe
 """ ;
 
         mod:brand "TooB";
-        mod:label "TooB Freeverb";
+        mod:label "Freeverb";
         lv2:optionalFeature lv2:hardRTCapable;
 
         lv2:port

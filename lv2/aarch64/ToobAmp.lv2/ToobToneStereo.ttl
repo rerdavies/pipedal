@@ -43,7 +43,7 @@
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 78 ;
+        lv2:microVersion 79 ;
         rdfs:comment """
 TooB Tone is a simple tone control. For more flexible EQ plugins, see TooB 3 Band Eq, or TooB Parameteric EQ.
 
