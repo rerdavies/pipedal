@@ -67,8 +67,8 @@ install (
 )
 
 install (
-    DIRECTORY ${PROJECT_SOURCE_DIR}/default_presets 
-    DESTINATION /etc/pipedal/config
+    DIRECTORY ${PROJECT_SOURCE_DIR}/default_presets/presets 
+    DESTINATION /etc/pipedal/config/default_presets/presets
 )
 
 message(STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")

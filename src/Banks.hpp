@@ -317,6 +317,12 @@ namespace pipedal
             bank.name(name);
             bank.instanceId(++nextInstanceId_);
 
+            if (afterId == -2)
+            {
+                entries_.insert(entries_.begin(), bank);
+                return bank.instanceId();
+
+            }
             for (size_t i = 0; i < this->entries_.size(); ++i)
             {
                 if (entries_[i].instanceId() == afterId)

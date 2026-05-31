@@ -179,38 +179,44 @@ static fs::path GetTone3000ThumbnailFile(const fs::path& thumbnailDirectory, con
     return {};
 }
 
-int64_t ImportBankFile(PiPedalModel &model, const std::filesystem::path& filePath,uint64_t uploadAfter = -1)
-{
-    BankFile bankFile;
+namespace pipedal::implementation {
+
+    int64_t ImportBankFile(PiPedalModel &model, const std::filesystem::path& filePath,uint64_t uploadAfter = -1)
+    {
+        BankFile bankFile;
 
 
-    if (filePath.empty())
-    {
-        throw std::runtime_error("Unexpected.");
-    }
-    if (IsZipFile(filePath))
-    {
-        auto presetReader = PresetBundleReader::LoadPresetsFile(model, filePath);
-        presetReader->ExtractMediaFiles();
-
-        std::stringstream ss(presetReader->GetPresetJson());
-        json_reader reader(ss);
-        reader.read(&bankFile);
-    }
-    else
-    {
-        std::ifstream f {filePath};
-        if (!f.is_open()) {
-            throw std::runtime_error(SS("Unable to open file " << filePath));
+        if (filePath.empty())
+        {
+            throw std::runtime_error("Unexpected.");
         }
-        // legacy json format, no zip, no media files.
-        json_reader reader(f);
-        reader.read(&bankFile);
-    }
-    uint64_t instanceId = model.UploadBank(bankFile, uploadAfter);
+        if (IsZipFile(filePath))
+        {
+            auto presetReader = PresetBundleReader::LoadPresetsFile(model, filePath);
+            presetReader->ExtractMediaFiles();
 
-    return instanceId;
+            std::stringstream ss(presetReader->GetPresetJson());
+            json_reader reader(ss);
+            reader.read(&bankFile);
+        }
+        else
+        {
+            std::ifstream f {filePath};
+            if (!f.is_open()) {
+                throw std::runtime_error(SS("Unable to open file " << filePath));
+            }
+            // legacy json format, no zip, no media files.
+            json_reader reader(f);
+            reader.read(&bankFile);
+        }
+        uint64_t instanceId = model.UploadBank(bankFile, uploadAfter);
+
+        return instanceId;
+    }
 }
+
+using namespace pipedal::implementation;
+
 class DownloadIntercept : public RequestHandler
 {
     PiPedalModel* model;
