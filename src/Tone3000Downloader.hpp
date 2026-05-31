@@ -145,6 +145,7 @@ namespace pipedal
                 const std::string &errorMessage) = 0;
 
             virtual std::string Tone3000ThumbnailDirectory() = 0;
+            virtual std::string OldTone3000ThumbnailDirectory() = 0;
         };
 
         using self = Tone3000Downloader;

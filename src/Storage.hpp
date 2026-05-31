@@ -80,6 +80,8 @@ private:
     
 private:
     void FillSampleDirectoryTree(FilePropertyDirectoryTree*node, const std::filesystem::path&directory) const;
+    void UpgradeV1FactoryPresets();
+    void UpgradeV2FactoryPresets();
     void UpgradeFactoryPresets();
     void MaybeCopyDefaultPresets();
     static std::string SafeEncodeName(const std::string& name);

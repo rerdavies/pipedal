@@ -49,12 +49,12 @@
 using namespace pipedal;
 namespace fs = std::filesystem;
 
-const char *BANK_EXTENSION = ".bank";
-const char *BANKS_FILENAME = "index.banks";
+const char* BANK_EXTENSION = ".bank";
+const char* BANKS_FILENAME = "index.banks";
 
 #define USER_SETTINGS_FILENAME "userSettings.json";
 
-static bool hasSyntheticModRoot(const UiFileProperty &fileProperty)
+static bool hasSyntheticModRoot(const UiFileProperty& fileProperty)
 {
     return (fileProperty.modDirectories().size() > 1 || (fileProperty.modDirectories().size() == 1 && fileProperty.useLegacyModDirectory()));
 }
@@ -80,7 +80,7 @@ static int fromhexStrict(char c)
     return -1;
 }
 
-std::string Storage::SafeDecodeName(const std::string &name)
+std::string Storage::SafeDecodeName(const std::string& name)
 {
     std::stringstream s;
     for (int i = 0; i < name.length(); /**/)
@@ -127,9 +127,9 @@ std::string Storage::SafeDecodeName(const std::string &name)
     return s.str();
 }
 
-static const char *hex = "0123456789ABCDEF";
+static const char* hex = "0123456789ABCDEF";
 
-std::string Storage::SafeEncodeName(const std::string &name)
+std::string Storage::SafeEncodeName(const std::string& name)
 {
     std::stringstream s;
     for (char c : name)
@@ -153,7 +153,7 @@ std::string Storage::SafeEncodeName(const std::string &name)
     return s.str();
 }
 
-std::filesystem::path ResolveHomePath(const std::filesystem::path &path)
+std::filesystem::path ResolveHomePath(const std::filesystem::path& path)
 {
     if (path.begin() == path.end())
         return path;
@@ -162,7 +162,7 @@ std::filesystem::path ResolveHomePath(const std::filesystem::path &path)
     auto el = (*it);
     if (el != "~")
         return path;
-    const char *homeDirectory = nullptr;
+    const char* homeDirectory = nullptr;
 
     homeDirectory = getenv("HOME");
     if (homeDirectory == nullptr)
@@ -187,28 +187,28 @@ std::filesystem::path ResolveHomePath(const std::filesystem::path &path)
     return result;
 }
 
-void Storage::SetConfigRoot(const std::filesystem::path &path)
+void Storage::SetConfigRoot(const std::filesystem::path& path)
 {
     this->configRoot = ResolveHomePath(path);
 }
-void Storage::SetDataRoot(const std::filesystem::path &path)
+void Storage::SetDataRoot(const std::filesystem::path& path)
 {
     this->dataRoot = ResolveHomePath(path);
     this->dataRoot__audio_uploads = dataRoot / "audio_uploads";
 }
 
-const std::filesystem::path &Storage::GetConfigRoot() const
+const std::filesystem::path& Storage::GetConfigRoot() const
 {
     return this->configRoot;
 }
-const std::filesystem::path &Storage::GetDataRoot() const
+const std::filesystem::path& Storage::GetDataRoot() const
 {
     return this->dataRoot;
 }
 
-static void CopyDirectory(const std::filesystem::path &source, const std::filesystem::path &destination)
+static void CopyDirectory(const std::filesystem::path& source, const std::filesystem::path& destination)
 {
-    for (auto &directoryEntry : std::filesystem::directory_iterator(source))
+    for (auto& directoryEntry : std::filesystem::directory_iterator(source))
     {
         if (!IsValidUtf8(directoryEntry.path().string()))
         {
@@ -239,18 +239,25 @@ void Storage::MaybeCopyDefaultPresets()
     }
 }
 
-static void removeFileNoThrow(const std::filesystem::path &path)
+static void removeFileNoThrow(const std::filesystem::path& path)
 {
     try
     {
         fs::remove(path);
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
     }
 }
 
 void Storage::UpgradeFactoryPresets()
+{
+    UpgradeV1FactoryPresets();
+    UpgradeV2FactoryPresets();
+}
+
+
+void Storage::UpgradeV2FactoryPresets()
 {
     auto presetsDirectory = this->GetPresetsDirectory();
     auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
@@ -265,8 +272,41 @@ void Storage::UpgradeFactoryPresets()
     fs::path defaultPresetsVersionFile = presetsDirectory / "banks.versionInfo";
     presetsVersion.Load(defaultPresetsVersionFile);
 
-    // Maybe install or upgrade factory presets.
-    if (defaultConfigPresetsVersion.Version() > presetsVersion.Version() || defaultConfigPresetsVersion.Version() == 0)
+    constexpr uint32_t V2_VERSION_NUMBER = 2;
+
+    // set the default banks.versionInfo value to 0 to force complete upgrade path
+
+    bool testUpgrade = (defaultConfigPresetsVersion.Version() == 0);
+    // Maybe install or upgrade Version 1 factory presets.
+    if ((V2_VERSION_NUMBER > presetsVersion.Version() && presetsVersion.Version() != 0) || testUpgrade)
+    {
+        
+    }
+
+}
+
+void Storage::UpgradeV1FactoryPresets()
+{
+    auto presetsDirectory = this->GetPresetsDirectory();
+    auto presetsConfigDirectory = this->configRoot / "default_presets" / "presets";
+
+    using namespace ::pipedal::implementation;
+
+    BrowserFilesVersionInfo defaultConfigPresetsVersion;
+    fs::path defaultConfigPresetsVersionFile = presetsConfigDirectory / "banks.versionInfo";
+    defaultConfigPresetsVersion.Load(defaultConfigPresetsVersionFile);
+
+    BrowserFilesVersionInfo presetsVersion;
+    fs::path defaultPresetsVersionFile = presetsDirectory / "banks.versionInfo";
+    presetsVersion.Load(defaultPresetsVersionFile);
+
+    constexpr uint32_t V1_VERSION_NUMBER = 1;
+
+    // set the default banks.versionInfo value to 0 to force complete upgrade path
+
+    bool testUpgrade = (defaultConfigPresetsVersion.Version() == 0);
+    // Maybe install or upgrade Version 1 factory presets.
+    if ((V1_VERSION_NUMBER > presetsVersion.Version() && presetsVersion.Version() != 0) || testUpgrade)
     {
         // remove TooB ML README.md
         removeFileNoThrow("/usr/lib/lv2/ToobAmp.lv2/models/tones/README.md");
@@ -275,88 +315,92 @@ void Storage::UpgradeFactoryPresets()
         removeFileNoThrow("/var/pipedal/audio_uploads/ToobMlModels/README.md");
         removeFileNoThrow("/var/pipedal/audio_uploads/ToobMlModels/model.index");
 
-        std::string name = "Factory Presets";
-        BankFile newFactoryPresets;
+        // Do NOT upgrade to v1 Factory Presets.
+#if 0
         {
-            fs::path defaultBankPath = presetsConfigDirectory / "Default+Bank.bank";
-            try
+            std::string name = "Factory Presets";
+            BankFile newFactoryPresets;
             {
-                std::ifstream is(defaultBankPath);
-                json_reader reader(is);
-                reader.read(&newFactoryPresets);
+                fs::path defaultBankPath = presetsConfigDirectory / "Default+Bank.bank";
+                try
+                {
+                    std::ifstream is(defaultBankPath);
+                    json_reader reader(is);
+                    reader.read(&newFactoryPresets);
+                }
+                catch (const std::exception& e)
+                {
+                    Lv2Log::error(SS("Failed to isntall factory presets. Can't read " << defaultBankPath << "."));
+                }
             }
-            catch (const std::exception &e)
+            newFactoryPresets.name("Factory Presets");
+
+            BankIndexEntry* existingEntry = bankIndex.getEntryByName(name);
+            if (existingEntry == nullptr)
             {
-                Lv2Log::error(SS("Failed to isntall factory presets. Can't read " << defaultBankPath << "."));
-            }
-        }
-        newFactoryPresets.name("Factory Presets");
+                BankFile bankFile;
+                bankFile.name(name);
 
-        BankIndexEntry *existingEntry = bankIndex.getEntryByName(name);
-        if (existingEntry == nullptr)
-        {
-            BankFile bankFile;
-            bankFile.name(name);
+                for (auto& presetEntry : newFactoryPresets.presets())
+                {
+                    bankFile.addPreset(presetEntry->preset(), -1);
+                }
 
-            for (auto &presetEntry : newFactoryPresets.presets())
-            {
-                bankFile.addPreset(presetEntry->preset(), -1);
-            }
-
-            int64_t instanceId = bankFile.presets()[0]->instanceId();
-            bankFile.selectedPreset(instanceId);
-            SaveBankFile(name, bankFile);
-            this->bankIndex.addBank(-1, name);
-            this->SaveBankIndex();
-        }
-        else
-        {
-
-            // either use the current bank (if the factory bank is selected), or create a new one.
-            BankFile bankFile;
-            bankFile.name(name);
-            BankFile *pFactoryPresetsBank = nullptr;
-            bool usingCurrentBank = false;
-            if (bankIndex.selectedBank() == existingEntry->instanceId())
-            {
-                usingCurrentBank = true;
-                pFactoryPresetsBank = &(this->currentBank);
+                int64_t instanceId = bankFile.presets()[0]->instanceId();
+                bankFile.selectedPreset(instanceId);
+                SaveBankFile(name, bankFile);
+                this->bankIndex.addBank(-1, name);
+                this->SaveBankIndex();
             }
             else
             {
-                LoadBankFile(name, &bankFile);
-                pFactoryPresetsBank = &bankFile;
-            }
-            // index existing presets.
-            std::unordered_map<std::string, size_t> nameToPositionIndex;
-            for (size_t i = 0; i < pFactoryPresetsBank->presets().size(); ++i)
-            {
-                auto &preset = pFactoryPresetsBank->presets()[i];
-                nameToPositionIndex[preset->preset().name()] = i;
-            }
 
-            // merge new presets into the existing ones (overwriting as neccessary)
-            for (auto &newPresetEntry : newFactoryPresets.presets())
-            {
-                const std::string name = newPresetEntry->preset().name();
-
-                auto f = nameToPositionIndex.find(name);
-                if (f != nameToPositionIndex.end())
+                // either use the current bank (if the factory bank is selected), or create a new one.
+                BankFile bankFile;
+                bankFile.name(name);
+                BankFile* pFactoryPresetsBank = nullptr;
+                bool usingCurrentBank = false;
+                if (bankIndex.selectedBank() == existingEntry->instanceId())
                 {
-                    size_t postition = f->second;
-                    // overwrite the existing entry.
-                    pFactoryPresetsBank->presets()[postition]->preset(newPresetEntry->preset());
+                    usingCurrentBank = true;
+                    pFactoryPresetsBank = &(this->currentBank);
                 }
                 else
                 {
-                    pFactoryPresetsBank->addPreset(newPresetEntry->preset());
+                    LoadBankFile(name, &bankFile);
+                    pFactoryPresetsBank = &bankFile;
                 }
-            }
-            SaveBankFile(name, *pFactoryPresetsBank);
+                // index existing presets.
+                std::unordered_map<std::string, size_t> nameToPositionIndex;
+                for (size_t i = 0; i < pFactoryPresetsBank->presets().size(); ++i)
+                {
+                    auto& preset = pFactoryPresetsBank->presets()[i];
+                    nameToPositionIndex[preset->preset().name()] = i;
+                }
 
-            presetsVersion.Version(defaultConfigPresetsVersion.Version());
-            presetsVersion.Save(defaultPresetsVersionFile);
+                // merge new presets into the existing ones (overwriting as neccessary)
+                for (auto& newPresetEntry : newFactoryPresets.presets())
+                {
+                    const std::string name = newPresetEntry->preset().name();
+
+                    auto f = nameToPositionIndex.find(name);
+                    if (f != nameToPositionIndex.end())
+                    {
+                        size_t postition = f->second;
+                        // overwrite the existing entry.
+                        pFactoryPresetsBank->presets()[postition]->preset(newPresetEntry->preset());
+                    }
+                    else
+                    {
+                        pFactoryPresetsBank->addPreset(newPresetEntry->preset());
+                    }
+                }
+                SaveBankFile(name, *pFactoryPresetsBank);
+            }
         }
+#endif
+        presetsVersion.Version(2);
+        presetsVersion.Save(defaultPresetsVersionFile);
     }
 }
 void Storage::Initialize()
@@ -368,7 +412,7 @@ void Storage::Initialize()
 
         MaybeCopyDefaultPresets();
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         throw PiPedalStateException("Can't create presets directory. (" + (std::string)this->GetPresetsDirectory() + ") (" + e.what() + ")");
     }
@@ -379,7 +423,7 @@ void Storage::Initialize()
     {
         LoadJackChannelSelection();
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
     }
     LoadAlsaSequencerConfiguration();
@@ -406,7 +450,7 @@ void Storage::LoadBank(int64_t instanceId)
         }
         this->LoadPreset(this->currentBank.selectedPreset());
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         throw std::logic_error(SS("Bank file corrupted. " << e.what() << "(" << GetBankFileName(indexEntry.name()) << ")"));
     }
@@ -425,7 +469,7 @@ std::filesystem::path Storage::GetPluginPresetsDirectory() const
 {
     return this->dataRoot / "plugin_presets";
 }
-const std::filesystem::path &Storage::GetPluginUploadDirectory() const
+const std::filesystem::path& Storage::GetPluginUploadDirectory() const
 {
     return dataRoot__audio_uploads;
 }
@@ -447,7 +491,7 @@ std::filesystem::path Storage::GetIndexFileName() const
 {
     return this->GetPresetsDirectory() / BANKS_FILENAME;
 }
-std::filesystem::path Storage::GetBankFileName(const std::string &name) const
+std::filesystem::path Storage::GetBankFileName(const std::string& name) const
 {
     std::string fileName = SafeEncodeName(name) + BANK_EXTENSION;
     return this->GetPresetsDirectory() / fileName;
@@ -463,7 +507,7 @@ void Storage::LoadBankIndex()
         json_reader reader(s);
         reader.read(&bankIndex);
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
         bankIndex.clear();
         ReIndex();
@@ -497,7 +541,7 @@ void Storage::LoadPluginPresetIndex()
             reader.read(&pluginPresetIndex);
         }
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
     }
 }
@@ -530,7 +574,7 @@ void Storage::SaveBankIndex()
 
 void Storage::ReIndex()
 {
-    for (const auto &dirEntry : std::filesystem::directory_iterator(GetPresetsDirectory()))
+    for (const auto& dirEntry : std::filesystem::directory_iterator(GetPresetsDirectory()))
     {
         if (!IsValidUtf8(dirEntry.path().string()))
         {
@@ -555,7 +599,7 @@ void Storage::ReIndex()
     bankIndex.selectedBank(bankIndex.entries()[0].instanceId());
 }
 
-void Storage::CreateBank(const std::string &name)
+void Storage::CreateBank(const std::string& name)
 {
     BankFile bankFile;
     Pedalboard defaultPreset = Pedalboard::MakeDefault();
@@ -570,7 +614,7 @@ void Storage::CreateBank(const std::string &name)
     this->SaveBankIndex();
 }
 
-void Storage::GetBankFile(int64_t instanceId, BankFile *pBank) const
+void Storage::GetBankFile(int64_t instanceId, BankFile* pBank) const
 {
     auto indexEntry = this->bankIndex.getBankIndexEntry(instanceId);
     auto name = indexEntry.name();
@@ -581,7 +625,7 @@ void Storage::GetBankFile(int64_t instanceId, BankFile *pBank) const
     pBank->name(indexEntry.name());
 }
 
-void Storage::LoadBankFile(const std::string &name, BankFile *pBank)
+void Storage::LoadBankFile(const std::string& name, BankFile* pBank)
 {
     std::filesystem::path fileName = GetBankFileName(name);
     std::ifstream is(fileName);
@@ -589,7 +633,7 @@ void Storage::LoadBankFile(const std::string &name, BankFile *pBank)
     reader.read(pBank);
 }
 
-void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
+void Storage::SaveBankFile(const std::string& name, const BankFile& bankFile)
 {
     std::filesystem::path fileName = GetBankFileName(name);
     std::filesystem::path backupFile = ((std::string)fileName) + ".$$$";
@@ -612,7 +656,7 @@ void Storage::SaveBankFile(const std::string &name, const BankFile &bankFile)
             std::filesystem::remove(backupFile);
         }
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         std::filesystem::remove(fileName);
         if (std::filesystem::exists(backupFile))
@@ -629,9 +673,9 @@ void Storage::SaveCurrentBank()
     SaveBankFile(indexEntry.name(), this->currentBank);
 }
 
-const Pedalboard &Storage::GetCurrentPreset()
+const Pedalboard& Storage::GetCurrentPreset()
 {
-    auto &item = currentBank.getItem(currentBank.selectedPreset());
+    auto& item = currentBank.getItem(currentBank.selectedPreset());
     return item.preset();
 }
 
@@ -646,13 +690,13 @@ bool Storage::LoadPreset(int64_t instanceId)
     }
     return true;
 }
-void Storage::SaveCurrentPreset(const Pedalboard &pedalboard)
+void Storage::SaveCurrentPreset(const Pedalboard& pedalboard)
 {
-    auto &item = currentBank.getItem(currentBank.selectedPreset());
+    auto& item = currentBank.getItem(currentBank.selectedPreset());
     item.preset(pedalboard);
     SaveCurrentBank();
 }
-int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, int64_t bankInstanceId, const std::string &name, int64_t saveAfterInstanceId)
+int64_t Storage::SaveCurrentPresetAs(const Pedalboard& pedalboard, int64_t bankInstanceId, const std::string& name, int64_t saveAfterInstanceId)
 {
     Pedalboard newPedalboard = pedalboard;
     newPedalboard.name(name);
@@ -676,14 +720,14 @@ int64_t Storage::SaveCurrentPresetAs(const Pedalboard &pedalboard, int64_t bankI
             SaveBankFile(indexEntry.name(), bankFile);
             return -1;
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             throw std::logic_error(SS("Bank file corrupted. " << e.what() << "(" << GetBankFileName(indexEntry.name()) << ")"));
         }
     }
 }
 
-static std::string stripNumericSuffix(const std::string &name)
+static std::string stripNumericSuffix(const std::string& name)
 {
     // remove (digit*) from the end of the string.
     // Find the last '(' character
@@ -722,7 +766,7 @@ static std::string stripNumericSuffix(const std::string &name)
 
     return name.substr(0, pos);
 }
-static std::string makeUniqueName(const std::string &name, const std::set<std::string> &existingNames)
+static std::string makeUniqueName(const std::string& name, const std::set<std::string>& existingNames)
 {
     if (!existingNames.contains(name))
     {
@@ -741,25 +785,25 @@ static std::string makeUniqueName(const std::string &name, const std::set<std::s
         ++i;
     }
 }
-int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector<int64_t>& presets)
 {
     if (bankIndex.selectedBank() == bankInstanceId)
     {
         throw std::runtime_error("Can't import to self.");
     }
-    std::set<int64_t> presetsSet{presets.begin(), presets.end()};
+    std::set<int64_t> presetsSet{ presets.begin(), presets.end() };
     auto indexEntry = this->bankIndex.getBankIndexEntry(bankInstanceId);
 
     std::set<std::string> existingNames;
 
-    for (auto &preset : this->currentBank.presets())
+    for (auto& preset : this->currentBank.presets())
     {
         existingNames.insert(preset->preset().name());
     }
     BankFile bankFile;
     LoadBankFile(indexEntry.name(), &bankFile);
     int64_t lastPresetId = -1;
-    for (auto &presetEntry : bankFile.presets())
+    for (auto& presetEntry : bankFile.presets())
     {
         if (presetsSet.contains(presetEntry->instanceId()))
         {
@@ -773,7 +817,7 @@ int64_t Storage::ImportPresetsFromBank(int64_t bankInstanceId, const std::vector
     SaveCurrentBank();
     return lastPresetId;
 }
-int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t> &presets)
+int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int64_t>& presets)
 {
     if (bankIndex.selectedBank() == bankInstanceId)
     {
@@ -784,15 +828,15 @@ int64_t Storage::CopyPresetsToBank(int64_t bankInstanceId, const std::vector<int
     BankFile bankFile;
     LoadBankFile(indexEntry.name(), &bankFile);
 
-    std::set<int64_t> presetsSet{presets.begin(), presets.end()};
+    std::set<int64_t> presetsSet{ presets.begin(), presets.end() };
 
     std::set<std::string> existingNames;
 
-    for (auto &preset : bankFile.presets())
+    for (auto& preset : bankFile.presets())
     {
         existingNames.insert(preset->preset().name());
     }
-    for (auto &presetEntry : this->currentBank.presets())
+    for (auto& presetEntry : this->currentBank.presets())
     {
         if (presetsSet.contains(presetEntry->instanceId()))
         {
@@ -814,7 +858,7 @@ std::vector<PresetIndexEntry> Storage::RequestBankPresets(int64_t bankInstanceId
     std::vector<PresetIndexEntry> result;
     BankFile bankFile;
     LoadBankFile(indexEntry.name(), &bankFile);
-    for (auto &preset : bankFile.presets())
+    for (auto& preset : bankFile.presets())
     {
         result.push_back(
             PresetIndexEntry(preset->instanceId(), preset->preset().name()));
@@ -822,19 +866,19 @@ std::vector<PresetIndexEntry> Storage::RequestBankPresets(int64_t bankInstanceId
     return result;
 }
 
-void Storage::SetPresetIndex(const PresetIndex &presets)
+void Storage::SetPresetIndex(const PresetIndex& presets)
 {
     // painful because we must move unique_ptrs.
-    std::map<int64_t, std::unique_ptr<BankFileEntry> *> entries;
+    std::map<int64_t, std::unique_ptr<BankFileEntry>*> entries;
     for (int i = 0; i < this->currentBank.presets().size(); ++i)
     {
-        auto &preset = this->currentBank.presets()[i];
+        auto& preset = this->currentBank.presets()[i];
         entries[preset->instanceId()] = &(this->currentBank.presets()[i]);
     }
-    std::vector<std::unique_ptr<BankFileEntry> *> newPresets;
+    std::vector<std::unique_ptr<BankFileEntry>*> newPresets;
     for (size_t i = 0; i < presets.presets().size(); ++i)
     {
-        std::unique_ptr<BankFileEntry> *p = entries[presets.presets()[i].instanceId()];
+        std::unique_ptr<BankFileEntry>* p = entries[presets.presets()[i].instanceId()];
         if (p == nullptr)
         {
             throw PiPedalStateException("Presets do not match the currently loaded bank.");
@@ -846,7 +890,7 @@ void Storage::SetPresetIndex(const PresetIndex &presets)
     bankFile.presets().resize(newPresets.size());
     for (int i = 0; i < presets.presets().size(); ++i)
     {
-        std::unique_ptr<BankFileEntry> *oldBankFilePreset = newPresets[i];
+        std::unique_ptr<BankFileEntry>* oldBankFilePreset = newPresets[i];
 
         bankFile.presets()[i] = std::move((*oldBankFilePreset));
     }
@@ -857,11 +901,11 @@ void Storage::SetPresetIndex(const PresetIndex &presets)
     this->SaveCurrentBank();
 }
 
-void Storage::GetPresetIndex(PresetIndex *pResult)
+void Storage::GetPresetIndex(PresetIndex* pResult)
 {
     *pResult = PresetIndex();
     pResult->selectedInstanceId(this->currentBank.selectedPreset());
-    for (auto &item : this->currentBank.presets())
+    for (auto& item : this->currentBank.presets())
     {
         PresetIndexEntry entry;
         entry.instanceId(item->instanceId());
@@ -892,7 +936,7 @@ Pedalboard Storage::GetPreset(int64_t instanceId) const
     throw PiPedalException("Not found.");
 }
 
-int64_t Storage::DeletePresets(const std::vector<int64_t> &presetInstanceIds)
+int64_t Storage::DeletePresets(const std::vector<int64_t>& presetInstanceIds)
 {
     int64_t newSelection = currentBank.selectedPreset();
     for (auto presetId : presetInstanceIds)
@@ -903,7 +947,7 @@ int64_t Storage::DeletePresets(const std::vector<int64_t> &presetInstanceIds)
     return newSelection;
 }
 
-bool Storage::RenamePreset(int64_t presetId, const std::string &name)
+bool Storage::RenamePreset(int64_t presetId, const std::string& name)
 {
     if (this->currentBank.renamePreset(presetId, name))
     {
@@ -913,7 +957,7 @@ bool Storage::RenamePreset(int64_t presetId, const std::string &name)
     return false;
 }
 
-static int lastIndexOf(const char *sz, char c)
+static int lastIndexOf(const char* sz, char c)
 {
     size_t len = strlen(sz);
     for (size_t i = len - 1; i >= 0; --i)
@@ -927,13 +971,13 @@ static int lastIndexOf(const char *sz, char c)
     }
     return -1;
 }
-std::string Storage::GetPresetCopyName(const std::string &name)
+std::string Storage::GetPresetCopyName(const std::string& name)
 {
-    const char *str = name.c_str();
+    const char* str = name.c_str();
     std::string stem;
     if (name.length() != 0 && name[name.length() - 1] == ')')
     {
-        const char *str = name.c_str();
+        const char* str = name.c_str();
         size_t pos = lastIndexOf(str, '(');
         if (pos == -1)
         {
@@ -995,7 +1039,7 @@ int64_t Storage::CreateNewPreset()
 
 int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
 {
-    auto &fromItem = this->currentBank.getItem(fromId);
+    auto& fromItem = this->currentBank.getItem(fromId);
     int64_t result;
     if (toId == -1)
     {
@@ -1006,7 +1050,7 @@ int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
     }
     else
     {
-        auto &toItem = this->currentBank.getItem(toId);
+        auto& toItem = this->currentBank.getItem(toId);
         toItem.preset(fromItem.preset());
         result = toId;
     }
@@ -1014,13 +1058,13 @@ int64_t Storage::CopyPreset(int64_t fromId, int64_t toId)
     return result;
 }
 
-void Storage::SetJackChannelSelection(const JackChannelSelection &channelSelection)
+void Storage::SetJackChannelSelection(const JackChannelSelection& channelSelection)
 {
     this->jackChannelSelection = channelSelection;
     this->isJackChannelSelectionValid = true;
     SaveChannelSelection();
 }
-JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration &jackConfiguration)
+JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration& jackConfiguration)
 {
     if (!this->isJackChannelSelectionValid)
     {
@@ -1033,7 +1077,7 @@ JackChannelSelection Storage::GetJackChannelSelection(const JackConfiguration &j
     return jackChannelSelection.RemoveInvalidChannels(jackConfiguration);
 }
 
-static AlsaSequencerConfiguration MigrateRawMidiToAlsaSequencer(std::vector<AlsaMidiDeviceInfo> &selectedDevices)
+static AlsaSequencerConfiguration MigrateRawMidiToAlsaSequencer(std::vector<AlsaMidiDeviceInfo>& selectedDevices)
 {
     AlsaSequencerConfiguration result;
     try
@@ -1046,7 +1090,7 @@ static AlsaSequencerConfiguration MigrateRawMidiToAlsaSequencer(std::vector<Alsa
         {
             if (i->name_.starts_with("hw:"))
             {
-                for (const auto &port : sequencerPorts)
+                for (const auto& port : sequencerPorts)
                 {
                     if (i->name_ == port.rawMidiDevice)
                     {
@@ -1058,7 +1102,7 @@ static AlsaSequencerConfiguration MigrateRawMidiToAlsaSequencer(std::vector<Alsa
             }
         }
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         Lv2Log::error(SS("Failed to migrate MIDI settings. " << e.what()));
         // ick.
@@ -1079,7 +1123,7 @@ void Storage::LoadAlsaSequencerConfiguration()
             reader.read(&result);
             this->alsaSequencerConfiguration = result;
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error("I/O error reading %s: %s", fileName.c_str(), e.what());
         }
@@ -1113,13 +1157,13 @@ void Storage::SaveAlsaSequencerConfiguration()
         json_writer writer(s);
         writer.write(this->alsaSequencerConfiguration);
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         Lv2Log::error("I/O error writing %s: %s", fileName.c_str(), e.what());
     }
 }
 
-void Storage::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration &alsaSequencerConfiguration)
+void Storage::SetAlsaSequencerConfiguration(const AlsaSequencerConfiguration& alsaSequencerConfiguration)
 {
     this->alsaSequencerConfiguration = alsaSequencerConfiguration;
     SaveAlsaSequencerConfiguration();
@@ -1142,7 +1186,7 @@ void Storage::LoadJackChannelSelection()
             reader.read(&this->jackChannelSelection);
             this->isJackChannelSelectionValid = true;
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error("I/O error reading %s: %s", fileName.c_str(), e.what());
         }
@@ -1159,28 +1203,28 @@ void Storage::SaveChannelSelection()
         json_writer writer(s, false);
         writer.write(this->jackChannelSelection);
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         Lv2Log::error("I/O error writing %s: %s", fileName.c_str(), e.what());
         throw PiPedalStateException("Unexpected error writing Jack settings file.");
     }
 }
 
-void Storage::RenameBank(int64_t bankId, const std::string &newName)
+void Storage::RenameBank(int64_t bankId, const std::string& newName)
 {
     auto existingBank = this->bankIndex.getEntryByName(newName);
     if (existingBank != nullptr)
     {
         throw PiPedalStateException("A bank by that name already exists.");
     }
-    auto &entry = this->bankIndex.getBankIndexEntry(bankId);
+    auto& entry = this->bankIndex.getBankIndexEntry(bankId);
     std::filesystem::path oldPath = this->GetBankFileName(entry.name());
     std::filesystem::path newPath = this->GetBankFileName(newName);
     try
     {
         std::filesystem::rename(oldPath, newPath);
     }
-    catch (std::exception &e)
+    catch (std::exception& e)
     {
         std::stringstream s;
         s << "Unable to rename the bank. (" << e.what() << ")";
@@ -1190,21 +1234,21 @@ void Storage::RenameBank(int64_t bankId, const std::string &newName)
     SaveBankIndex();
 }
 
-int64_t Storage::SaveBankAs(int64_t bankId, const std::string &newName)
+int64_t Storage::SaveBankAs(int64_t bankId, const std::string& newName)
 {
     auto existingBank = this->bankIndex.getEntryByName(newName);
     if (existingBank != nullptr)
     {
         throw PiPedalStateException("A bank by that name already exists.");
     }
-    auto &entry = this->bankIndex.getBankIndexEntry(bankId);
+    auto& entry = this->bankIndex.getBankIndexEntry(bankId);
     std::filesystem::path oldPath = this->GetBankFileName(entry.name());
     std::filesystem::path newPath = this->GetBankFileName(newName);
     try
     {
         std::filesystem::copy(oldPath, newPath);
     }
-    catch (std::exception &e)
+    catch (std::exception& e)
     {
         std::stringstream s;
         s << "Unable to save the bank. (" << e.what() << ")";
@@ -1223,7 +1267,7 @@ void Storage::MoveBank(int from, int to)
 
 int64_t Storage::GetBankByMidiBankNumber(uint8_t bankNumber)
 {
-    auto &entries = this->bankIndex.entries();
+    auto& entries = this->bankIndex.entries();
     if (bankNumber >= entries.size())
     {
         if (entries.size() == 0)
@@ -1234,11 +1278,11 @@ int64_t Storage::GetBankByMidiBankNumber(uint8_t bankNumber)
 }
 int64_t Storage::DeleteBank(int64_t bankId)
 {
-    auto &entries = this->bankIndex.entries();
+    auto& entries = this->bankIndex.entries();
 
     for (size_t i = 0; i < entries.size(); ++i)
     {
-        auto &entry = entries[i];
+        auto& entry = entries[i];
 
         if (entry.instanceId() == bankId)
         {
@@ -1287,7 +1331,7 @@ int64_t Storage::GetCurrentPresetId() const
     return this->currentBank.selectedPreset();
 }
 
-int64_t Storage::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)
+int64_t Storage::UploadPreset(const BankFile& bankFile, int64_t uploadAfter)
 {
     int64_t lastPreset = this->currentBank.selectedPreset();
     if (uploadAfter != -1)
@@ -1317,7 +1361,7 @@ int64_t Storage::UploadPreset(const BankFile &bankFile, int64_t uploadAfter)
     this->SaveCurrentBank();
     return lastPreset;
 }
-int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
+int64_t Storage::UploadBank(BankFile& bankFile, int64_t uploadAfter)
 {
     int64_t lastBank = this->bankIndex.selectedBank();
     if (uploadAfter != -1)
@@ -1353,7 +1397,7 @@ int64_t Storage::UploadBank(BankFile &bankFile, int64_t uploadAfter)
     return lastBank;
 }
 
-void Storage::SetGovernorSettings(const std::string &governor)
+void Storage::SetGovernorSettings(const std::string& governor)
 {
     userSettings.governor_ = governor;
     SaveUserSettings();
@@ -1386,7 +1430,7 @@ std::string Storage::GetGovernorSettings() const
     return this->userSettings.governor_;
 }
 
-bool Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings)
+bool Storage::SetWifiConfigSettings(const WifiConfigSettings& wifiConfigSettings)
 {
     WifiConfigSettings copyToSave = wifiConfigSettings;
     WifiConfigSettings previousValue;
@@ -1413,7 +1457,7 @@ bool Storage::SetWifiConfigSettings(const WifiConfigSettings &wifiConfigSettings
     return configChanged;
 }
 
-void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings &wifiDirectConfigSettings)
+void Storage::SetWifiDirectConfigSettings(const WifiDirectConfigSettings& wifiDirectConfigSettings)
 {
     WifiDirectConfigSettings copyToSave = wifiDirectConfigSettings;
     copyToSave.rebootRequired_ = false;
@@ -1444,7 +1488,7 @@ void Storage::LoadUserSettings()
             reader.read(&userSettings);
         }
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
     }
     this->wifiConfigSettings.valid_ = true;
@@ -1477,7 +1521,7 @@ WifiDirectConfigSettings Storage::GetWifiDirectConfigSettings()
     return this->wifiDirectConfigSettings;
 }
 
-void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
+void Storage::SaveCurrentPreset(const CurrentPreset& currentPreset)
 {
     try
     {
@@ -1487,12 +1531,12 @@ void Storage::SaveCurrentPreset(const CurrentPreset &currentPreset)
         json_writer writer(f, true);
         writer.write(currentPreset);
     }
-    catch (std::exception &)
+    catch (std::exception&)
     {
         // called from destructor. Must be nothrow().
     }
 }
-bool Storage::RestoreCurrentPreset(CurrentPreset *pResult)
+bool Storage::RestoreCurrentPreset(CurrentPreset* pResult)
 {
     std::filesystem::path path = GetCurrentPresetPath();
     if (std::filesystem::exists(path))
@@ -1504,7 +1548,7 @@ bool Storage::RestoreCurrentPreset(CurrentPreset *pResult)
             reader.read(pResult);
             std::filesystem::remove(path); // one-shot only, restore the state from the last *orderly* shutdown.
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::warning(SS("Failed to restore current preset. " << e.what()));
 
@@ -1533,9 +1577,9 @@ void Storage::SetPluginPresetIndexVersion(uint64_t version)
     }
 }
 
-bool Storage::HasPluginPresets(const std::string &pluginUri) const
+bool Storage::HasPluginPresets(const std::string& pluginUri) const
 {
-    for (const auto &entry : this->pluginPresetIndex.entries_)
+    for (const auto& entry : this->pluginPresetIndex.entries_)
     {
         if (entry.pluginUri_ == pluginUri)
         {
@@ -1545,9 +1589,9 @@ bool Storage::HasPluginPresets(const std::string &pluginUri) const
     return false;
 }
 
-std::filesystem::path Storage::GetPluginPresetPath(const std::string &pluginUri) const
+std::filesystem::path Storage::GetPluginPresetPath(const std::string& pluginUri) const
 {
-    for (const auto &entry : this->pluginPresetIndex.entries_)
+    for (const auto& entry : this->pluginPresetIndex.entries_)
     {
         if (entry.pluginUri_ == pluginUri)
         {
@@ -1557,7 +1601,7 @@ std::filesystem::path Storage::GetPluginPresetPath(const std::string &pluginUri)
     throw PiPedalArgumentException("Plugin preset file not found.");
 }
 
-void Storage::MergePluginPresets(const std::string &pluginUri, const PluginPresets &presets)
+void Storage::MergePluginPresets(const std::string& pluginUri, const PluginPresets& presets)
 {
     std::string name;
     std::filesystem::path path;
@@ -1581,12 +1625,12 @@ void Storage::MergePluginPresets(const std::string &pluginUri, const PluginPrese
                 reader.read(&existingPresets);
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error(SS("Storage::MergePluginPresets: Can't reading existing plugin presets." << e.what()));
         }
     }
-    for (const PluginPreset &preset : presets.presets_)
+    for (const PluginPreset& preset : presets.presets_)
     {
 
         existingPresets.MergePreset(preset);
@@ -1619,7 +1663,7 @@ void Storage::MergePluginPresets(const std::string &pluginUri, const PluginPrese
     }
 }
 
-void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPresets &presets)
+void Storage::SavePluginPresets(const std::string& pluginUri, const PluginPresets& presets)
 {
     std::string name;
     std::filesystem::path path;
@@ -1662,7 +1706,7 @@ void Storage::SavePluginPresets(const std::string &pluginUri, const PluginPreset
     }
 }
 
-PluginPresets Storage::GetPluginPresets(const std::string &pluginUri) const
+PluginPresets Storage::GetPluginPresets(const std::string& pluginUri) const
 {
     PluginPresets result;
     if (!HasPluginPresets(pluginUri))
@@ -1681,36 +1725,36 @@ PluginPresets Storage::GetPluginPresets(const std::string &pluginUri) const
     reader.read(&result);
     return result;
 }
-PluginUiPresets Storage::GetPluginUiPresets(const std::string &pluginUri) const
+PluginUiPresets Storage::GetPluginUiPresets(const std::string& pluginUri) const
 {
     PluginPresets presets = GetPluginPresets(pluginUri);
     PluginUiPresets result;
     result.pluginUri_ = presets.pluginUri_;
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
-        const auto &preset = presets.presets_[i];
+        const auto& preset = presets.presets_[i];
         result.presets_.push_back(
             PluginUiPreset{
                 preset.label_,
-                preset.instanceId_});
+                preset.instanceId_ });
     }
     return result;
 }
 
-PluginPresetValues Storage::GetPluginPresetValues(const std::string &pluginUri, uint64_t instanceId)
+PluginPresetValues Storage::GetPluginPresetValues(const std::string& pluginUri, uint64_t instanceId)
 {
     auto presets = GetPluginPresets(pluginUri);
-    for (const auto &preset : presets.presets_)
+    for (const auto& preset : presets.presets_)
     {
         if (preset.instanceId_ == instanceId)
         {
             PluginPresetValues result;
 
-            for (const auto &valuePair : preset.controlValues_)
+            for (const auto& valuePair : preset.controlValues_)
             {
                 result.controls.push_back(ControlValue(valuePair.first.c_str(), valuePair.second));
             }
-            for (const auto &pair : preset.pathProperties_)
+            for (const auto& pair : preset.pathProperties_)
             {
                 result.pathProperties[pair.first] = pair.second;
             }
@@ -1722,24 +1766,24 @@ PluginPresetValues Storage::GetPluginPresetValues(const std::string &pluginUri, 
     throw PiPedalException("Plugin preset not found.");
 }
 
-void Storage::ToAbstractPaths(PluginPreset &pluginPreset)
+void Storage::ToAbstractPaths(PluginPreset& pluginPreset)
 {
     if (pluginPreset.pathProperties_.size() != 0)
     {
         std::map<std::string, std::string> newPathProperties;
-        for (const auto &pair : pluginPreset.pathProperties_)
+        for (const auto& pair : pluginPreset.pathProperties_)
         {
             newPathProperties[pair.first] = this->ToAbstractPathFromJson(pair.second);
         }
         pluginPreset.pathProperties_ = newPathProperties;
     }
 }
-void Storage::FromAbstractPaths(PluginPreset &pluginPreset)
+void Storage::FromAbstractPaths(PluginPreset& pluginPreset)
 {
     if (pluginPreset.pathProperties_.size() != 0)
     {
         std::map<std::string, std::string> newPathProperties;
-        for (const auto &pair : pluginPreset.pathProperties_)
+        for (const auto& pair : pluginPreset.pathProperties_)
         {
             newPathProperties[pair.first] = this->FromAbstractPathJson(pair.second);
         }
@@ -1748,22 +1792,22 @@ void Storage::FromAbstractPaths(PluginPreset &pluginPreset)
 }
 
 uint64_t Storage::SavePluginPreset(
-    const std::string &name,
-    const PedalboardItem &pedalboardItem)
+    const std::string& name,
+    const PedalboardItem& pedalboardItem)
 {
-    const std::string &pluginUri = pedalboardItem.uri();
+    const std::string& pluginUri = pedalboardItem.uri();
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
     bool existing = false;
 
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
-        auto &preset = presets.presets_[i];
+        auto& preset = presets.presets_[i];
         if (preset.label_ == name)
         {
             existing = true;
             result = preset.instanceId_;
-            PluginPreset pluginPreset{preset.instanceId_, preset.label_, pedalboardItem};
+            PluginPreset pluginPreset{ preset.instanceId_, preset.label_, pedalboardItem };
 
             presets.presets_[i] = PluginPreset(preset.instanceId_, preset.label_, pedalboardItem);
             break;
@@ -1784,15 +1828,15 @@ uint64_t Storage::SavePluginPreset(
 }
 
 uint64_t Storage::SavePluginPreset(
-    const std::string &pluginUri,
-    PluginPreset &pluginPreset)
+    const std::string& pluginUri,
+    PluginPreset& pluginPreset)
 {
     auto presets = GetPluginPresets(pluginUri);
     uint64_t result = -1;
     bool existing = false;
     for (size_t i = 0; i < presets.presets_.size(); ++i)
     {
-        auto &preset = presets.presets_[i];
+        auto& preset = presets.presets_[i];
         if (preset.label_ == pluginPreset.label_)
         {
             existing = true;
@@ -1814,7 +1858,7 @@ uint64_t Storage::SavePluginPreset(
     return result;
 }
 
-void Storage::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
+void Storage::UpdatePluginPresets(const PluginUiPresets& pluginPresets)
 {
     // handles deletions, renaming, and reordering only.
     // If you need to add a preset, you need to call SavePluginPreset or DuplicatePluginPreset instead.
@@ -1824,7 +1868,7 @@ void Storage::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
     newPresets.pluginUri_ = pluginPresets.pluginUri_;
     newPresets.nextInstanceId_ = presets.nextInstanceId_;
 
-    for (const auto &preset : pluginPresets.presets_)
+    for (const auto& preset : pluginPresets.presets_)
     {
         PluginPreset newPreset = presets.GetPreset(preset.instanceId_);
         newPreset.label_ = preset.label_;
@@ -1833,7 +1877,7 @@ void Storage::UpdatePluginPresets(const PluginUiPresets &pluginPresets)
     SavePluginPresets(newPresets.pluginUri_, newPresets);
 }
 
-static std::string stripCopySuffix(const std::string &s)
+static std::string stripCopySuffix(const std::string& s)
 {
     int pos = s.length() - 1;
     if (pos >= 0 && s[pos] == ')')
@@ -1855,7 +1899,7 @@ static std::string stripCopySuffix(const std::string &s)
     }
     return s;
 }
-uint64_t Storage::CopyPluginPreset(const std::string &pluginUri, uint64_t presetId)
+uint64_t Storage::CopyPluginPreset(const std::string& pluginUri, uint64_t presetId)
 {
     PluginPresets presets = this->GetPluginPresets(pluginUri);
     size_t pos = presets.Find(presetId);
@@ -1904,7 +1948,7 @@ std::map<std::string, bool> Storage::GetFavorites() const
     }
     return result;
 }
-void Storage::SetFavorites(const std::map<std::string, bool> &favorites)
+void Storage::SetFavorites(const std::map<std::string, bool>& favorites)
 {
     std::filesystem::path fileName = this->dataRoot / "favorites.json";
     pipedal::ofstream_synced f;
@@ -1940,7 +1984,7 @@ pipedal::JackServerSettings Storage::GetJackServerSettings()
 
     return result;
 }
-void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfiguration)
+void Storage::SetJackServerSettings(const pipedal::JackServerSettings& jackConfiguration)
 {
     std::filesystem::path fileName = this->dataRoot / "AudioConfig.json";
     pipedal::ofstream_synced f;
@@ -1952,7 +1996,7 @@ void Storage::SetJackServerSettings(const pipedal::JackServerSettings &jackConfi
     }
 }
 
-void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
+void Storage::SetSystemMidiBindings(const std::vector<MidiBinding>& bindings)
 {
     std::filesystem::path fileName = this->dataRoot / "config" / "SystemMidiBindings.json";
     pipedal::ofstream_synced f;
@@ -1963,9 +2007,9 @@ void Storage::SetSystemMidiBindings(const std::vector<MidiBinding> &bindings)
         writer.write(bindings);
     }
 }
-static bool hasBinding(std::vector<MidiBinding> &bindings, const std::string &name)
+static bool hasBinding(std::vector<MidiBinding>& bindings, const std::string& name)
 {
-    for (auto &binding : bindings)
+    for (auto& binding : bindings)
     {
         if (binding.symbol() == name)
         {
@@ -2015,7 +2059,7 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
             }
             return result;
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::warning(SS("Can't read file " << fileName << ". " << e.what()));
         }
@@ -2040,7 +2084,7 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
     return result;
 }
 
-static bool containsDirectorySeparator(const std::string &value)
+static bool containsDirectorySeparator(const std::string& value)
 {
     if (value.find("/") != std::string::npos)
         return true; // linux
@@ -2056,7 +2100,7 @@ static void ThrowPermissionDeniedError()
     throw std::logic_error("Permission denied.");
 }
 
-static bool ensureNoDotDot(const std::filesystem::path &path)
+static bool ensureNoDotDot(const std::filesystem::path& path)
 {
     for (auto segment_ : path)
     {
@@ -2082,7 +2126,7 @@ static bool ensureNoDotDot(const std::filesystem::path &path)
     return true;
 }
 
-bool isInfoFile(const fs::path &path)
+bool isInfoFile(const fs::path& path)
 {
     auto extension = path.extension();
     if (extension == ".pdf")
@@ -2105,37 +2149,37 @@ bool isInfoFile(const fs::path &path)
     return false;
 }
 
-static bool isInfoFile(const FileEntry &l)
+static bool isInfoFile(const FileEntry& l)
 {
     return isInfoFile(l.displayName_);
 }
 
 static void AddFilesToResult(
-    FileRequestResult &result,
-    const ModFileTypes::ModDirectory *modDirectoryInfo, // yyx
-    const UiFileProperty &fileProperty,
-    const fs::path &rootPath)
+    FileRequestResult& result,
+    const ModFileTypes::ModDirectory* modDirectoryInfo, // yyx
+    const UiFileProperty& fileProperty,
+    const fs::path& rootPath)
 {
 
     if (!fs::exists(rootPath))
     {
         return; // silently without error.
     }
-    auto &resultFiles = result.files_;
+    auto& resultFiles = result.files_;
 
     std::set<std::string> validExtensions = fileProperty.GetPermittedFileExtensions(
         modDirectoryInfo ? modDirectoryInfo->modType : "");
 
     try
     {
-        for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
+        for (auto const& dir_entry : std::filesystem::directory_iterator(rootPath))
         {
             if (!IsValidUtf8(dir_entry.path().string()))
             {
                 Lv2Log::warning("Invalid UTF-8 name in directory: " + dir_entry.path().string());
                 continue; // skip invalid UTF-8 names.
             }
-            const auto &path = dir_entry.path();
+            const auto& path = dir_entry.path();
             auto name = path.filename().string();
             if (dir_entry.is_regular_file())
             {
@@ -2155,11 +2199,11 @@ static void AddFilesToResult(
             }
             else if (dir_entry.is_directory())
             {
-                resultFiles.push_back(FileEntry{path, SafeFilenameToString(name), true, fs::is_symlink(path)});
+                resultFiles.push_back(FileEntry{ path, SafeFilenameToString(name), true, fs::is_symlink(path) });
             }
         }
     }
-    catch (const std::exception &error)
+    catch (const std::exception& error)
     {
         throw std::logic_error(
             SS("GetFileList failed. " << rootPath.string() << " - " << error.what()));
@@ -2169,41 +2213,41 @@ static void AddFilesToResult(
 
     auto collator = Locale::GetInstance()->GetCollator();
 
-    std::sort(resultFiles.begin(), resultFiles.end(), [&collator](const FileEntry &l, const FileEntry &r)
-              {
-        if (l.isDirectory_ != r.isDirectory_)
+    std::sort(resultFiles.begin(), resultFiles.end(), [&collator](const FileEntry& l, const FileEntry& r)
         {
-            return l.isDirectory_ > r.isDirectory_;
-        }
-        bool lIsInfoFile = isInfoFile(l);
-        bool rIsInfoFile = isInfoFile(r);
-        if (lIsInfoFile != rIsInfoFile)
-        {
-            return lIsInfoFile > rIsInfoFile;
-        }
-        return collator->Compare(l.displayName_,r.displayName_) < 0; });
+            if (l.isDirectory_ != r.isDirectory_)
+            {
+                return l.isDirectory_ > r.isDirectory_;
+            }
+            bool lIsInfoFile = isInfoFile(l);
+            bool rIsInfoFile = isInfoFile(r);
+            if (lIsInfoFile != rIsInfoFile)
+            {
+                return lIsInfoFile > rIsInfoFile;
+            }
+            return collator->Compare(l.displayName_, r.displayName_) < 0; });
 }
 
 static void AddTracksToResult(
-    const fs::path &audioRootDirectory,
-    FileRequestResult &result,
-    const ModFileTypes::ModDirectory *modDirectoryInfo, // yyx
-    const UiFileProperty &fileProperty,
-    const fs::path &rootPath)
+    const fs::path& audioRootDirectory,
+    FileRequestResult& result,
+    const ModFileTypes::ModDirectory* modDirectoryInfo, // yyx
+    const UiFileProperty& fileProperty,
+    const fs::path& rootPath)
 {
 
     if (!fs::exists(rootPath))
     {
         return; // silently without error.
     }
-    auto &resultFiles = result.files_;
+    auto& resultFiles = result.files_;
 
     std::set<std::string> validExtensions = fileProperty.GetPermittedFileExtensions(
         modDirectoryInfo ? modDirectoryInfo->modType : "");
 
     if (validExtensions.size() == 0)
     {
-        const auto &audioExtensions = MimeTypes::instance().AudioExtensions();
+        const auto& audioExtensions = MimeTypes::instance().AudioExtensions();
         validExtensions.insert(audioExtensions.begin(), audioExtensions.end());
     }
     validExtensions.insert(".jpg");
@@ -2213,29 +2257,29 @@ static void AddTracksToResult(
         // Add directories first.
         try
         {
-            for (auto const &dir_entry : std::filesystem::directory_iterator(rootPath))
+            for (auto const& dir_entry : std::filesystem::directory_iterator(rootPath))
             {
                 if (!IsValidUtf8(dir_entry.path().string()))
                 {
                     Lv2Log::warning("Invalid UTF-8 name in directory: " + dir_entry.path().string());
                     continue; // skip invalid UTF-8 names.
                 }
-                const auto &path = dir_entry.path();
+                const auto& path = dir_entry.path();
                 auto name = path.filename().string();
                 try
                 {
                     if (dir_entry.is_directory())
                     {
-                        resultFiles.push_back(FileEntry{path, name, true, dir_entry.is_symlink()});
+                        resultFiles.push_back(FileEntry{ path, name, true, dir_entry.is_symlink() });
                     }
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     Lv2Log::warning(SS("Failed to add directory entry: " << path.string() << " - " << e.what()));
                 }
             }
         }
-        catch (const std::exception &error)
+        catch (const std::exception& error)
         {
             throw std::logic_error(
                 SS("AddTracksToResult failed to enumerate directories. " << rootPath.string() << " - " << error.what()));
@@ -2244,7 +2288,7 @@ static void AddTracksToResult(
         std::sort(
             resultFiles.begin(),
             resultFiles.end(),
-            [collator](const FileEntry &l, const FileEntry &r)
+            [collator](const FileEntry& l, const FileEntry& r)
             {
                 if (l.isDirectory_ != r.isDirectory_)
                 {
@@ -2261,11 +2305,11 @@ static void AddTracksToResult(
             });
         // Add audio files.
         auto audioFiles = AudioDirectoryInfo::Create(rootPath,
-                                                     GetShadowIndexDirectory(audioRootDirectory, rootPath));
+            GetShadowIndexDirectory(audioRootDirectory, rootPath));
 
         try
         {
-            for (const auto &audioFile : audioFiles->GetFiles())
+            for (const auto& audioFile : audioFiles->GetFiles())
             {
                 fs::path audioFilePath = rootPath / audioFile.fileName();
                 std::string extension = UiFileProperty::GetFileExtension(audioFilePath);
@@ -2280,29 +2324,29 @@ static void AddTracksToResult(
                 }
             }
         }
-        catch (const std::exception &error)
+        catch (const std::exception& error)
         {
             throw std::logic_error(
                 SS("AddTracksToResult failed to enumerate audio files. " << rootPath.string() << " - " << error.what()));
         }
     }
-    catch (const std::exception &error)
+    catch (const std::exception& error)
     {
         throw std::logic_error(SS("GetFileList failed. " << error.what() << "(" << rootPath.string() << ")"));
     }
 }
 
-FileRequestResult Storage::GetModFileList2(const std::string &relativePath, const UiFileProperty &fileProperty)
+FileRequestResult Storage::GetModFileList2(const std::string& relativePath, const UiFileProperty& fileProperty)
 {
     FileRequestResult result;
-    const fs::path &uploadsDirectory = GetPluginUploadDirectory();
+    const fs::path& uploadsDirectory = GetPluginUploadDirectory();
 
     if (relativePath.empty())
     {
         // return the synthetic root.
         result.isProtected_ = true;
 
-        for (const auto &modDirectory : fileProperty.modDirectories())
+        for (const auto& modDirectory : fileProperty.modDirectories())
         {
             const auto directoryInfo = ModFileTypes::GetModDirectory(modDirectory);
             if (directoryInfo)
@@ -2316,27 +2360,27 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
             result.files_.push_back(
                 FileEntry(uploadsDirectory / fileProperty.directory(), fs::path(fileProperty.directory()).filename().string(), true, true));
         }
-        result.breadcrumbs_.push_back({"", "Home"});
+        result.breadcrumbs_.push_back({ "", "Home" });
         result.currentDirectory_ = relativePath;
         return result;
     }
     fs::path modDirectoryPath;
 
-    result.breadcrumbs_.push_back({"", "Home"});
-    fs::path fsRelativePath{relativePath};
+    result.breadcrumbs_.push_back({ "", "Home" });
+    fs::path fsRelativePath{ relativePath };
 
-    const ModFileTypes::ModDirectory *rootModDirectory = nullptr;
-    for (const auto &modDirectory : fileProperty.modDirectories())
+    const ModFileTypes::ModDirectory* rootModDirectory = nullptr;
+    for (const auto& modDirectory : fileProperty.modDirectories())
     {
-        const ModFileTypes::ModDirectory *modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
+        const ModFileTypes::ModDirectory* modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
         if (modDirectoryInfo)
         {
             if (IsSubdirectory(fsRelativePath, uploadsDirectory / modDirectoryInfo->pipedalPath))
             {
                 rootModDirectory = modDirectoryInfo;
                 modDirectoryPath = uploadsDirectory / modDirectoryInfo->pipedalPath;
-                result.breadcrumbs_.push_back({modDirectoryPath.string(),
-                                               (modDirectoryInfo->displayName)});
+                result.breadcrumbs_.push_back({ modDirectoryPath.string(),
+                                               (modDirectoryInfo->displayName) });
                 break;
             }
         }
@@ -2346,8 +2390,8 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         if (IsSubdirectory(fsRelativePath, uploadsDirectory / fileProperty.directory()))
         {
             modDirectoryPath = uploadsDirectory / fileProperty.directory();
-            result.breadcrumbs_.push_back({modDirectoryPath.string(),
-                                           SafeFilenameToString(fs::path(fileProperty.directory()).filename().string())});
+            result.breadcrumbs_.push_back({ modDirectoryPath.string(),
+                                           SafeFilenameToString(fs::path(fileProperty.directory()).filename().string()) });
         }
         else
         {
@@ -2357,8 +2401,8 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
 
     // add reaming path segments as breadcrumbs.
     {
-        fs::path modPath{modDirectoryPath};
-        fs::path rp{relativePath};
+        fs::path modPath{ modDirectoryPath };
+        fs::path rp{ relativePath };
         auto iRp = rp.begin();
         // skip past one or more segments in the modDirectoryPath.
         for (auto iModPath = modPath.begin(); iModPath != modPath.end(); ++iModPath)
@@ -2372,7 +2416,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
         while (iRp != rp.end())
         {
             cumulativePath /= (*iRp);
-            result.breadcrumbs_.push_back({cumulativePath, SafeFilenameToString(*iRp)});
+            result.breadcrumbs_.push_back({ cumulativePath, SafeFilenameToString(*iRp) });
             ++iRp;
         }
     }
@@ -2389,7 +2433,7 @@ FileRequestResult Storage::GetModFileList2(const std::string &relativePath, cons
     return result;
 }
 
-static bool IsChildDirectory(const fs::path &child, const fs::path &parent)
+static bool IsChildDirectory(const fs::path& child, const fs::path& parent)
 {
     auto iChild = child.begin();
     for (auto i = parent.begin(); i != parent.end(); ++i)
@@ -2403,7 +2447,7 @@ static bool IsChildDirectory(const fs::path &child, const fs::path &parent)
     return true;
 }
 
-FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const UiFileProperty &fileProperty)
+FileRequestResult Storage::GetFileList2(const std::string& relativePath_, const UiFileProperty& fileProperty)
 {
     std::string absolutePath = relativePath_;
     if (!ensureNoDotDot(absolutePath))
@@ -2446,8 +2490,8 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
 
     {
         // watch out for resource files!!!
-        result.breadcrumbs_.push_back({"", "Home"});
-        fs::path fsAbsolutePath{absolutePath};
+        result.breadcrumbs_.push_back({ "", "Home" });
+        fs::path fsAbsolutePath{ absolutePath };
         auto iAbsolutePath = fsAbsolutePath.begin();
         for (auto i = pluginRootDirectory.begin(); i != pluginRootDirectory.end(); ++i)
         {
@@ -2462,7 +2506,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
         while (iAbsolutePath != fsAbsolutePath.end())
         {
             cumulativePath /= (*iAbsolutePath);
-            result.breadcrumbs_.push_back({cumulativePath.string(), SafeFilenameToString(iAbsolutePath->string())});
+            result.breadcrumbs_.push_back({ cumulativePath.string(), SafeFilenameToString(iAbsolutePath->string()) });
             ++iAbsolutePath;
         }
     }
@@ -2471,7 +2515,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
         throw std::runtime_error(SS("Improper location. " << absolutePath));
     }
 
-    const ModFileTypes::ModDirectory *pModDirectory = nullptr;
+    const ModFileTypes::ModDirectory* pModDirectory = nullptr;
     if (fileProperty.modDirectories().size() > 0)
     {
         pModDirectory = ModFileTypes::GetModDirectory(fileProperty.modDirectories()[0]);
@@ -2488,7 +2532,7 @@ FileRequestResult Storage::GetFileList2(const std::string &relativePath_, const 
     return result;
 }
 
-bool Storage::IsValidSampleFileName(const std::filesystem::path &fileName)
+bool Storage::IsValidSampleFileName(const std::filesystem::path& fileName)
 {
     if (!fileName.is_absolute())
     {
@@ -2523,7 +2567,7 @@ bool Storage::IsValidSampleFileName(const std::filesystem::path &fileName)
     }
     return true;
 }
-void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
+void Storage::DeleteSampleFile(const std::filesystem::path& fileName)
 {
     if (!IsValidSampleFileName(fileName))
     {
@@ -2563,14 +2607,14 @@ void Storage::DeleteSampleFile(const std::filesystem::path &fileName)
             }
         }
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
         throw std::logic_error("Permission denied.");
     }
 }
-std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, const std::string &filename)
+std::filesystem::path Storage::MakeUserFilePath(const std::string& directory, const std::string& filename)
 {
-    std::filesystem::path filePath{filename};
+    std::filesystem::path filePath{ filename };
 
     std::filesystem::path result = fs::path(directory) / filename;
     if (!result.is_absolute())
@@ -2584,12 +2628,12 @@ std::filesystem::path Storage::MakeUserFilePath(const std::string &directory, co
     return result;
 }
 
-bool Storage::IsValidReadmeFile(const std::filesystem::path &fullPath)
+bool Storage::IsValidReadmeFile(const std::filesystem::path& fullPath)
 {
     return isInfoFile(fullPath.filename().string());
 }
 
-bool Storage::IsValidArtworkFile(const std::filesystem::path &fullPath)
+bool Storage::IsValidArtworkFile(const std::filesystem::path& fullPath)
 {
     if (IsInAudioTracksDirectory(fullPath) && isArtworkFileName(fullPath.filename().string()))
     {
@@ -2598,10 +2642,10 @@ bool Storage::IsValidArtworkFile(const std::filesystem::path &fullPath)
     }
     return false;
 }
-std::string Storage::UploadUserFile(const std::string &directory,
-                                    UiFileProperty::ptr uiFileProperty,
-                                    const std::string &filename,
-                                    std::istream &stream, size_t contentLength)
+std::string Storage::UploadUserFile(const std::string& directory,
+    UiFileProperty::ptr uiFileProperty,
+    const std::string& filename,
+    std::istream& stream, size_t contentLength)
 {
     std::filesystem::path path;
     if (directory.length() != 0)
@@ -2617,7 +2661,7 @@ std::string Storage::UploadUserFile(const std::string &directory,
     {
         relativePath = MakeRelativePath(path, this->GetPluginUploadDirectory());
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         throw std::logic_error("Permission denied. Path is outside the upload storage directory.");
     }
@@ -2640,7 +2684,7 @@ std::string Storage::UploadUserFile(const std::string &directory,
             std::vector<uint8_t> buffer;
             size_t BUFFER_SIZE = 64 * 1024;
             buffer.resize(BUFFER_SIZE);
-            char *pBuffer = (char *)&(buffer[0]);
+            char* pBuffer = (char*)&(buffer[0]);
             while (contentLength != 0)
             {
                 size_t thisTime = std::min(BUFFER_SIZE, contentLength);
@@ -2657,7 +2701,7 @@ std::string Storage::UploadUserFile(const std::string &directory,
                 contentLength -= thisTime;
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error(SS("Upload failed. " << e.what()));
             std::filesystem::remove(path);
@@ -2667,7 +2711,7 @@ std::string Storage::UploadUserFile(const std::string &directory,
     return path.string();
 }
 
-std::string Storage::CreateNewSampleDirectory(const std::string &relativePath, const UiFileProperty &uiFileProperty)
+std::string Storage::CreateNewSampleDirectory(const std::string& relativePath, const UiFileProperty& uiFileProperty)
 {
     if (uiFileProperty.directory().empty())
     {
@@ -2686,9 +2730,9 @@ std::string Storage::CreateNewSampleDirectory(const std::string &relativePath, c
     return path;
 }
 std::string Storage::RenameFilePropertyFile(
-    const std::string &oldRelativePath,
-    const std::string &newRelativePath,
-    const UiFileProperty &uiFileProperty)
+    const std::string& oldRelativePath,
+    const std::string& newRelativePath,
+    const UiFileProperty& uiFileProperty)
 {
     if (uiFileProperty.directory().empty())
     {
@@ -2730,7 +2774,7 @@ std::string Storage::RenameFilePropertyFile(
     return newPath;
 }
 
-fs::path MakeVersionedPath(const fs::path &path)
+fs::path MakeVersionedPath(const fs::path& path)
 {
     if (!fs::exists(path))
     {
@@ -2778,9 +2822,9 @@ fs::path MakeVersionedPath(const fs::path &path)
 }
 
 std::string Storage::CopyFilePropertyFile(
-    const std::string &oldRelativePath,
-    const std::string &newRelativePath,
-    const UiFileProperty &uiFileProperty,
+    const std::string& oldRelativePath,
+    const std::string& newRelativePath,
+    const UiFileProperty& uiFileProperty,
     bool overwrite)
 {
     if (uiFileProperty.directory().empty())
@@ -2832,7 +2876,7 @@ std::string Storage::CopyFilePropertyFile(
     return newPath;
 }
 
-void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree *node, const std::filesystem::path &directory) const
+void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree* node, const std::filesystem::path& directory) const
 {
     for (auto child : std::filesystem::directory_iterator(directory))
     {
@@ -2844,7 +2888,7 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree *node, const std
         }
         if (child.is_directory())
         {
-            const auto &childPath = child.path();
+            const auto& childPath = child.path();
             FilePropertyDirectoryTree::ptr childTree = std::make_unique<FilePropertyDirectoryTree>(childPath);
             FillSampleDirectoryTree(childTree.get(), childPath);
             node->children_.push_back(std::move(childTree));
@@ -2852,17 +2896,17 @@ void Storage::FillSampleDirectoryTree(FilePropertyDirectoryTree *node, const std
     }
     auto collator = Locale::GetInstance()->GetCollator();
     std::sort(node->children_.begin(), node->children_.end(),
-              [&collator](const FilePropertyDirectoryTree::ptr &left, const FilePropertyDirectoryTree::ptr &right)
-              {
-                  return collator->Compare(left->directoryName_, right->directoryName_) < 0;
-              });
+        [&collator](const FilePropertyDirectoryTree::ptr& left, const FilePropertyDirectoryTree::ptr& right)
+        {
+            return collator->Compare(left->directoryName_, right->directoryName_) < 0;
+        });
 }
 
-static void GetAllExtensions(std::set<std::string> &result, const std::filesystem::path &path)
+static void GetAllExtensions(std::set<std::string>& result, const std::filesystem::path& path)
 {
     assert(fs::is_directory(path));
 
-    for (const auto &dirEnt : fs::directory_iterator(path))
+    for (const auto& dirEnt : fs::directory_iterator(path))
     {
         if (!IsValidUtf8(dirEnt.path().string()))
         {
@@ -2886,7 +2930,7 @@ static void GetAllExtensions(std::set<std::string> &result, const std::filesyste
     }
 }
 
-static std::set<std::string> GetAllExtensions(const std::filesystem::path &path)
+static std::set<std::string> GetAllExtensions(const std::filesystem::path& path)
 {
     std::set<std::string> result;
     if (fs::is_regular_file(path))
@@ -2899,7 +2943,7 @@ static std::set<std::string> GetAllExtensions(const std::filesystem::path &path)
     }
     return result;
 }
-FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty &uiFileProperty, const std::filesystem::path &selectedPath)
+FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFileProperty& uiFileProperty, const std::filesystem::path& selectedPath)
 {
     fs::path uploadDirectory = this->GetPluginUploadDirectory();
 
@@ -2908,7 +2952,7 @@ FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFil
     {
         relativePath = MakeRelativePath(selectedPath, uploadDirectory);
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         // not an upload directory.
         throw std::runtime_error(SS("Permission denied: " << selectedPath));
@@ -2927,7 +2971,7 @@ FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFil
         result->isProtected_ = true;
         std::string parentModDirectory = uiFileProperty.getParentModDirectory(relativePath);
 
-        for (const auto &modDirectory : uiFileProperty.modDirectories())
+        for (const auto& modDirectory : uiFileProperty.modDirectories())
         {
             auto modDirectoryInfo = ModFileTypes::GetModDirectory(modDirectory);
             if (modDirectoryInfo)
@@ -2935,7 +2979,7 @@ FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFil
                 if (IsSubset(fileExtensions, modDirectoryInfo->fileExtensions) ||
                     modDirectoryInfo->fileExtensions.contains(".*") ||
                     modDirectoryInfo->fileExtensions.empty() // Private directory that accepts files of any type.
-                )
+                    )
                 {
                     auto childPath = uploadDirectory / modDirectoryInfo->pipedalPath;
                     FilePropertyDirectoryTree::ptr child = std::make_unique<FilePropertyDirectoryTree>(
@@ -2973,30 +3017,30 @@ FilePropertyDirectoryTree::ptr Storage::GetFilePropertydirectoryTree(const UiFil
     }
 }
 
-bool Storage::IsInAudioTracksDirectory(const std::filesystem::path &path) const
+bool Storage::IsInAudioTracksDirectory(const std::filesystem::path& path) const
 {
     std::filesystem::path audioTracksDirectory =
         this->GetPluginUploadDirectory() / "shared/audio/Tracks";
     return IsSubdirectory(path, audioTracksDirectory);
 }
 
-bool Storage::IsInUploadsDirectory(const std::filesystem::path &path) const
+bool Storage::IsInUploadsDirectory(const std::filesystem::path& path) const
 {
     return IsSubdirectory(path, this->GetPluginUploadDirectory());
 }
 
-const PluginPresetIndex &Storage::GetPluginPresetIndex()
+const PluginPresetIndex& Storage::GetPluginPresetIndex()
 {
     return pluginPresetIndex;
 }
 
-std::filesystem::path Storage::FromAbstractPathString(const std::string &stringPath)
+std::filesystem::path Storage::FromAbstractPathString(const std::string& stringPath)
 {
     if (stringPath.empty())
     {
         return "";
     }
-    fs::path path{stringPath};
+    fs::path path{ stringPath };
     if (path.is_absolute())
     {
         return path;
@@ -3004,7 +3048,7 @@ std::filesystem::path Storage::FromAbstractPathString(const std::string &stringP
     return GetPluginUploadDirectory() / path;
 }
 
-std::string Storage::ToAbstractPathFromJson(const std::string &pathJson)
+std::string Storage::ToAbstractPathFromJson(const std::string& pathJson)
 {
     json_variant v = json_variant::parse(pathJson);
 
@@ -3012,7 +3056,7 @@ std::string Storage::ToAbstractPathFromJson(const std::string &pathJson)
 
     return v.to_string();
 }
-std::string Storage::FromAbstractPathJson(const std::string &pathJson)
+std::string Storage::FromAbstractPathJson(const std::string& pathJson)
 {
     json_variant v = json_variant::parse(pathJson);
 
@@ -3061,14 +3105,14 @@ ChannelRouterSettings::ptr Storage::LoadChannelRouterSettings()
         this->channelSelection = ChannelSelection(*result);
         return result;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         Lv2Log::error("Failed to load Channel Router settings: %s", e.what());
         return std::make_shared<ChannelRouterSettings>();
     }
 }
 
-static int64_t GetUpgradedPortIndex(const std::string &portName)
+static int64_t GetUpgradedPortIndex(const std::string& portName)
 {
     auto nPos = portName.find_last_of('_');
     if (nPos != std::string::npos)
@@ -3079,7 +3123,7 @@ static int64_t GetUpgradedPortIndex(const std::string &portName)
             int64_t channelIndex = std::stoll(channelStr);
             return channelIndex;
         }
-        catch (const std::exception &)
+        catch (const std::exception&)
         {
             return -1;
         }
@@ -3095,8 +3139,8 @@ void Storage::UpgradeChannelRouterSettings()
         {
             channelRouterSettings->configured(true);
             channelRouterSettings->mainInputChannels().resize(2);
-            const std::vector<std::string> &oldInputs = jackChannelSelection.GetInputAudioPorts();
-            std::vector<int64_t> &newInputs = channelRouterSettings->mainInputChannels();
+            const std::vector<std::string>& oldInputs = jackChannelSelection.GetInputAudioPorts();
+            std::vector<int64_t>& newInputs = channelRouterSettings->mainInputChannels();
 
             if (oldInputs.size() == 1)
             {
@@ -3114,8 +3158,8 @@ void Storage::UpgradeChannelRouterSettings()
                     newInputs[i] = portIndex;
                 }
             }
-            const std::vector<std::string> &oldOutputs = jackChannelSelection.GetOutputAudioPorts();
-            auto &newMainOutputs = channelRouterSettings->mainOutputChannels();
+            const std::vector<std::string>& oldOutputs = jackChannelSelection.GetOutputAudioPorts();
+            auto& newMainOutputs = channelRouterSettings->mainOutputChannels();
             if (oldOutputs.size() == 1)
             {
                 int64_t leftIndex = GetUpgradedPortIndex(oldOutputs[0]);
@@ -3133,11 +3177,11 @@ void Storage::UpgradeChannelRouterSettings()
                 }
             }
 
-            auto &newAuxInputs = channelRouterSettings->auxInputChannels();
+            auto& newAuxInputs = channelRouterSettings->auxInputChannels();
             newAuxInputs.resize(2);
             newAuxInputs[0] = -1;
             newAuxInputs[1] = -1;
-            auto &newAuxOutputs = channelRouterSettings->auxOutputChannels();
+            auto& newAuxOutputs = channelRouterSettings->auxOutputChannels();
             newAuxOutputs.resize(2);
             newAuxOutputs[0] = -1;
             newAuxOutputs[1] = -1;
@@ -3147,7 +3191,7 @@ void Storage::UpgradeChannelRouterSettings()
     }
 }
 
-const ChannelSelection &Storage::GetChannelSelection() const
+const ChannelSelection& Storage::GetChannelSelection() const
 {
     return channelSelection;
 }
