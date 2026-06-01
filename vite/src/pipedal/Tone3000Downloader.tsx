@@ -459,7 +459,8 @@ export class Tone3000DownloadHandler {
                         throw new Error(`Thumbnail download failed: Unexpected media type '${mediaType}'.`);
                 }
                 let blob = await thumbnailResult.blob();
-                const TONE3000_THUMBNAIL_PATH = "/var/pipedal/tone3000_thumbnails/";
+                
+                const TONE3000_THUMBNAIL_PATH = "/var/pipedal/audio_uploads/tone3000_thumbnails/";
                 let thumbnailUploadPath = TONE3000_THUMBNAIL_PATH + tone.id +  extension;
 
                  let serverUrl = this.model.varServerUrl + "t3k_uploadAsset?path="
