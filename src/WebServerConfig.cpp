@@ -97,7 +97,9 @@ static bool IsSafeThumbnailPath(const fs::path path)
     if (!HtmlHelper::IsSafeFileName(path)) {
         return false;
     }
-    if (!(path.string().starts_with("/var/pipedal/tone3000_thumbnails/")))
+    if ((!path.string().starts_with("/var/pipedal/tone3000_thumbnails/")) &&
+        (!path.string().starts_with("/var/pipedal/audio_uploads/tone3000_thumbnails/"))
+        )
     {
         return false;
     }
@@ -181,7 +183,7 @@ static fs::path GetTone3000ThumbnailFile(const fs::path& thumbnailDirectory, con
 
 namespace pipedal::implementation {
 
-    int64_t ImportBankFile(PiPedalModel &model, const std::filesystem::path& filePath,uint64_t uploadAfter = -1)
+    int64_t ImportBankFile(PiPedalModel& model, const std::filesystem::path& filePath, uint64_t uploadAfter = -1)
     {
         BankFile bankFile;
 
@@ -201,7 +203,7 @@ namespace pipedal::implementation {
         }
         else
         {
-            std::ifstream f {filePath};
+            std::ifstream f{ filePath };
             if (!f.is_open()) {
                 throw std::runtime_error(SS("Unable to open file " << filePath));
             }
@@ -621,7 +623,11 @@ public:
                 fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
                 if (!fs::exists(path))
                 {
-                    throw PiPedalException("File not found.");
+                    path = GetTone3000ThumbnailFile(this->model->OldTone3000ThumbnailDirectory(),id);
+                    if (!fs::exists(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
                 }
                 auto mimeType = GetMimeType(path);
                 if (mimeType.empty())
