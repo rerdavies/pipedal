@@ -539,7 +539,7 @@ static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
     }
     return result;
 }
-static std::string GetNonLinkLocalAddressForIp4Interface(const std::string &name)
+static std::string GetIp4NonLinkLocalAddressForInterface(const std::string &name)
 {
     struct ifaddrs *ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
@@ -694,13 +694,13 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
                 int8_t *pAddr = (int8_t *)&inetAddr6;
                 uint32_t remoteAddress = htonl(*(int32_t *)(pAddr + 12));
                 std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
-                result = GetNonLinkLocalAddressForIp4Interface(interfaceName);
+                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
             }
             else
             {
 
                 std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
-                result = GetNonLinkLocalAddressForInterface(interfaceName);
+                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
             }
         }
     }
@@ -713,7 +713,7 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
 
 std::string pipedal::GetInterfaceIpv4Address(const std::string &interfaceName)
 {
-    return GetNonLinkLocalAddressForIp4Interface(interfaceName);
+    return GetIp4NonLinkLocalAddressForInterface(interfaceName);
 }
 
 // std::string getNonLinkLocalAddress(const std::string&address, const std::string&interface)

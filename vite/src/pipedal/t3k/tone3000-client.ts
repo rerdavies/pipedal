@@ -179,7 +179,7 @@ export async function startSelectFlowPopup(
     const url = buildAuthorizeUrl(publishableKey, redirectUri, extra, pkce);
 
     if (T3K_DEBUG) {
-        console.debug("PiPedal startSelectFlowPopup URL:" + url + "(from buildAuthorizeUrl)");
+        console.debug("PiPedal startSelectFlowPopup URL:" + url + " (from buildAuthorizeUrl)");
     }
     const width = options?.width ?? 480;
     const height = options?.height ?? 700;
@@ -476,7 +476,8 @@ export async function handleOAuthCallback(
     const url = new URL(responseUri);
     const params = new URLSearchParams(url.search);
     const code = params.get('code');
-    const error = params.get('error');
+    let error = params.get('error');
+    const error_description = params.get('error_description');
     const returnedState = params.get('state');
     const toneId = params.get('tone_id') ?? undefined;
     const modelId = params.get('model_id') ?? undefined;
@@ -497,6 +498,10 @@ export async function handleOAuthCallback(
     // User closed without signing in — no code to exchange
     if (canceled && !code) {
         return { ok: false, error: 'canceled', canceled: true };
+    }
+    // build full error description
+    if (error && error_description) {
+        error = `${error}: ${error_description}`;
     }
 
     // Access denied — e.g. model is private and user clicked "Back"
