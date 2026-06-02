@@ -214,7 +214,6 @@ export const MidiBindingDialog =
                                             midiControlType={ getMidiControlType(plugin, "__bypass")
                                              }
                                              canDoTapTempo={false }
-                                            uiControl={plugin.getControl("__bypass")}
                                             onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                         />
                                     </td>
@@ -259,7 +258,6 @@ export const MidiBindingDialog =
                                             midiControlType={getMidiControlType(plugin, symbol)}
                                             midiBinding={item.getMidiBinding(symbol)}
                                             canDoTapTempo={canDoTapTempo(plugin, symbol)}
-                                            uiControl={control}
                                             onChange={(instanceId: number, newItem: MidiBinding) => this.handleItemChanged(instanceId, newItem)}
                                         />
                                     </td>
