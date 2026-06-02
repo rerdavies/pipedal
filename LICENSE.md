@@ -23,12 +23,38 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ---
+The following files are provided under a T3K license. Under an arrangement with 
+Tone3000.com, permission has been granted
+to Robin Davies to distribute these files ONLY with Pipedal.
+
+- `default_presets/V3 Factory Presets.piBank` (contains compressed versions and bundled version 
+of the protected files).)
+- The installed file "/etc/pipedal/config/default_presets/presets/V3 Factory Presets.piBank"
+- Files installed in "/var/pipedal/audio_uploads/NeuralAmpModels/Factory Models"
+- Files installedcd  in "/var/pipedal/audio_uploads/IRs/Factory IRs"
+
+Please contact the original authors for permission if you would like to distribute 
+these files for other purposes, or if you would like to distribute these files 
+in a forked version of PiPedal.
+
+## T3K License
+
+Users may download and use the data file in software and publish the resulting outputs without royalties or restrictions. However, they may not upload, republish, or distribute the data file without the author's permission.
+
+## Original Authors
+
+- tone3000 - [https://tone3000.com/tone3000](https://tone3000.com/tone3000)
+- amalgamaudio - [https://tone3000.com/amalgamaudio](https://tone3000.com/amalgamaudio)
+- kenazmusic - [https://tone3000.com/kenazmusic](https://tone3000.com/kenazmusic)
+- outmodedelectronics - [https://tone3000.com/outmodedelectronics](https://tone3000.com/outmodedelectronics)
+
+
+---
 
 PiPedal also makes use of a wide variety of open-source source-code, data, 
-and directly- or indirectly-linked libraries that are covered under the following 
-licenses.
+and directly- or indirectly-linked libraries.
 
-Portions of PiPedal are covered by the folling well-known open-source licenses:
+Portions of PiPedal are therefore covered by the folling well-known open-source licenses:
 
     MIT, MIT-like, BSD variants, Mozilla, LGPL, Apache 2.0, CC BY. SIL
 

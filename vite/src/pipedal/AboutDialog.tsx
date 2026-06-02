@@ -188,7 +188,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
 
                             {this.model.isAndroidHosted() && (
                                 <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
-                                    Copyright &#169; 2022-2024 Robin Davies.
+                                    Copyright &#169; 2022-2026 Robin Davies.
                                 </Typography>
                             )}
                             <Divider />

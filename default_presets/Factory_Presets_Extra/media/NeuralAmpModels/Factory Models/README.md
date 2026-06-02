@@ -68,7 +68,7 @@
     <div id='tone3000_float_content' >
         <h3 id='tone3000_title'>Marshall - JCM800 KKS (TS9) [18dBu] - Hi Gain</h3>
         <div id='tone3000_subtitle'>
-            <p>Amp head only, NAM A2. Created by <a target='_blank' href="https://tone3000.com/kenazmusic&architecture=2">kenazmusic</a><br/>
+            <p>Amp head only, NAM A2. Created by <a target='_blank' href="https://tone3000.com/kenazmusic">kenazmusic</a><br/>
             From the <a target='_blank' href="https://www.tone3000.com/tones/marshall-jcm800-kerry-king-signature-18dbu-59301">Marshall - JCM800 (Kerry King Signature) [18dBu]</a> model pack.<a></p>
             <p>A model of a high-gain Marshall JCM800 Kerry King Signature Amp, with an Ibanez TS9. The model is not calibrated, but expects the input signal to be gain-staged to -18dBU.
             </p>
