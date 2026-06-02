@@ -6,7 +6,7 @@ icon_width: 120px
 
 {% include pageIconL.html %}
 
-Some LV2 plugins (currently a minority of plugins) provide custom plugin user interfaces based on [MOD Audio's](https://mod.audio/desktop/) 
+Many LV2 plugins provide custom plugin user interfaces based on [MOD Audio's](https://mod.audio/desktop/) 
 [ModUi framework](https://wiki.mod.audio/wiki/MOD_Web_GUI_Framework). When using such a plugin, you can choose whether to use the MOD Web GUI Framework user interface (the MOD UI) or the default PiPedal user interface. For the most part, the same functionality is available in both interfaces.
 
 Plugins that are distributed via Linux distributions usually do not implement MOD user interfaces; but all (or almost all) of the plugins that are available from the [PatchStorage website](https://patchstorage.com/platform/lv2-plugins/) do implement MOD user interfaces. Many plugins that are available from GitHub or other sources also implement MOD user interfaces. Often you can find updated versions of a plugin that is published by a distro on PatchStorage which does provide a MOD UI.

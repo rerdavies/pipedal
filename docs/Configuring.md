@@ -187,4 +187,4 @@ When the Raspberry Pi hosts the hotspot, mDNS discovery is definitely enabled; s
 
 
 --------
-[<< Headless Operation](HeadlessOperation.md)  | [Up](Documentation.md) | [Using TooB Neural Amp Modeler >>](UsingNAM.md)
+[<< Headless Operation](HeadlessOperation.md)  | [Up](Documentation.md) | [What PiPedal Is >>](WhatPiPedalIs.md)
