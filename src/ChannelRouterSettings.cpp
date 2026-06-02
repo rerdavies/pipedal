@@ -17,7 +17,6 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
 #include "ChannelRouterSettings.hpp"
 #include <stdexcept>
 
@@ -52,7 +51,7 @@ static uint64_t countChannels(const std::vector<int64_t> &channels)
         }
         return 2;
     }
-}   
+}
 
 uint64_t ChannelRouterSettings::numberOfAudioInputChannels() const
 {
@@ -71,75 +70,110 @@ uint64_t ChannelRouterSettings::numberOfAudioOutputChannels() const
     return countChannels(mainOutputChannels_);
 }
 
-ChannelSelection::ChannelSelection(ChannelRouterSettings&settings)
-: mainInputChannels_(settings.mainInputChannels())
-, mainOutputChannels_(settings.mainOutputChannels())
-, auxInputChannels_(settings.auxInputChannels())
-, auxOutputChannels_(settings.auxOutputChannels())
+ChannelSelection::ChannelSelection(ChannelRouterSettings &settings)
+    : mainInputChannels_(settings.mainInputChannels()), mainOutputChannels_(settings.mainOutputChannels()), auxInputChannels_(settings.auxInputChannels()), auxOutputChannels_(settings.auxOutputChannels())
 {
-    normalizeChannelSelection(); 
+    normalizeChannelSelection();
 }
 
-static void normalizeInputChannels(std::vector<int64_t>&channels) {
-    if (channels.size() == 2) {
-        if (channels[0] == -1 && channels[1] == -1) 
+static void normalizeInputChannels(std::vector<int64_t> &channels)
+{
+    if (channels.size() == 2)
+    {
+        if (channels[0] == -1 && channels[1] == -1)
         {
             channels.resize(0);
-        } else if (channels[0] == channels[1]) {
+        }
+        else if (channels[0] == channels[1])
+        {
             channels.resize(1);
-        } else if (channels[1] == -1) {
-            channels.resize(1);} {
+        }
+        else if (channels[1] == -1)
+        {
+            channels.resize(1);
+        }
+        {
         }
     }
 }
 
-static void normalizeOutputChannels(std::vector<int64_t>&channels) {
+static void normalizeOutputChannels(std::vector<int64_t> &channels)
+{
     normalizeInputChannels(channels);
 }
 
-void ChannelSelection::normalizeChannelSelection() {
+void ChannelSelection::normalizeChannelSelection()
+{
     normalizeInputChannels(mainInputChannels_);
     normalizeOutputChannels(mainOutputChannels_);
     normalizeInputChannels(auxInputChannels_);
     normalizeOutputChannels(auxOutputChannels_);
 
     // If either aux inputs or outputs are zero, don't do ANY aux processing.
-    if (auxInputChannels_.size() == 0) 
+    if (auxInputChannels_.size() == 0)
     {
         auxOutputChannels_.resize(0);
-    } else if (auxOutputChannels_.size() == 0) {
+    }
+    else if (auxOutputChannels_.size() == 0)
+    {
         auxInputChannels_.resize(0);
     }
     // If either main inputs or outputs are empty, add send/receive dummy buffers. (Lv2 plugins shouldn't have to deal with this)
-    if (mainInputChannels_.size() == 0) 
+    if (mainInputChannels_.size() == 0)
     {
         mainInputChannels_.resize(1);
         mainInputChannels_[0] = -1;
     }
-    if (mainOutputChannels_.size() == 0) {
+    if (mainOutputChannels_.size() == 0)
+    {
         mainInputChannels_.resize(1);
         mainOutputChannels_[0] = -1;
     }
-    // Send buffers are what they are. Let the send plugin deal with it. 
+    // Send buffers are what they are. Let the send plugin deal with it.
 }
-
 
 ChannelRouterSettings::ChannelRouterSettings()
 {
-    
 }
 
 std::vector<ChannelRouterPresetIndexEntry> ChannelRouterPresetBank::getIndexEntries()
 {
     std::vector<ChannelRouterPresetIndexEntry> result;
-    for (auto &entry: entries_)
+    for (auto &entry : entries_)
     {
         result.push_back(ChannelRouterPresetIndexEntry{entry->id(), entry->name()});
     }
     return result;
 }
 
+static bool HasIllegalChannel(const std::vector<int64_t> &channels)
+{
+    for (auto c : channels)
+    {
+        if (c < 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
+bool ChannelSelection::IsValid() const
+{
+    if (mainInputChannels_.size() == 0 || mainOutputChannels_.size() == 0)
+    {
+        return false;
+    }
+    if (HasIllegalChannel(mainInputChannels_) ||
+        HasIllegalChannel(mainOutputChannels_) ||
+        HasIllegalChannel(auxInputChannels_) ||
+        HasIllegalChannel(auxOutputChannels_))
+    {
+        return false;
+    }
+
+    return true;
+}
 JSON_MAP_BEGIN(ChannelRouterSettings)
 JSON_MAP_REFERENCE(ChannelRouterSettings, configured)
 JSON_MAP_REFERENCE(ChannelRouterSettings, changed)
@@ -155,7 +189,6 @@ JSON_MAP_REFERENCE(ChannelRouterPresetIndexEntry, id)
 JSON_MAP_REFERENCE(ChannelRouterPresetIndexEntry, name)
 JSON_MAP_END();
 
-
 JSON_MAP_BEGIN(ChannelRouterPresetBankEntry)
 JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, id)
 JSON_MAP_REFERENCE(ChannelRouterPresetBankEntry, name)
@@ -167,4 +200,3 @@ JSON_MAP_REFERENCE(ChannelRouterPresetBank, nextId)
 JSON_MAP_REFERENCE(ChannelRouterPresetBank, version)
 JSON_MAP_REFERENCE(ChannelRouterPresetBank, entries)
 JSON_MAP_END();
-

@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 2.0.102
+    VERSION 2.0.103
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
 execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
 
-set (DISPLAY_VERSION "PiPedal v2.0.102-Alpha")
+set (DISPLAY_VERSION "PiPedal v2.0.103-Release")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
 
@@ -67,8 +67,8 @@ install (
 )
 
 install (
-    DIRECTORY ${PROJECT_SOURCE_DIR}/default_presets 
-    DESTINATION /etc/pipedal/config
+    DIRECTORY ${PROJECT_SOURCE_DIR}/default_presets/presets 
+    DESTINATION /etc/pipedal/config/default_presets
 )
 
 message(STATUS "CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")

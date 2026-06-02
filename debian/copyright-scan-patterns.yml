@@ -8,29 +8,50 @@ check:
 
 ignore:
   pattern:
+  - lv2/
+  - src/profilePluginMain.cpp
   - /.cache/
-  - /react/public/
+  - /vite/public/
   - /debian/
   - /source-map/
   - /build/
   - /CMakeFiles/
-  - /
   - /test/
   - /atob/
-  - react/src/react-app-env.d.ts
-  - react/src/reportWebVitals.ts
-  - react/src/setupTests.ts
+  - vite/src/react-app-env.d.ts
+  - vite/src/reportWebVitals.ts
+  - vite/src/setupTests.ts
   - /usr/share/perl5/Dpkg/Copyright/Scanner.pm
-  - react/node_modules/glob/
-  - react/node_modules/fs.realpath/
-  - react/node_modules/sax/
-  - react/node_modules/sha.js/
+  - vite/node_modules/glob/
+  - vite/node_modules/fs.realpath/
+  - vite/node_modules/sax/
+  - vite/node_modules/sha.js/
   - AUTHORS
   - /debian/copyright/
-  
+  - vite/node_modules/typescript/bin
+  - /bin/
+  - /modules/libzip/regress/
+  - /NetworkManagerP2P/src/
+  - .editorconfig
+  - .gitmodules
+  - .well-known
+  - /rollup-linux-x64-gnu/rollup.linux-x64-gnu.node
+  - /rollup.
+  - /artifacts/
+  - /img/
+  - /modules/libzip/man/mkdocset.pl
+  - copyrightMain.cpp
+  - copyright
+
 
   suffixes:
+  - db3
+  - tcl
+  - db
+  - mp3
   - generic
+  - flac
+  - svgx
   - rst
   - jpg
   - png
@@ -41,7 +62,9 @@ ignore:
   - m4
   - map
   - ico
+  - woff
   - woff2
+  - xml
   - svg
   - mjs
   - d.ts
@@ -60,3 +83,28 @@ ignore:
   - tsx
   - md
   - yml
+  - ai
+  - svgz
+  - css
+  - ts
+  - tsx
+  - mts
+  - cts
+  - cjs
+  - asc
+  - mdx
+  - jst
+  - html
+  - bak
+  - piBank
+  - test
+  - cmake
+  - bak
+  - xcf
+  - psd
+  - ttl
+  - so
+  - sh
+  - zh
+  - raw
+  - wav

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
         }
         if (parser.Arguments().size() == 0)
         {
-            throw PiPedalException("<config_root> not provided.");
+            throw PiPedalException("<doc_root> not provided.");
         }
         if (help || parser.Arguments().size() == 0)
         {
@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
                   << "Options:\n"
                   << "   -systemd: Log to systemd journals instead of to the console.\n"
                   << "   -port: Port to listen on e.g. 80, or 0.0.0.0:80\n"
-                  << "   -log-level: (debug|info|warning|error)"
+                  << "   -log-level: (debug|info|warning|error)\n"
                   << "Example:\n"
                   << "    pipedald /etc/pipedal/config /etc/pipedal/react -port 80 \n"
                      "\n"

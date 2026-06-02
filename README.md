@@ -9,13 +9,57 @@
 <img src="https://img.shields.io/github/downloads/rerdavies/pipedal/total?color=%23808080&link=https%3A%2F%2Frerdavies.github.io%2Fpipedal%2Fdownload.html"/>
 
 
-Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.102</a> 
+Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.103</a> 
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### Announcing PiPedal 2.0 (2.0.102 Alpha). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for information, and instructions on how to install Pipedal 2.0. New features include support for Neural Amp Modeler A2 models, integration with Tone3000.com services for easy downloading of Neural Amp Modeler A2 models and IIRs, a new Channel Routing dialog for global routing of auxiliary input channels, and unprocessed re-amp output channels, and many other minor features, improvements, and bug fixes. Pipedal 2.0 also adds support for running PiPedal as a Progressive Web Application (PWA), which allows you to launch Pipedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device). See the [documentation](https://rerdavies.github.io/pipedal/PiPedal2.html) for instructions on how to install Pipedal on your desktop as a standalone app.
+#### Announcing PiPedal 2.0 (2.0.103)&mdash;a major update to PiPedal, including big new features. See the [documentation](https://rerdavies.github.io/pipedal/PiPedal.html) for information, and instructions on how to install Pipedal 2.0. 
 
 &nbsp;
+
+_To download PiPedal v2.0.102, click [*here*](download.md). 
+To view PiPedal documentation, click [*here*](Documentation.md)._
+
+Use your Raspberry Pi, or Ubuntu amd/x86-64 computer as a guitar effects pedal. Configure and control PiPedal remotedly, with your phone or tablet, or via a web browser.
+
+PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
+
+PiPedal runs on Raspbery Pi OS (Bookworm or Trixie), or Ubuntu 24.x or later (amd64/x86-64 and aarch64). Make sure you follow the [Ubuntu post-install 
+instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
+
+{% include gallery.html %}
+
+New in PiPedal v2.0:
+
+- Support for Neural Amp Modeler (NAM) A2 models.
+- Direct single-step downloads of NAM A2 models to the Pipedal server using web services provided by <a href="https://tone3000.com/">Tone3000.com</a>.
+- Install PiPedal as a Progressive Web App (PWA) on your Windows or Apple desktop or laptop in order to run PiPedal as a native application, without the clutter of browser chrome, address bars, and needless decorations.
+- A new Channel Routing dialog which allows you to pass through Auxilliary audio channels, or unprocessed guitar inputs for later re-amping in a DAW or external hardware. 
+- New NAM A2-based Factory Presets, and a small selection of NAM A2 models pre-installed and ready to use.
+
+PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB Neural Amp Modeler technology. And PiPedal 2.0 now includes support for the brand new NAM A2 technology, which provides event more accurate amp simulations than NAM A1, while using even less CPU. Experience the ground-breaking quality of NAM A2 models now, with PiPedal's low-latency audio engine running on your Raspberry Pi or Ubuntu computer.
+
+NAM changes everything! The quality of NAM A1 and A2 models is better than than amp emulations on top-of-the-line commercial guitar stomp boxes costing thousands of dollars. Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp.
+
+PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or download and install commercially-developed NAM models from a rich ecosystem of model providers.
+
+
+{% include demo.html %}
+
+PiPedal can be remotely controlled via a web interface over Ethernet, or Wi-Fi. If you don't have access to a Wi-Fi router, PiPedal can be configured to 
+start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to your home network.
+
+Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi networks, or Wi-Fi hotspots. If you are using PiPedal away from home, you can configure PiPedal to automatically start a Wi-Fi hotspot whenever Pipedal is unable to detect your home network (Raspberry Pi OS only). The PiPedal Client Android app will allow to connect by simply launching the app, whether you are at home, or using a Wi-Fi auto-hotspot at a gig, when away from home.
+
+PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
+
+PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.
+
+If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
+
+
+
+##################################################################################################
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal using a remote web browsers, from your phone or tablet.
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
@@ -36,7 +80,7 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 
 <img src="docs/gallery/dark-sshot1.png"></img>
 
-<img src="docs/gallery/rig.jpg" width="45%"></img>  <img src="docs/gallery/jazz.png" width="45%"></img> <img src="docs/gallery/thunder.png" width="45%"></img> <img src="docs/gallery/midi-bindings.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img>  
+<img src="docs/gallery/nam_models.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img> <img src="docs/gallery/tuner.png" width="45%"></img><img src="docs/gallery/rig.jpg" width="45%"></img>
 
  
 
@@ -46,42 +90,46 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 ----
 &nbsp;
 
-### [What PiPedal Is](https://rerdavies.github.io/pipedal/AboutPiPedal.html)
-### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
-### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
-### [PiPedal on Ubuntu](https://rerdavies.github.io/pipedal/Ubuntu.html)
-
-### [Headless Operation](https://rerdavies.github.io/pipedal/HeadlessOperation.html)
-### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)
-
-&nbsp;
-### [Using TooB Neural Amp Modeler](https://rerdavies.github.io/pipedal/UsingNAM.html)
-### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)
-### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)
-### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.html)
-### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.html)
-### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.html)
-
+#### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
 &nbsp;
 
-### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.md)
-### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
-### [Support for LV2 Plugins with MOD User Interfaces](https://rerdavies.github.io/pipedal/ModUiSupport.html)
+#### [Installing PiPedal](https://rerdavies.github.io/pipedal/Installing.html)
+#### [Installing PiPedal on Ubuntu](https://rerdavies.github.io/pipedal/Ubuntu.html)
+#### [Headless Operation](https://rerdavies.github.io/pipedal/HeadlessOperation.html)
+#### [Configuring PiPedal After Installation](https://rerdavies.github.io/pipedal/Configuring.html)  
+&nbsp;
+#### [What PiPedal Is](https://rerdavies.github.io/pipedal/WhatPiPedalIs.html)
+#### [Machine Learning in PiPedal (A History)](https://rerdavies.github.io/pipedal/PiPedalHistory.html)
+#### [How to Use PiPedal](https://rerdavies.github.io/pipedal/HowToUsePiPedal.html)
+#### [How to Build Presets With PiPedal](https://rerdavies.github.io/pipedal/BuildingPresets.html)
+#### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)  
+#### [Neural Amp Modeler Calibration](https://rerdavies.github.io/pipedal/NamCalibration.html)  
+#### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)  
+#### [Optimizing Audio Latency](https://rerdavies.github.io/pipedal/AudioLatency.html)  
+#### [Command-Line Configuration of PiPedal](https://rerdavies.github.io/pipedal/CommandLine.html)
+#### [Changing the Web Server Port](https://rerdavies.github.io/pipedal/ChangingTheWebServerPort.html)
 
 &nbsp;
-
-### [Frequently Asked Questions](https://rerdavies.github.io/pipedal/FAQ.html)
+#### [Using LV2 Audio Plugins](https://rerdavies.github.io/pipedal/UsingLv2Plugins.html)
+#### [Which LV2 Plugins does PiPedal support?](https://rerdavies.github.io/pipedal/WhichLv2PluginsAreSupported.html)
+#### [LV2 Plugins with MOD User Interfaces](https://rerdavies.github.io/pipedal/ModUiSupport.html)
 
 &nbsp;
 
-### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
-### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)
-### [The Build System](https://rerdavies.github.io/pipedal/TheBuildSystem.html)
-### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
+#### [Frequently Asked Questions](https://rerdavies.github.io/pipedal/FAQ.html)
 
 &nbsp;
 
+#### [Building PiPedal from Source](https://rerdavies.github.io/pipedal/BuildingPiPedalFromSource.html)
+#### [Build Prerequisites](https://rerdavies.github.io/pipedal/BuildPrerequisites.html)
+#### [The Build Systems](https://rerdavies.github.io/pipedal/TheBuildSystem.html)
+#### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
 #### [PiPedal Architecture](https://rerdavies.github.io/pipedal/Architecture.html)
+
+ 
+
+
+
  
 
 

@@ -1330,7 +1330,7 @@ static void PrintHelp()
     PrettyPrinter pp;
     pp << "pipedalconfig - Command-line post-install configuration for PiPedal"
        << "\n"
-       << "Copyright (c) 2022-2024 Robin E. R. Davies."
+       << "Copyright (c) Robin E.R. Davies."
        << "\n"
        << "\n"
        << "See https://rerdavies.github.io/pipedal/Documentation.html for "

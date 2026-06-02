@@ -68,6 +68,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import FilePropertyDirectorySelectDialog from './FilePropertyDirectorySelectDialog';
 import { getAlbumArtUri, getTrackTitle } from './AudioFileMetadata';
 import Tone3000DownloadType from './Tone3000DownloadType';
+import { ModelSelectionDialog, ModelSelectionDialogParams } from './ModelSelectionDialog';
 
 
 const ToobNamModelFileUrl = "http://two-play.com/plugins/toob-nam#modelFile";
@@ -182,6 +183,7 @@ export interface FilePropertyDialogState {
 
     textFileName?: string;
 
+    modelSelectionDialogParams?: ModelSelectionDialogParams;
 };
 
 interface DragState {
@@ -255,7 +257,8 @@ export default withStyles(
                 multiSelect: false,
                 selectedFiles: [],
                 openTone3000Help: false,
-                openGuitarMlHelp: false
+                openGuitarMlHelp: false,
+                modelSelectionDialogParams: undefined,
             };
             this.requestScroll = true;
         }
@@ -588,8 +591,19 @@ export default withStyles(
             this.requestFiles(this.state.navDirectory)
             this.model.onTone3000DownloadCompleteEvent.addEventHandler(this.handleTone3000DownloadComplete);
             this.requestScroll = true;
+
+            this.model.setT3kModelSelectionDialogListener({
+                onShowDialog: (modelSelectionDialogParams: ModelSelectionDialogParams) => {
+                    this.setState({
+                        modelSelectionDialogParams: modelSelectionDialogParams
+                    });
+
+            }
+
+            });
         }
         componentWillUnmount() {
+            this.model.setT3kModelSelectionDialogListener(undefined);
             this.stopAutoScroll();
             this.cancelProgressTimeout();
             this.model.onTone3000DownloadCompleteEvent.removeEventHandler(this.handleTone3000DownloadComplete);
@@ -939,7 +953,8 @@ export default withStyles(
             );
         }
 
-        getDefaultPath(): string {
+        // yyy: depends on dialog type!!!
+        private getDefaultPath(): string {
             try {
                 let storage = window.localStorage;
                 let result = storage.getItem("fpDefaultPath");
@@ -1100,14 +1115,13 @@ export default withStyles(
             let downloadType: Tone3000DownloadType = Tone3000DownloadType.Nam;
             if (this.props.fileProperty.patchProperty === ToobNamModelFileUrl) {
                 downloadType = Tone3000DownloadType.Nam;
-            } else if (ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty))
-            {
+            } else if (ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty)) {
                 downloadType = Tone3000DownloadType.CabIr;
             } else {
                 throw new Error("Unsupported file property for Tone3000 dialog");
             }
             this.model.showTone3000DownloadPopup(
-                downloadType, 
+                downloadType,
                 this.state.currentDirectory);
         }
 
@@ -1129,10 +1143,32 @@ export default withStyles(
 
         }
 
+        handleT3kLinkClick(href: string): boolean {
+            if (!href.startsWith("https://tone3000.com/")) {
+                return false;
+            }
+            return false;
+            // STUB: Waiting for a way to do a popup flow starting with a tone or user home page.
+            // let uri = new URL(href);
+            // if (uri.pathname.split("/").filter(segment => segment.length > 0).length === 1) {
+            //     // It's a username. Launch a select flow with username as a filter.
+            //     let username = uri.pathname.split("/").filter(segment => segment.length > 0)[0];
+            //     this.model.showTone3000DownloadPopup(
+            //         Tone3000DownloadType.Nam,
+            //         this.state.currentDirectory,
+            //         {
+            //             username: username
+            //         }
+            //     );
+            // }
+
+            return true;
+        }
+
         render() {
             const isTracksDirectory = this.isTracksDirectory();
             const isToobNamModelFile = this.props.fileProperty.patchProperty === ToobNamModelFileUrl;
-            const isToobCabIrFile =  ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty);
+            const isToobCabIrFile = ToobCabIrFileUrls.includes(this.props.fileProperty.patchProperty);
             const isToobMLModelFile = this.props.fileProperty.patchProperty === ToobMlModelFileUrl;
 
             const classes = withStyles.getClasses(this.props);
@@ -1704,6 +1740,16 @@ export default withStyles(
 
 
                         />
+                        {this.state.modelSelectionDialogParams && (
+                            <ModelSelectionDialog open={true}
+                                params={
+                                    this.state.modelSelectionDialogParams
+                                }
+                                onClose={
+                                    () => { this.setState({ modelSelectionDialogParams: undefined }); }
+                                }
+                            />
+                        )}
                         <OkCancelDialog open={this.state.openConfirmDeleteDialog}
 
                             text={
@@ -1803,6 +1849,10 @@ export default withStyles(
                             <TextInfoDialog open={true}
                                 title={pathFileNameOnly(this.state.textFileName)}
                                 fileName={this.state.textFileName} onClose={() => this.setState({ textFileName: undefined })}
+                                onT3kLinkClick={(href) => {
+                                    return this.handleT3kLinkClick(href);
+                                }
+                                }
                             />
                         )}
                     </DialogEx>
@@ -1828,7 +1878,7 @@ export default withStyles(
             // open pdf in new tab
             this.model.displayMediaFile(fileName);
         }
-        
+
         handleShowTextFile(fileName: string) {
             this.setState({ textFileName: fileName });
         }

@@ -32,13 +32,14 @@ Devices that would make excellent choices:
 
 - MOTU M2 
 - Focusrite Scarlett 2i2 (4th gen)
- -PreSonus Quantum ES 2 USB-C Audio Interface
+- PreSonus Quantum ES 2 USB-C Audio Interface
 - Solid State Logic SSL 2 MK II
 - Universal Audio Volt 176
 
-Or other devices in that sort of class and price range.
+or other devices in that sort of class and price range. (The Focusrite Scarlett Solo, and 3rd gen 2i2 models have significantly 
+less dynamic range).
 
-The MOTU M2, and the Focusrite Scarlett 2i2 are relatively affordable.
+Of these, the MOTU M2, and the Focusrite Scarlett 2i2 are relatively affordable.
 
 #### Q. My Neural Amp Modeler amp models don't sound that great. Am I doing something wrong? the output signal not loud enough. 
 

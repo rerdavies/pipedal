@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2026 Robin E. R. Davies
+ *   Copyright (c) Robin E.R. Davies
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -150,7 +150,7 @@ public:
     virtual const char *what() const noexcept override
     {
         std::exception::what();
-        return "Cancelled.";
+        return "Canceled.";
     }
 };
 
@@ -713,7 +713,7 @@ static std::map<std::string, std::string> gearEnumValues =
         {"full-rig", "Full rig"},
         {"pedal", "Pedal"},
         {"outboard", "Outboard"},
-        {"ir", "I/R"}};
+        {"ir", "IR"}};
 
 static std::string mdGear(const std::string &gear)
 {
@@ -926,7 +926,7 @@ static std::string mdLicense(const std::string &license)
 static std::map<std::string, std::string> platformEnumValues =
     {
         {"nam", "NAM"},
-        {"ir", "I/R"},
+        {"ir", "IR"},
         {"aida-x", "Aida X"},
         {"aa-snapshot", "aa-snapshot"},
         {"proteus", "Proteus"}};
@@ -1124,7 +1124,7 @@ std::string Tone3000DownloaderImpl::DownloadTone3000Files(
     //     {
     //         if (isCancelled())
     //         {
-    //             throw std::runtime_error("Cancelled");
+    //             throw std::runtime_error("Canceled");
     //         }
     //         size_t thisTime = models.size() - downloadIndex;
     //         thisTime = Tone3000Throttler::instance().ReserveDownloadSlots(thisTime);
@@ -1159,7 +1159,7 @@ std::string Tone3000DownloaderImpl::DownloadTone3000Files(
 
     //             if (isCancelled())
     //             {
-    //                 throw std::runtime_error("Cancelled");
+    //                 throw std::runtime_error("Canceled");
     //             }
 
     //             if (result != 200)
@@ -1198,7 +1198,7 @@ std::string Tone3000DownloaderImpl::DownloadTone3000Files(
     //                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     //                 if (isCancelled())
     //                 {
-    //                     throw std::runtime_error("Cancelled");
+    //                     throw std::runtime_error("Canceled");
     //                 }
     //             }
     //             if (CurlGet(imageUrl, imageFile.Path(), &imageHeaders) == 200)

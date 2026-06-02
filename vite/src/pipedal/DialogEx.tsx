@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -29,7 +29,7 @@ interface DialogExState {
 interface DialogExProps extends DialogProps {
     tag: string;
     fullwidth?: boolean;
-    onEnterKey: () => void;
+    onEnterKey?: () => void;
     dlgRef?: (instance: HTMLDivElement | null) => void;
 }
 

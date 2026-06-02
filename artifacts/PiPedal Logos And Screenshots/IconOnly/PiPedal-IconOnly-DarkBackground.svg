@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="85.609207"
+   height="84"
+   viewBox="0 0 22.650768 22.225001"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <filter
+       style="color-interpolation-filters:sRGB"
+       id="filter35"
+       x="-0.081083745"
+       y="-0.081083745"
+       width="1.1621675"
+       height="1.1790599">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="0.670588"
+         flood-color="rgb(0,0,0)"
+         id="feFlood34" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="0.400000"
+         id="feGaussianBlur34" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="0.000000"
+         dy="0.200000"
+         id="feOffset34" />
+      <feComposite
+         result="comp1"
+         operator="out"
+         in="flood"
+         in2="offset"
+         id="feComposite34" />
+      <feComposite
+         result="comp2"
+         operator="atop"
+         in="comp1"
+         in2="SourceGraphic"
+         id="feComposite35" />
+    </filter>
+  </defs>
+  <rect
+     style="display:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:2.15288;stroke-linejoin:round"
+     id="rect1"
+     width="22.650768"
+     height="22.225"
+     x="4.4408921e-16"
+     y="0" />
+  <g
+     id="layer2"
+     style="display:inline"
+     transform="translate(2.8587177,2.6458337)">
+    <path
+       id="circle34"
+       style="font-variation-settings:'GRAD' 15, 'opsz' 144, 'wdth' 132, 'wght' 200;display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.95622;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       d="M 8.4666891 0.6418209 A 7.8248739 7.8248739 0 0 0 0.64184379 8.4666662 A 7.8248739 7.8248739 0 0 0 8.4666891 16.291512 A 7.8248739 7.8248739 0 0 0 16.291534 8.4666662 A 7.8248739 7.8248739 0 0 0 8.4666891 0.6418209 z M 8.4589376 2.5466142 C 9.5197109 2.5466142 10.517453 2.8288908 11.380206 3.3212439 L 10.998318 3.6576575 L 9.7508484 4.7588822 C 9.3466902 4.6190555 8.9121544 4.5428747 8.4589376 4.5428747 C 6.2834631 4.5428747 4.5372132 6.2911917 4.5372132 8.4666662 C 4.5372132 10.642142 6.2834631 12.388907 8.4589376 12.388907 C 10.634412 12.388907 12.382729 10.642142 12.382729 8.4666662 C 12.382729 8.1866352 12.353587 7.9137269 12.298497 7.6506953 L 12.298497 7.6501786 L 13.548549 6.5479203 L 13.930438 6.21099 C 14.218908 6.9067544 14.378473 7.6688392 14.378473 8.4666662 C 14.378473 11.726464 11.718734 14.386718 8.4589376 14.386718 C 5.199141 14.386718 2.5388856 11.726464 2.5388856 8.4666662 C 2.5388856 5.2068696 5.199141 2.5466142 8.4589376 2.5466142 z M 12.305731 3.9723669 C 12.724688 4.3318625 13.093641 4.7487349 13.399205 5.2105342 L 8.9963725 9.0945349 L 7.931838 7.8310461 L 12.305731 3.9723669 z " />
+  </g>
+</svg>

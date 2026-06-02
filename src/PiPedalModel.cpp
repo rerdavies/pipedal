@@ -220,7 +220,7 @@ void PiPedalModel::Init(const PiPedalConfiguration &configuration)
     pluginHost.SetConfiguration(configuration);
     storage.SetConfigRoot(configuration.GetDocRoot());
     storage.SetDataRoot(configuration.GetLocalStoragePath());
-    storage.Initialize();
+    storage.Initialize(this);
     pluginHost.SetPluginStoragePath(storage.GetPluginUploadDirectory());
 
     this->systemMidiBindings = storage.GetSystemMidiBindings();
@@ -729,7 +729,12 @@ void PiPedalModel::SetSnapshot(int64_t selectedSnapshot)
                 }
             }
             pedalboardChanged = true;
+        } else if (selectedSnapshot == -1) 
+        {
+            this->pedalboard.selectedSnapshot(-1);
+            pedalboardChanged = true;
         }
+
     }
     if (pedalboardChanged)
     {
@@ -1576,9 +1581,9 @@ void PiPedalModel::RestartAudio(bool useDummyAudioDriver)
             throw std::runtime_error("Audio configuration not valid.");
         }
 
-        const auto &channelSelection = this->storage.GetChannelSelection();
+        auto channelSelection = this->storage.GetChannelSelection();
 
-        this->audioHost->Open(jackServerSettings, channelSelection);
+        this->audioHost->Open(jackServerSettings, channelSelection); 
 
         this->pluginHost.OnConfigurationChanged(jackConfiguration, channelSelection);
 
@@ -3505,6 +3510,10 @@ void PiPedalModel::SetChannelRouterSettings(int64_t clientId, ChannelRouterSetti
 }
 
 std::string PiPedalModel::Tone3000ThumbnailDirectory()
+{
+    return "/var/pipedal/audio_uploads/tone3000_thumbnails";
+}
+std::string PiPedalModel::OldTone3000ThumbnailDirectory()
 {
     return "/var/pipedal/tone3000_thumbnails";
 }

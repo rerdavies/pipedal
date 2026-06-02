@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -173,7 +173,7 @@ export default class UploadFileDialog extends ResizeResponsiveComponent<UploadFi
         for (let upload of this.uploadList) {
             if (upload.status === FileUploadStatus.Ready || upload.status === FileUploadStatus.Uploading) {
                 upload.status = FileUploadStatus.Cancelled;
-                upload.statusMessage = "Cancelled.";
+                upload.statusMessage = "Canceled.";
             }
             if (upload.abortController) {
                 upload.abortController.abort();

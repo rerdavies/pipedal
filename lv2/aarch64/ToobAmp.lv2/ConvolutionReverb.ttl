@@ -53,7 +53,7 @@ toobimpulse:impulseFile
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
         lv2:minorVersion 0 ;
-        lv2:microVersion 78 ;
+        lv2:microVersion 79 ;
         rdfs:comment """
 
 Toob Convolution Reverb Stereo uses convolution reverb impulse/response files in order to produce highly 
@@ -151,7 +151,7 @@ Source: https://www.openair.hosted.york.ac.uk/?page_id=483
 """ ;
 
         mod:brand "TooB";
-        mod:label "TooB CReverb";
+        mod:label "Conv Reverb";
         lv2:requiredFeature urid:map;
         lv2:optionalFeature state::freePath, state:makePath, state:mapPath, work:schedule ;
         lv2:extensionData state:interface, work:interface;

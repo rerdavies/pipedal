@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2022 Robin E. R. Davies
+ * Copyright (c) Robin E.R. Davies
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -56,7 +56,7 @@ void PrintHelp()
     pp.width(78);
 
     pp << "PiPedal Latency Tester\n";
-    pp << "Copyright (c) 2022 Robin Davies\n";
+    pp << "Copyright (c) Robin E.R. Davies\n";
     pp << "\n";
     pp << Indent(0) << "Syntax\n\n";
     pp << Indent(2) << "pipedal_latency_test [<options>] <input-device> [<output-device>]\n\n";

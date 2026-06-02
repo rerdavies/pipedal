@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Robin E. R. Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -647,7 +647,7 @@ void printHelp()
 
     pp << 
         "pipedal_kconfig - Edit kernel commandline arguments. \n" 
-        << "Copyright (c) Robin E. R. Davies"
+        << "Copyright (c) Robin E.R. Davies"
         << "\n\n"
         << "A utility that provides a user-friendly interface for configuring  kernel commandline arguments that affect realtime audio performance on PREEMPT_DYANMIC kernels (like Ubuntu)."
         << "\n\n"

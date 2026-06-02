@@ -16,7 +16,7 @@ import DialogEx from './DialogEx';
 
 import Slide, { SlideProps } from '@mui/material/Slide';
 
-interface AboutDialogProps  {
+interface AboutDialogProps {
     open: boolean;
     onClose: () => void;
 };
@@ -38,7 +38,7 @@ const Transition = React.forwardRef(function Transition(
 const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> {
 
     model: PiPedalModel;
-    refNotices: React.RefObject<HTMLDivElement | null >;
+    refNotices: React.RefObject<HTMLDivElement | null>;
 
 
     constructor(props: AboutDialogProps) {
@@ -166,7 +166,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                     >
                         <div id="debug_info" style={{
                             userSelect: "text",
-                            cursor: "text",margin: 24
+                            cursor: "text", margin: 24
                         }}>
                             <div style={{ display: "flex", flexFlow: "row nowrap" }}>
                                 <Typography noWrap display="block" variant="h6" color="textPrimary" style={{ flexGrow: 1, flexShrink: 1 }}>
@@ -178,7 +178,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
 
                             </div>
                             <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
-                                Copyright &#169; 2022-2025 Robin Davies.
+                                Copyright &#169; Robin Davies.
                             </Typography>
                             {this.model.isAndroidHosted() && (
                                 <Typography noWrap display="block" variant="body2" style={{ marginBottom: 0 }}  >
@@ -188,7 +188,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
 
                             {this.model.isAndroidHosted() && (
                                 <Typography noWrap display="block" variant="body2" style={{ marginBottom: 12 }}  >
-                                    Copyright &#169; 2022-2024 Robin Davies.
+                                    Copyright &#169; Robin Davies.
                                 </Typography>
                             )}
                             <Divider />
@@ -216,7 +216,77 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                                     {this.model.serverVersion?.osVersion ?? ""}
                                 </Typography>
                             </div>
-                        </div><div style={{marginLeft: 24, marginRight: 24}}>
+                        </div><div style={{ marginLeft: 24, marginRight: 24 }}>
+
+                            <Divider />
+                            <Typography display="block" variant="caption" style={{ marginTop: 16 }}>
+                                T3K LICENSED FILES
+                            </Typography>
+                            <Typography display="block" variant="body2" style={{ marginTop: 8 }}>
+                                The following files are provided under a T3K license. Under an arrangement with Tone3000.com,
+                                permission has been granted to Robin Davies to distribute these files ONLY with PiPedal.
+                            </Typography>
+                            <ul style={{ marginTop: 8, marginBottom: 8 }}>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        "default_presets/V3 Factory Presets.piBank" (contains compressed versions of the protected files).
+                                    </Typography>
+                                </li>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        The installed file "/etc/pipedal/config/default_presets/presets/V3 Factory Presets.piBank"
+                                    </Typography>
+                                </li>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        Files installed in "/var/pipedal/audio_uploads/NeuralAmpModels/Factory Models/"
+                                    </Typography>
+                                </li>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        Files installed in "/var/pipedal/audio_uploads/IRs/Factory IRs/"
+                                    </Typography>
+                                </li>
+                            </ul>
+                            <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                Please contact the original authors for permission if you would like to distribute these files for
+                                other purposes, or if you would like to distribute these files in a forked version of PiPedal.
+                            </Typography>
+
+                            <Typography display="block" variant="subtitle2" style={{ marginTop: 8 }}>
+                                T3K License
+                            </Typography>
+                            <Typography display="block" variant="body2" style={{ marginTop: 4, marginBottom: 12 }}>
+                                Users may download and use the data file in software and publish the resulting outputs without
+                                royalties or restrictions. However, they may not upload, republish, or distribute the data file
+                                without the author&apos;s permission.
+                            </Typography>
+
+                            <Typography display="block" variant="subtitle2" style={{ marginTop: 8 }}>
+                                Original Authors
+                            </Typography>
+                            <ul style={{ marginTop: 8, marginBottom: 16 }}>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        tone3000 - <a href="https://tone3000.com/tone3000" target="_blank" rel="noreferrer">https://tone3000.com/tone3000</a>
+                                    </Typography>
+                                </li>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        amalgamaudio - <a href="https://tone3000.com/amalgamaudio" target="_blank" rel="noreferrer">https://tone3000.com/amalgamaudio</a>
+                                    </Typography>
+                                </li>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        kenazmusic - <a href="https://tone3000.com/kenazmusic" target="_blank" rel="noreferrer">https://tone3000.com/kenazmusic</a>
+                                    </Typography>
+                                </li>
+                                <li>
+                                    <Typography display="inline" variant="body2">
+                                        outmodedelectronics - <a href="https://tone3000.com/outmodedelectronics" target="_blank" rel="noreferrer">https://tone3000.com/outmodedelectronics</a>
+                                    </Typography>
+                                </li>
+                            </ul>
 
                             <Divider />
                             <Typography display="block" variant="caption"  >

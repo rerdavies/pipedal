@@ -1,19 +1,19 @@
 # Release Notes
 
-## PiPedal 2.0.102 Alpha
+## PiPedal 2.0.103
 
-PiPedal 2.0 provides support for Neural Amp Modeler A2 models. 
+PiPedal 2.0 is a big release, with exciting new features, improvements, and bug fixes. 
 
-NAM A2 provides significant improvements in sound quality and performance compared to NAM A1. NAM A2 also provides "Slimable" models. Slimmable models provide multiple levels of performance and sound quality in a single model file, allowing you to choose the level of performance and sound quality that best suits your needs. This is particularly useful for users of Raspberry Pi 4, since NAM A2 models can provide better sound quality than NAM A1 models, while consuming significantly less CPU resources. 
+The headline feature of PiPedal 2.0 is support for TooB Neural Amp Modeler A2 models. TooB Neural Amp Modeler A2 models provide significant improvements in sound quality and performance compared to NAM A1 models, while consuming significantly less CPU resources. This is particularly important for users of Raspberry Pi 4, since NAM A2 models can provide better sound quality than NAM A1 models, while consuming significantly less CPU resources.
 
 A new integrated Tone3000 model downloader provides a convenient way to download the latest NAM A2 models and IIR files from Tone3000 directly to the PiPedal server. All existing NAM A1 models on Tone3000 have been retrained for NAM A2. When 
 you download from Tone3000 using the integrated downloader, you will get NAM A2 models. Just click on the DOWNLOAD MODELS FROM TONE3000 button. 
 
 Currently, the best way to get access to NAM A2 models is via the integrated Tone3000 model downloader. Models downloaded externally from the Tone3000 website will still be NAM A1 models; however this should change soon with a forthcoming announcement from Tone3000. 
 
-A new channel routing dialog replaces the channel configurationg dialog. The Channel Routing dialog allows global (i.e. not per-preset) configuration of audio channels. You can now configure audio channels as Aux channels (e.g. using the non-guitar channel on your audio interface as an input for backing tracks), or sending unprocessed guitar input signal to an unused output channel for re-amping in a DAW or external hardware. Refer to the (?) help dialog in the Channel Routing Dialog for more information on how to use this feature.
+PiPedal 2.0 has a (long overdue) new Factory Presets bank. These are also the set of presets that are included in the Default Bank when performing a clean install of PiPedal 2.0. The new Factory Presets are built around a small selection of NAM A2 models that show off the improved sound quality and performance of NAM A2. And a small selection of NAM A2 models are also bundled with PiPedal.
 
-PiPedal 2.0 can now be installed as a Progressive Web Application (PWA). This allows you to launch Pipedal from your desktop as a native desktop application, without extra browser address bars and window decorations. 
+PiPedal 2.0 can now be installed as a Progressive Web Application (PWA). This allows you to launch Pipedal from your desktop as a native desktop application, without extra browser address bars and window decorations. This provides a much nicer experience when using PiPedal from a Windows or Apple device. 
 
 ### Features
 
@@ -27,17 +27,23 @@ PiPedal 2.0 can now be installed as a Progressive Web Application (PWA). This al
 
 - Install PiPedal as a Progressive Web Application (PWA), which allows you to launch PiPedal from your desktop as a native desktop application. (A nice feature if you are accessing Pipedal from an Apple device).
 
+- New Factory Presets bank, with new presets that show off the improved sound quality and performance of NAM A2 models.
+
 - New TooB Tone plugin: a simple one-knob tone control. The new TooB Tone plugin provides a simple one-knob tone control that can be used to adjust the overall tone of your guitar signal. It is a great tool for quickly shaping your tone without having to use a more complex EQ plugin.
 
 - Copy and Paste plugins (and their settings) between pedalboards. Accessible via the "Copy Plugin" and "Paste Plugin" menu items in the former Plugin Preset selector menu. 
 
 ### Minor features and bug fixes
 
+- Runtime detection and use of AVX extensions for TooB plugins. Reduces CPU use of TooB NAM by 50% on most x86_64/amd64 computers.
+
 - Better handling of step sizes in numeric edit controls.
 
-- Short names of TooB CE-2 Chorus and TooB BF-2 Flanger changed to "TooB Chorus" and "TooB Flanger", repsectively.
-
 - Split controls now support double-tap to reset to a default value. (Other controls already support this feature).
+
+- Many small tweaks and improvements to the Pipedal user interface.
+
+
 
 ## PiPedal 1.5.99 Beta
 

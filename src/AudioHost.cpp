@@ -1,4 +1,4 @@
-// Copyright (c) Robin E. R. Davies
+// Copyright (c) Robin E.R. Davies
 // Copyright (c) Gabriel Hernandez
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -1189,7 +1189,7 @@ private:
         std::vector<float *> *pOutputBuffers;
         pedalboard = this->realtimeActivePedalboard;
         pInputBuffers = &(audioDriver->MainInputBuffers());
-    
+
         pOutputBuffers = &(audioDriver->MainOutputBuffers());
 
         if (pedalboard == nullptr || pInputBuffers->size() == 0 || pOutputBuffers->size() == 0)
@@ -1255,60 +1255,79 @@ private:
             masterOutputBuffers[outputIx++] = audioDriver->GetDeviceOutputBuffer(nChannel);
         }
     }
-    inline void AccumulateVu(float*result, size_t nFrames, float*buffer) 
+    inline void AccumulateVu(float *result, size_t nFrames, float *buffer)
     {
         float maxVal = *result;
         for (size_t i = 0; i < nFrames; ++i)
         {
             float v = std::fabs(buffer[i]);
-            if (v > maxVal) 
+            if (v > maxVal)
             {
                 maxVal = v;
             }
         }
         *result = maxVal;
     }
-    void AccumulateVuInputs(size_t nFrames,VuUpdateX&vuUpdate, const std::vector<int64_t>&channels)
+    void AccumulateVuInputs(size_t nFrames, VuUpdateX &vuUpdate, const std::vector<int64_t> &channels)
     {
-        if (channels.size() == 0) return;
-
-        AccumulateVu(&vuUpdate.inputMaxValueL_,nFrames,this->audioDriver->DeviceInputBuffers()[channels[0]]);
-
-        if (channels.size() == 2) {
-            AccumulateVu(&vuUpdate.inputMaxValueR_,nFrames,this->audioDriver->DeviceInputBuffers()[channels[1]]);
-        }
-    }
-    void AccumulateVuOutputs(size_t nFrames,VuUpdateX&vuUpdate, const std::vector<int64_t>&channels)
-    {
-        if (channels.size() == 0) return;
-        AccumulateVu(&vuUpdate.outputMaxValueL_,nFrames,this->audioDriver->DeviceOutputBuffers()[channels[0]]);
-        if (channels.size() >= 2) {
-            AccumulateVu(&vuUpdate.outputMaxValueR_,nFrames,this->audioDriver->DeviceOutputBuffers()[channels[1]]);
-        }
-    }
-    void ComputeMasterVus(size_t nFrames) {
-        if (this->realtimeVuBuffers) 
+        if (channels.size() == 0)
+            return;
+        if (channels[0] == -1) // Indicates invalid channel router settings.
         {
-            float** audioBuffers;
+            vuUpdate.inputMaxValueL_ = 0;
+            vuUpdate.inputMaxValueR_ = 0;
+            return;
+        }
 
-            for (auto& vuUpdate: this->realtimeVuBuffers->vuUpdateWorkingData)
+        AccumulateVu(&vuUpdate.inputMaxValueL_, nFrames, this->audioDriver->DeviceInputBuffers()[channels[0]]);
+
+        if (channels.size() == 2)
+        {
+            AccumulateVu(&vuUpdate.inputMaxValueR_, nFrames, this->audioDriver->DeviceInputBuffers()[channels[1]]);
+        }
+    }
+    void AccumulateVuOutputs(size_t nFrames, VuUpdateX &vuUpdate, const std::vector<int64_t> &channels)
+    {
+        if (channels.size() == 0)
+            return;
+
+        if (channels[0] == -1) // Indicates invalid channel router settings.
+        {
+            vuUpdate.outputMaxValueL_ = 0;
+            vuUpdate.outputMaxValueR_ = 0;
+            return;
+        }
+
+        AccumulateVu(&vuUpdate.outputMaxValueL_, nFrames, this->audioDriver->DeviceOutputBuffers()[channels[0]]);
+        if (channels.size() >= 2)
+        {
+            AccumulateVu(&vuUpdate.outputMaxValueR_, nFrames, this->audioDriver->DeviceOutputBuffers()[channels[1]]);
+        }
+    }
+    void ComputeMasterVus(size_t nFrames)
+    {
+        if (this->realtimeVuBuffers)
+        {
+            float **audioBuffers;
+
+            for (auto &vuUpdate : this->realtimeVuBuffers->vuUpdateWorkingData)
             {
-                if (vuUpdate.instanceId_ < 0) 
+                if (vuUpdate.instanceId_ < 0)
                 {
                     switch (vuUpdate.instanceId_)
                     {
-                        case Pedalboard::START_CONTROL_ID:
-                            AccumulateVuInputs(nFrames, vuUpdate, pHost->GetChannelSelection().mainInputChannels());
-                            break;
-                        case Pedalboard::END_CONTROL_ID:
-                            AccumulateVuOutputs(nFrames, vuUpdate, pHost->GetChannelSelection().mainOutputChannels());
-                            break;
-                        case Pedalboard::AUX_START_CONTROL_ID:
-                            AccumulateVuInputs(nFrames, vuUpdate, pHost->GetChannelSelection().auxInputChannels());
-                            break;
-                        case Pedalboard::AUX_END_CONTROL_ID:
-                            AccumulateVuOutputs(nFrames, vuUpdate, pHost->GetChannelSelection().auxOutputChannels());
-                            break;
+                    case Pedalboard::START_CONTROL_ID:
+                        AccumulateVuInputs(nFrames, vuUpdate, pHost->GetChannelSelection().mainInputChannels());
+                        break;
+                    case Pedalboard::END_CONTROL_ID:
+                        AccumulateVuOutputs(nFrames, vuUpdate, pHost->GetChannelSelection().mainOutputChannels());
+                        break;
+                    case Pedalboard::AUX_START_CONTROL_ID:
+                        AccumulateVuInputs(nFrames, vuUpdate, pHost->GetChannelSelection().auxInputChannels());
+                        break;
+                    case Pedalboard::AUX_END_CONTROL_ID:
+                        AccumulateVuOutputs(nFrames, vuUpdate, pHost->GetChannelSelection().auxOutputChannels());
+                        break;
                     }
                 }
             }
@@ -1905,7 +1924,6 @@ public:
         }
     }
 
-
     virtual void SetBypass(uint64_t instanceId, bool enabled)
     {
         std::lock_guard guard(mutex);
@@ -2067,7 +2085,7 @@ public:
                 for (size_t i = 0; i < instanceIds.size(); ++i)
                 {
                     int64_t instanceId = instanceIds[i];
-                    std::shared_ptr<Lv2Pedalboard>& pedalboard = this->currentPedalboard;
+                    std::shared_ptr<Lv2Pedalboard> &pedalboard = this->currentPedalboard;
                     int64_t effectIndex = -1;
                     if (pedalboard != nullptr)
                     {
@@ -2091,8 +2109,7 @@ public:
                         instanceId == Pedalboard::START_CONTROL_ID ||
                         instanceId == Pedalboard::END_CONTROL_ID ||
                         instanceId == Pedalboard::AUX_START_CONTROL_ID ||
-                        instanceId == Pedalboard::AUX_END_CONTROL_ID
-                    )
+                        instanceId == Pedalboard::AUX_END_CONTROL_ID)
                     {
                         auto index = GetRealtimeItemIndex(instanceId);
                         VuUpdateX v;

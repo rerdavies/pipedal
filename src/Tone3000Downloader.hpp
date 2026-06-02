@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2026 Robin E. R. Davies
+ *   Copyright (c) Robin E.R. Davies
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -145,6 +145,7 @@ namespace pipedal
                 const std::string &errorMessage) = 0;
 
             virtual std::string Tone3000ThumbnailDirectory() = 0;
+            virtual std::string OldTone3000ThumbnailDirectory() = 0;
         };
 
         using self = Tone3000Downloader;

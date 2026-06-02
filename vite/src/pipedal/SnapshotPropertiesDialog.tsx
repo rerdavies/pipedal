@@ -1,7 +1,7 @@
 /*
  * MIT License
  * 
- * Copyright (c) 2024 Robin E. R. Davies
+ * Copyright (c) Robin E.R. Davies
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -36,7 +36,7 @@ import { colorKeys } from "./MaterialColors";
 import ResizeResponsiveComponent from './ResizeResponsiveComponent';
 import ColorDropdownButton, { DropdownAlignment } from './ColorDropdownButton';
 
-const snapshotColors = colorKeys.slice(0,100);
+const snapshotColors = colorKeys.slice(0, 100);
 const NBSP = "\u00A0";
 
 export interface SnapshotPropertiesDialogProps {
@@ -46,6 +46,7 @@ export interface SnapshotPropertiesDialogProps {
     snapshotIndex: number,
     color: string,
     onOk: (snapshotId: number, name: string, color: string, editing: boolean) => void,
+    onRemove: (snapshotid: number) => void,
     onClose: () => void
 };
 
@@ -54,6 +55,7 @@ export interface SnapshotPropertiesDialogState {
     color: string,
     nameErrorMessage: string,
     compactVertical: boolean,
+    showRemoveConfirm: boolean
 };
 
 export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<SnapshotPropertiesDialogProps, SnapshotPropertiesDialogState> {
@@ -72,21 +74,21 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
             color = snapshotColors[0];
         }
         let name = this.props.name;
-        if (name.length === 0 && !this.props.editing)
-        {
-            name = "Snapshot " + (this.props.snapshotIndex+1);
+        if (name.length === 0 && !this.props.editing) {
+            name = "Snapshot " + (this.props.snapshotIndex + 1);
         }
         return {
             name: name,
             color: color,
             nameErrorMessage: "",
-            compactVertical: this.getCompactVertical()
+            compactVertical: this.getCompactVertical(),
+            showRemoveConfirm: false
         };
     }
 
     onWindowSizeChanged(width: number, height: number): void {
-        super.onWindowSizeChanged(width,height);
-        this.setState({compactVertical: this.getCompactVertical() })
+        super.onWindowSizeChanged(width, height);
+        this.setState({ compactVertical: this.getCompactVertical() })
     }
 
     handleOk() {
@@ -102,6 +104,10 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
         }
     }
 
+    handleRemoveSnapshot() {
+        this.props.onRemove(this.props.snapshotIndex);
+    }
+
     render() {
         let props = this.props;
 
@@ -111,9 +117,9 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
 
         let okButtonText = this.props.editing ? "OK" : "Save";
         return (
-            <DialogEx maxWidth="sm" fullWidth={true} tag="snapshotProps" open={this.props.open} onClose={handleClose} 
+            <DialogEx maxWidth="sm" fullWidth={true} tag="snapshotProps" open={this.props.open} onClose={handleClose}
                 style={{ userSelect: "none" }} fullScreen={this.state.compactVertical}
-                onEnterKey={()=> { this.handleOk(); }}
+                onEnterKey={() => { this.handleOk(); }}
             >
                 <DialogTitle>
                     <div>
@@ -127,7 +133,7 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
                     </div>
 
                 </DialogTitle>
-                <DialogContent style={{paddingBottom: 0}}>
+                <DialogContent style={{ paddingBottom: 0 }}>
 
                     <TextField variant="standard" style={{ flexGrow: 1, flexBasis: 1 }}
                         autoComplete="off"
@@ -146,20 +152,47 @@ export default class SnapshotPropertiesDialog extends ResizeResponsiveComponent<
                     />
                     <Typography variant="caption" color="textSecondary">Color</Typography>
                     <ColorDropdownButton aria-label="color" currentColor={this.state.color} dropdownAlignment={DropdownAlignment.SE}
-                          onColorChange={(newcolor) => {
-                            this.setState({color: newcolor});
-                          }} />
-                          
+                        onColorChange={(newcolor) => {
+                            this.setState({ color: newcolor });
+                        }} />
+
                 </DialogContent>
                 <DialogActions>
+                    <Button variant="dialogSecondary" onClick={() => { 
+                        this.setState({ showRemoveConfirm: true }); 
+                    }} >
+                        Remove
+                    </Button>
+                    <div style={{ flexGrow: 1 }} />
                     <Button variant="dialogSecondary" onClick={handleClose} >
                         Cancel
                     </Button>
-                    <Button variant="dialogPrimary" onClick={()=> {this.handleOk();}}  >
+                    <Button variant="dialogPrimary" onClick={() => { this.handleOk(); }}  >
                         {okButtonText}
                     </Button>
                 </DialogActions>
-            </DialogEx>
+                <DialogEx open={this.state.showRemoveConfirm} tag="cofirmRemove"
+                    onEnterKey={() => {
+                        this.setState({ showRemoveConfirm: false });
+                        this.handleRemoveSnapshot();
+                    }}
+                    onClose={() => { this.setState({ showRemoveConfirm: false }); }} >
+                        <DialogContent>
+                            <Typography variant="body1">Are you sure you want to remove this snapshot?</Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button variant="dialogSecondary" onClick={() => { this.setState({ showRemoveConfirm: false }); }} >
+                                Cancel
+                            </Button>
+                            <Button variant="dialogPrimary" onClick={() => {
+                                this.setState({showRemoveConfirm: false });
+                                this.handleRemoveSnapshot();
+                            }}  >
+                                Remove
+                            </Button>
+                        </DialogActions>
+                </DialogEx>
+            </DialogEx >
         );
     }
 }

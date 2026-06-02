@@ -143,7 +143,9 @@
         "modui",
         "MOTU",
         "Netplan",
+        "otype",
         "Overdriven",
+        "PCKE",
         "Pedalboard",
         "pipedal",
         "pipedal_0",
@@ -154,10 +156,12 @@
         "pipedalshutdownd",
         "pipedaltest",
         "pipedalui",
+        "Pkce",
         "rdfs",
         "RTAS",
         "Scarlett",
         "setlist",
+        "slimmable",
         "Sonus",
         "stompboxes",
         "ToobAmp",
@@ -171,7 +175,7 @@
     "cSpell.ignoreWords": [
         "nammodel"
     ],
-    "cSpell.enabled": true,
+    "cSpell.enabled": false,
     
     // Disable all automatic completion suggestions - only show when Ctrl+Space is pressed
     "editor.quickSuggestions": {

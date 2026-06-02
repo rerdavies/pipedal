@@ -17,7 +17,7 @@ using namespace std;
 static void PrintHelp()
 {
     cout << "nm-pipedal-p2p - P2P Manager for NetworkManager network stack." << endl
-         << "Copyright (c) 2024 Robin E. R. Davies." << endl
+         << "Copyright (c) Robin E.R. Davies." << endl
          << endl
          << "Provides P2P connections on LINUX distributions that use NetworkManager." << endl
          << endl

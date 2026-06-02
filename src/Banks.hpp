@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -317,6 +317,12 @@ namespace pipedal
             bank.name(name);
             bank.instanceId(++nextInstanceId_);
 
+            if (afterId == -2)
+            {
+                entries_.insert(entries_.begin(), bank);
+                return bank.instanceId();
+
+            }
             for (size_t i = 0; i < this->entries_.size(); ++i)
             {
                 if (entries_[i].instanceId() == afterId)

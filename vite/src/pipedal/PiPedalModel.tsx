@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -50,7 +50,8 @@ import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSe
 import { getDefaultModGuiPreference } from './ModGuiHost';
 import ChannelRouterSettings from './ChannelRouterSettings';
 import Tone3000DownloadProgress from './Tone3000DownloadProgress';
-import { Tone } from './t3k/types';
+import { Model, Tone } from './t3k/types';
+import { ModelSelectionDialogParams } from './ModelSelectionDialog';
 
 
 export enum State {
@@ -66,6 +67,11 @@ export enum State {
     HotspotChanging,
 };
 
+export interface T3kModelSelectionDialogListener {
+    onShowDialog: (
+        modelSelectionDialogParams: ModelSelectionDialogParams
+    ) => void;
+};
 export interface Tone3000PkceParams {
     publishableKey: string;
     redirectUrl: string;
@@ -708,19 +714,16 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
-    async makeTone3000Pkce(redirectUrl: string) : Promise<Tone3000PkceParams>
-    {
-        if (this.webSocket === undefined)
-        {
+    async makeTone3000Pkce(redirectUrl: string): Promise<Tone3000PkceParams> {
+        if (this.webSocket === undefined) {
             throw new Error("Server disconnected.");
         }
         return await this.webSocket.request<Tone3000PkceParams>(
             "makeTone3000Pkce", redirectUrl);
     }
 
-    async sha256Base64url(intput: string) : Promise<string> {
-        if (this.webSocket === undefined)
-        {
+    async sha256Base64url(intput: string): Promise<string> {
+        if (this.webSocket === undefined) {
             throw new Error("Server disconnected.");
         }
         return this.webSocket.request<string>(
@@ -773,7 +776,10 @@ export class PiPedalModel //implements PiPedalModel
 
     showTone3000DownloadPopup(
         downloadType: Tone3000DownloadType,
-        downloadPath: string
+        downloadPath: string,
+        options?: {
+            userName?: string;
+        }
     ): void {
         if (this.tone3000DownloadHandler === null) {
             this.tone3000DownloadHandler = new Tone3000DownloadHandler(this);
@@ -781,7 +787,7 @@ export class PiPedalModel //implements PiPedalModel
         this.tone3000DownloadHandler.launchTone3000Popup(
             downloadType,
             downloadPath,
-        );
+            options);
 
     };
 
@@ -1333,7 +1339,7 @@ export class PiPedalModel //implements PiPedalModel
     }
 
     async writeTone3000Readme(
-        filePath: string, 
+        filePath: string,
         tone: Tone,
         thumbnailUrl: string
 
@@ -1375,6 +1381,7 @@ export class PiPedalModel //implements PiPedalModel
             }
             this.debug = !!data.debug;
             let { socket_server_port, socket_server_address, max_upload_size } = data;
+
             if ((!socket_server_address) || socket_server_address === "*") {
                 socket_server_address = window.location.hostname;
             }
@@ -1795,9 +1802,7 @@ export class PiPedalModel //implements PiPedalModel
     setSnapshots(snapshots: (Snapshot | null)[], selectedSnapshot: number) {
         let pedalboard = this.pedalboard.get().clone();
         pedalboard.snapshots = snapshots;
-        if (selectedSnapshot !== -1) {
-            pedalboard.selectedSnapshot = selectedSnapshot;
-        }
+        pedalboard.selectedSnapshot = selectedSnapshot;
         this.pruneSnapshotValues(pedalboard);
 
         this.setModelPedalboard(pedalboard);
@@ -3934,13 +3939,49 @@ export class PiPedalModel //implements PiPedalModel
         downloadType: Tone3000DownloadType
     ): void {
         if (this.webSocket) {
-            this.webSocket.send("DownloadModelsFromTone3000", { 
-                responseUri: responseUri, 
+            this.webSocket.send("DownloadModelsFromTone3000", {
+                responseUri: responseUri,
                 tone3000PckceParams: tone3000PckceParams,
                 downloadPath: downloadPath,
-                downloadType: downloadType === Tone3000DownloadType.Nam ? 0: 1
-             });
+                downloadType: downloadType === Tone3000DownloadType.Nam ? 0 : 1
+            });
         }
+    }
+    private t3kModelSelectionDialogListener?: T3kModelSelectionDialogListener = undefined;
+
+    setT3kModelSelectionDialogListener(
+        listener: T3kModelSelectionDialogListener | undefined
+    ) {
+        this.t3kModelSelectionDialogListener = listener;
+    }
+    showT3kModelSelectionDialog(
+        downloadType: Tone3000DownloadType,
+        toneName: string,
+        models: Model[],
+        onModelsSelected: (selectedModels: Model[]) => void,
+        onCancel: () => void
+    ) {
+        if (!this.t3kModelSelectionDialogListener) {
+            onCancel();
+            return;
+        }
+        this.tone3000Downloading.set(false);
+        this.t3kModelSelectionDialogListener.onShowDialog(
+            {
+                downloadType: downloadType,
+                toneName: toneName,
+                models: models,
+                onModelsSelected: (selectedModels: Model[]) => {
+                    this.tone3000Downloading.set(true);
+                    onModelsSelected(selectedModels);
+                },
+                onCancel: () => {
+                    this.tone3000Downloading.set(false);
+                    onCancel();
+
+                }
+            }
+        );
     }
 
 };

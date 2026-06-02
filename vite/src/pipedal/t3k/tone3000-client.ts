@@ -1,5 +1,5 @@
 /**
- * Modified by Robin E. R. Davies from tone3000-client.ts, original from github tone3000/api repository.
+ * Modified by Robin E.R. Davies from tone3000-client.ts, original from github tone3000/api repository.
  * 
  * The file has been modified to address the following scenario.
  * 
@@ -69,7 +69,7 @@ export interface T3KTokens {
 /** Result of handleOAuthCallback(). Always check `ok` before using fields. */
 export type OAuthCallbackResult =
     | { ok: true; tokens: T3KTokens; toneId?: string; modelId?: string; canceled?: boolean }
-    | { ok: false; error: string };
+    | { ok: false; error: string, canceled?: boolean };
 
 // ─── Internal PKCE helpers ────────────────────────────────────────────────────
 
@@ -164,7 +164,7 @@ export async function startSelectFlowPopup(
     redirectUri: string,
     options?: {
         gears?: string; platform?: string; menubar?: boolean, loginHint?: string, architecture?: number
-        width?: number, height?: number
+        width?: number, height?: number, userName?: string;
     }
 ): Promise<Window | null> {
     // Set before window.open so the popup inherits this flag via sessionStorage copy;
@@ -179,7 +179,7 @@ export async function startSelectFlowPopup(
     const url = buildAuthorizeUrl(publishableKey, redirectUri, extra, pkce);
 
     if (T3K_DEBUG) {
-        console.debug("PiPedal startSelectFlowPopup URL:" + url + "(from buildAuthorizeUrl)");
+        console.debug("PiPedal startSelectFlowPopup URL:" + url + " (from buildAuthorizeUrl)");
     }
     const width = options?.width ?? 480;
     const height = options?.height ?? 700;
@@ -216,7 +216,7 @@ export async function handleOAuthCallbackFromPopup(
     if (returnedState !== storedState) return { ok: false, error: 'state_mismatch' };
 
     // User closed without signing in — no code to exchange
-    if (canceled && !code) return { ok: false, error: 'canceled' };
+    if (canceled && !code) return { ok: false, error: 'canceled', canceled: true };
 
     if (error) return { ok: false, error };
     if (!code || !codeVerifier) return { ok: false, error: 'missing_code' };
@@ -476,7 +476,8 @@ export async function handleOAuthCallback(
     const url = new URL(responseUri);
     const params = new URLSearchParams(url.search);
     const code = params.get('code');
-    const error = params.get('error');
+    let error = params.get('error');
+    const error_description = params.get('error_description');
     const returnedState = params.get('state');
     const toneId = params.get('tone_id') ?? undefined;
     const modelId = params.get('model_id') ?? undefined;
@@ -496,7 +497,11 @@ export async function handleOAuthCallback(
 
     // User closed without signing in — no code to exchange
     if (canceled && !code) {
-        return { ok: false, error: 'canceled' };
+        return { ok: false, error: 'canceled', canceled: true };
+    }
+    // build full error description
+    if (error && error_description) {
+        error = `${error}: ${error_description}`;
     }
 
     // Access denied — e.g. model is private and user clicked "Back"

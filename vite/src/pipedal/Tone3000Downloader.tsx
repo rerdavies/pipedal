@@ -26,6 +26,7 @@ const USE_SERVER_PCKE=true;
 const RUN_THROTTLER_TEST = true;
 const ALLOWED_DOWNLOADS_PER_MINUTE = 25;
 const THROTTLING_TRIGGGER_LEVEL = Math.floor(ALLOWED_DOWNLOADS_PER_MINUTE/2);
+const PROMPT_FOR_SELECT_THRESHOLD = 15;
 
 
 class DownloadThrottler {
@@ -211,6 +212,28 @@ export class Tone3000DownloadHandler {
         this.progress.transferring = false;
         this.model.onTone3000DownloadComplete(resultPath);
     }
+
+
+    private async maybeSelectModels(toneName: string, models: Model[]): Promise<Model[]> {
+        let result = new Promise<Model[]>((resolve, reject) => {
+            if (models.length < PROMPT_FOR_SELECT_THRESHOLD) {
+                resolve(models);
+                return;
+            }
+            this.model.showT3kModelSelectionDialog(
+                this.downloadType,
+                toneName, 
+                models, 
+                (models: Model[])=> {
+                    resolve(models);
+                },
+                () => {
+                    reject(new Error("canceled"));
+                });
+            }
+        );
+        return result;
+    }
     private async DownloadModelsFromTone3000(
         responseUri: string,
         tone3000PckceParams: Tone3000PkceParams,
@@ -236,6 +259,11 @@ export class Tone3000DownloadHandler {
                 responseUri);
 
             if (!tokenResponse.ok) {
+                if (tokenResponse.canceled === true) 
+                {
+                    this.onTone3000DownloadComplete("");
+                    return;
+                }
                 throw new Error(tokenResponse.error);
             }
             if (tokenResponse.canceled) {
@@ -287,6 +315,14 @@ export class Tone3000DownloadHandler {
                     break;
                 }
                 ++page;
+            }
+
+            try {
+                models = await this.maybeSelectModels(tone.title, models);
+            } catch (e) {
+                // canceled.
+                this.onTone3000DownloadComplete("");
+                return;
             }
             let uploadPath = this.downloadPath;
             let extension: string;
@@ -423,7 +459,8 @@ export class Tone3000DownloadHandler {
                         throw new Error(`Thumbnail download failed: Unexpected media type '${mediaType}'.`);
                 }
                 let blob = await thumbnailResult.blob();
-                const TONE3000_THUMBNAIL_PATH = "/var/pipedal/tone3000_thumbnails/";
+                
+                const TONE3000_THUMBNAIL_PATH = "/var/pipedal/audio_uploads/tone3000_thumbnails/";
                 let thumbnailUploadPath = TONE3000_THUMBNAIL_PATH + tone.id +  extension;
 
                  let serverUrl = this.model.varServerUrl + "t3k_uploadAsset?path="
@@ -467,17 +504,10 @@ export class Tone3000DownloadHandler {
     private popupWindow: Window | null = null;
 
     private redirectUrl(): string {
-        let hostname = window.location.hostname;
-        let port = window.location.port;
-        let protocol = window.location.protocol;
+        let varServerURL = new URL(this.model.varServerUrl);
+        
         let serverUrl: string;
-        if (protocol === "http:" && (port === "80" || port === "")) {
-            serverUrl = `${protocol}//${hostname}`;
-        } else if (protocol === "https:" && (port === "443" || port === "")) {
-            serverUrl = `${protocol}//${hostname}`;
-        } else {
-            serverUrl = `${protocol}//${hostname}:${port}`;
-        }
+        serverUrl = varServerURL.origin;
         return `${serverUrl}/html/t3k_response.html`;
         // return `${serverUrl}/t3k_response.html`; // for a debuggable react version of the page
     }
@@ -519,7 +549,9 @@ export class Tone3000DownloadHandler {
     public async launchTone3000Popup(
         downloadType: Tone3000DownloadType,
         downloadPath: string,
-
+        options?:  {
+            userName?: string;
+        }
     ): Promise<void> {
         if (this.progress.transferring) {
             return;
@@ -584,6 +616,7 @@ export class Tone3000DownloadHandler {
                     menubar: true,
                     width: popupWidth,
                     height: popupHeight,
+                    userName: options?.userName
                 },
 
             );

@@ -190,7 +190,7 @@ namespace pipedal
             ReleaseFunctions();
             if (cancelled)
             {
-                throw std::logic_error("Cancelled.");
+                throw std::logic_error("Canceled.");
             }
             if (rejected)
             {

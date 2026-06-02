@@ -1,7 +1,7 @@
 /*
 * MIT License
 * 
-* Copyright (c) 2024 Robin E. R. Davies
+* Copyright (c) Robin E.R. Davies
 * 
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
@@ -121,8 +121,7 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
     }
 
     getCollapseButtons() {
-        if (this.getPortraitOrientation())
-        {
+        if (this.getPortraitOrientation()) {
             return document.documentElement.clientWidth < 550;
         } else {
             return document.documentElement.clientWidth < 800;
@@ -188,21 +187,31 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
     }
     renderSnapshot(snapshot: Snapshot | null, index: number) {
         return (
-            <SnapshotButton key={"s"+index}
+            <SnapshotButton key={"s" + index}
                 snapshot={snapshot}
                 snapshotIndex={index}
                 collapseButtons={this.state.collapseButtons}
                 selected={this.state.selectedSnapshot === index}
                 largeText={this.state.largeText}
-                onEditSnapshot={(index)=>{this.onEditSnapshot(index)}}
-                onSaveSnapshot={(index)=>{ this.onSaveSnapshot(index); }}
-                onSelectSnapshot={(index)=>{this.model.selectSnapshot(index);}}
+                onEditSnapshot={(index) => { this.onEditSnapshot(index) }}
+                onSaveSnapshot={(index) => { this.onSaveSnapshot(index); }}
+                onSelectSnapshot={(index) => { this.model.selectSnapshot(index); }}
             />
         );
     }
 
 
-
+    handleRemoveSnapshot(snapshotId: number) {
+        let snapshots = Snapshot.cloneSnapshots(this.state.snapshots);
+        snapshots[snapshotId] = null;
+        this.setState({
+            snapshots: snapshots,
+            snapshotPropertiesDialogOpen: false,
+            selectedSnapshot: -1
+        });
+        this.model.setSnapshots(snapshots, -1);
+        this.model.selectSnapshot(-1);
+    }
 
     handleSnapshotPropertyOk(index: number, name: string, color: string, editing: boolean) {
         if (editing) {
@@ -286,6 +295,9 @@ export default class SnapshotPanel extends ResizeResponsiveComponent<SnapshotPan
                             color={this.state.editColor}
                             editing={this.state.editing}
                             snapshotIndex={this.state.editId}
+                            onRemove={(snapshotId) => {
+                                this.handleRemoveSnapshot(snapshotId);
+                            }}
                             onClose={() => { this.setState({ snapshotPropertiesDialogOpen: false }); }}
                             onOk={(snapshotId, name, color, editing) => {
                                 this.handleSnapshotPropertyOk(snapshotId, name, color, editing);

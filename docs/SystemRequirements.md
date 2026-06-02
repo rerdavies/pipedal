@@ -14,7 +14,7 @@ page_icon: img/Requirements2.jpg
 * PiPedal will also run well on a Raspberry Pi 4.
 *  A Raspberry Pi 3 (or equivalent SBC) can run PiPedal, but may struggle to keep up. Not recommended. 
 * At least 2GB of RAM (4GB recommended). 
-* To compile PiPedal from source, at least 8GB of RAM is required.
+* To compile PiPedal from source, at least 8GB of RAM is required (16GB recommended).
 
 ### Audio System Requirements:
 * On Raspberry Pi's, you will need an external USB Audio Adapter, or a Pi audio hat with at least one audio input. You cannot use the built-in audio inputs and outputs. 
@@ -44,7 +44,7 @@ You should not run Pipedal using a browser on the same machine that is running t
 
 The Pipedal server does update itself automatically (it prompts for permission from the browser interface if there is an update available). However, it does not take care of Operating System updates. You should make sure to keep your OS up to date, and to install security updates as they become available. You will need to do that yourself from a commandline terminal, or using a desktop environment on the machine running the PiPedal server.
 
-You may find it much easier to set up and maintain your PiPedal server if you enable SSH access on the server machine.
+You may find it much easier to set up and maintain your headless PiPedal server if you enable SSH access on the server machine, and even easier if you install a graphical desktop that you can access remotely using VNC or RDP. 
 
 ### Older Versions of PiPedal
 
@@ -55,5 +55,5 @@ Older versions of PiPedal (v1.1.31) have been tested on the following operating 
 
 
 --------
-[<< Changing the Web Server Port](AboutPiPedal.md)  | [Up](Documentation.md) | [Installing PiPedal >>](Installing.md)
+[Up](Documentation.md) | [Installing PiPedal >>](Installing.md)
 

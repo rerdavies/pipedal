@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -75,7 +75,15 @@ public:
 
     void SetSocketServerEndpoint(const std::string &endpoint)
     {
-        this->socketServerAddress_ = endpoint;
+        if (endpoint.find(':') == std::string::npos)
+        {
+            // Only a port number was provided, use default address.
+            this->socketServerAddress_ = "0.0.0.0:" + endpoint;
+        }
+        else
+        {
+            this->socketServerAddress_ = endpoint;
+        }
     }
 
     bool GetAccessPointGateway(boost::asio::ip::network_v4 *pGatewayNetwork) const {

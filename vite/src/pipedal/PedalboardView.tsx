@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Robin Davies
+// Copyright (c) Robin E.R. Davies
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -161,8 +161,11 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: isDarkMode() ? "1pt #555 solid" : "1pt #666 solid",
-        borderRadius: 6
+        borderColor: "#777",
+        borderWidth: 2,
+        borderStyle: "solid",
+        padding: 1,
+        borderRadius: 8
     }),
     selectedIconFrame: css({
 
@@ -178,8 +181,12 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: isDarkMode() ? "1pt #FFF solid" : "1pt #333 solid",
-        borderRadius: 6
+        borderColor: theme.palette.primary.main,
+        borderWidth: "2.0px",
+        borderStyle: "solid",
+        overflow: "hidden",
+        borderRadius: 8,
+        boxShadow: "0 0 6px 0px " + theme.palette.primary.main + "C0"
     }),
     borderlessIconFrame: css({
 
@@ -194,8 +201,9 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
-        border: "0pt #666 solid",
-        borderRadius: 6
+        border: "0px #666 solid",
+        borderRadius: 8,
+        overflow: "hidden",
     }),
 
     pedalIcon: css({
@@ -1042,7 +1050,7 @@ const PedalboardView =
                                 onDoubleClick={(e: SyntheticEvent) => { this.onItemDoubleClick(e, instanceId); }}
                                 onContextMenu={(e: SyntheticEvent) => { this.onItemLongClick(e, instanceId); }}
                             >
-                                <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true} borderRadius={6}
+                                <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true} 
                                     clipChildren={true}
                                 >
                                     <Draggable draggable={draggable && (this.props.enableStructureEditing)} getScrollContainer={() => this.getScrollContainer()}
@@ -1050,7 +1058,7 @@ const PedalboardView =
                                         style={{ opacity: enabled ? 0.99 : 0.3 }}
 
                                     >
-                                        <div id="childIcon" style={{ position: "relative" }} >
+                                        <div id="childIcon" style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }} >
                                             <PluginIcon pluginType={iconType}
                                                 size={24}
                                                 color={getIconColor(iconColor)}

@@ -48,7 +48,7 @@
 #define BANK_EXTENSION ".piBank"
 #define PLUGIN_PRESETS_EXTENSION ".piPluginPresets"
 
-static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
+static const std::filesystem::path WEB_TEMP_DIR{ "/var/pipedal/web_temp" };
 
 static const std::string PLUGIN_PRESETS_MIME_TYPE = "application/vnd.pipedal.pluginPresets";
 static const std::string PRESET_MIME_TYPE = "application/vnd.pipedal.preset";
@@ -73,10 +73,10 @@ JSON_MAP_REFERENCE(UserUploadResponse, errorMessage)
 JSON_MAP_REFERENCE(UserUploadResponse, path)
 JSON_MAP_END()
 
-static std::string GetMimeType(const std::filesystem::path &path)
+static std::string GetMimeType(const std::filesystem::path& path)
 {
     std::string extension = path.extension();
-    const MimeTypes &mimeTypes = MimeTypes::instance();
+    const MimeTypes& mimeTypes = MimeTypes::instance();
     auto result = mimeTypes.MimeTypeFromExtension(extension);
     return result;
 }
@@ -97,7 +97,9 @@ static bool IsSafeThumbnailPath(const fs::path path)
     if (!HtmlHelper::IsSafeFileName(path)) {
         return false;
     }
-    if (!(path.string().starts_with("/var/pipedal/tone3000_thumbnails/")))
+    if ((!path.string().starts_with("/var/pipedal/tone3000_thumbnails/")) &&
+        (!path.string().starts_with("/var/pipedal/audio_uploads/tone3000_thumbnails/"))
+        )
     {
         return false;
     }
@@ -108,7 +110,7 @@ static bool IsSafeThumbnailPath(const fs::path path)
     }
     return true;
 }
-int32_t ConvertThumbnailSize(const std::string &param)
+int32_t ConvertThumbnailSize(const std::string& param)
 {
     if (param.empty())
     {
@@ -117,7 +119,7 @@ int32_t ConvertThumbnailSize(const std::string &param)
     return static_cast<int32_t>(std::stoi(param));
 }
 
-static bool IsZipFile(const std::filesystem::path &path)
+static bool IsZipFile(const std::filesystem::path& path)
 {
     std::ifstream f(path);
     if (!f.is_open())
@@ -135,15 +137,15 @@ static bool IsZipFile(const std::filesystem::path &path)
 class ExtensionChecker
 {
 public:
-    ExtensionChecker(const std::string &extensionList)
+    ExtensionChecker(const std::string& extensionList)
         : extensions(split(extensionList, ','))
     {
     }
-    bool IsValidExtension(const std::string &extension)
+    bool IsValidExtension(const std::string& extension)
     {
         if (extensions.size() == 0)
             return true;
-        for (const auto &ext : extensions)
+        for (const auto& ext : extensions)
         {
             if (ext == extension)
                 return true;
@@ -155,7 +157,7 @@ private:
     std::vector<std::string> extensions;
 };
 
-static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, const std::string &id)
+static fs::path GetTone3000ThumbnailFile(const fs::path& thumbnailDirectory, const std::string& id)
 {
     std::string stem = id;
     // find a file in thumbnailDirectory which has a filename of {stem}.*.
@@ -164,13 +166,13 @@ static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, con
         return {};
     }
 
-    for (const auto &entry : fs::directory_iterator(thumbnailDirectory))
+    for (const auto& entry : fs::directory_iterator(thumbnailDirectory))
     {
         if (!entry.is_regular_file())
         {
             continue;
         }
-        const auto &path = entry.path();
+        const auto& path = entry.path();
         if (path.stem() == stem)
         {
             return path;
@@ -179,18 +181,56 @@ static fs::path GetTone3000ThumbnailFile(const fs::path &thumbnailDirectory, con
     return {};
 }
 
+namespace pipedal::implementation {
+
+    int64_t ImportBankFile(PiPedalModel& model, const std::filesystem::path& filePath, uint64_t uploadAfter = -1)
+    {
+        BankFile bankFile;
+
+
+        if (filePath.empty())
+        {
+            throw std::runtime_error("Unexpected.");
+        }
+        if (IsZipFile(filePath))
+        {
+            auto presetReader = PresetBundleReader::LoadPresetsFile(model, filePath);
+            presetReader->ExtractMediaFiles();
+
+            std::stringstream ss(presetReader->GetPresetJson());
+            json_reader reader(ss);
+            reader.read(&bankFile);
+        }
+        else
+        {
+            std::ifstream f{ filePath };
+            if (!f.is_open()) {
+                throw std::runtime_error(SS("Unable to open file " << filePath));
+            }
+            // legacy json format, no zip, no media files.
+            json_reader reader(f);
+            reader.read(&bankFile);
+        }
+        uint64_t instanceId = model.UploadBank(bankFile, uploadAfter);
+
+        return instanceId;
+    }
+}
+
+using namespace pipedal::implementation;
+
 class DownloadIntercept : public RequestHandler
 {
-    PiPedalModel *model;
+    PiPedalModel* model;
 
 public:
-    DownloadIntercept(PiPedalModel *model)
+    DownloadIntercept(PiPedalModel* model)
         : RequestHandler("/var"),
-          model(model)
+        model(model)
     {
     }
 
-    virtual bool wants(const std::string &method, const uri &request_uri) const
+    virtual bool wants(const std::string& method, const uri& request_uri) const
     {
         if (request_uri.segment_count() != 2 || request_uri.segment(0) != "var")
         {
@@ -304,7 +344,7 @@ public:
         return false;
     }
 
-    static std::string GetContentDispositionHeader(const std::string &name, const std::string &extension)
+    static std::string GetContentDispositionHeader(const std::string& name, const std::string& extension)
     {
         std::string fileName = name.substr(0, 64) + extension;
         std::stringstream s;
@@ -314,7 +354,7 @@ public:
         return result;
     }
 
-    void GetPluginPresets(const uri &request_uri, std::string *pName, std::string *pContent)
+    void GetPluginPresets(const uri& request_uri, std::string* pName, std::string* pContent)
     {
         std::string pluginUri = request_uri.query("id");
         auto plugin = model->GetPluginHost().GetPluginInfo(pluginUri);
@@ -327,7 +367,7 @@ public:
         writer.write(pluginPresets);
         *pContent = s.str();
     }
-    void GetPreset(const uri &request_uri, std::string *pName, std::string *pContent)
+    void GetPreset(const uri& request_uri, std::string* pName, std::string* pContent)
     {
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
@@ -345,7 +385,7 @@ public:
         *pContent = s.str();
         *pName = pedalboard.name();
     }
-    void GetBank(const uri &request_uri, std::string *pName, std::string *pContent)
+    void GetBank(const uri& request_uri, std::string* pName, std::string* pContent)
     {
         std::string strInstanceId = request_uri.query("id");
         int64_t instanceId = std::stol(strInstanceId);
@@ -360,10 +400,10 @@ public:
     }
 
     virtual void head_response(
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         try
         {
@@ -392,7 +432,11 @@ public:
                 fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
                 if (!fs::exists(path))
                 {
-                    throw PiPedalException("File not found.");
+                    path = GetTone3000ThumbnailFile(this->model->OldTone3000ThumbnailDirectory(), id);
+                    if (!fs::exists(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
                 }
                 auto mimeType = GetMimeType(path);
                 if (mimeType.empty())
@@ -447,7 +491,7 @@ public:
                 std::string content;
                 GetPluginPresets(request_uri, &name, &content);
 
-                TemporaryFile tmpFile{WEB_TEMP_DIR};
+                TemporaryFile tmpFile{ WEB_TEMP_DIR };
                 PresetBundleWriter::ptr presetbundleWriter = PresetBundleWriter::CreatePluginPresetsFile(*(this->model), content);
                 presetbundleWriter->WriteToFile(tmpFile.Path());
                 size_t contentLength = std::filesystem::file_size(tmpFile.Path());
@@ -465,7 +509,7 @@ public:
                 std::string content;
                 GetPreset(request_uri, &name, &content);
 
-                TemporaryFile tmpFile{WEB_TEMP_DIR};
+                TemporaryFile tmpFile{ WEB_TEMP_DIR };
                 PresetBundleWriter::ptr presetbundleWriter = PresetBundleWriter::CreatePresetsFile(*(this->model), content);
                 presetbundleWriter->WriteToFile(tmpFile.Path());
                 size_t contentLength = std::filesystem::file_size(tmpFile.Path());
@@ -482,7 +526,7 @@ public:
                 std::string content;
                 GetBank(request_uri, &name, &content);
 
-                TemporaryFile tmpFile{WEB_TEMP_DIR};
+                TemporaryFile tmpFile{ WEB_TEMP_DIR };
                 PresetBundleWriter::ptr presetbundleWriter = PresetBundleWriter::CreatePresetsFile(*(this->model), content);
                 presetbundleWriter->WriteToFile(tmpFile.Path());
                 size_t contentLength = std::filesystem::file_size(tmpFile.Path());
@@ -495,7 +539,7 @@ public:
             }
             throw PiPedalException("Not found.");
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             if (strcmp(e.what(), "Not found") == 0)
             {
@@ -508,20 +552,20 @@ public:
         }
     }
 
-    static void setLastModifiedFromFile(HttpResponse &res, const std::filesystem::path &path)
+    static void setLastModifiedFromFile(HttpResponse& res, const std::filesystem::path& path)
     {
         auto lastModified = std::filesystem::last_write_time(path);
         res.set(HttpField::LastModified, HtmlHelper::timeToHttpDate(lastModified));
     }
-    AudioDirectoryInfo::Ptr CreateDirectoryInfo(const fs::path &path)
+    AudioDirectoryInfo::Ptr CreateDirectoryInfo(const fs::path& path)
     {
         return AudioDirectoryInfo::Create(path,
-                                          GetShadowIndexDirectory(
-                                              this->model->GetPluginUploadDirectory(),
-                                              path));
+            GetShadowIndexDirectory(
+                this->model->GetPluginUploadDirectory(),
+                path));
     }
 
-    bool isInfoFile(const fs::path &path)
+    bool isInfoFile(const fs::path& path)
     {
         auto extension = path.extension();
         if (extension == ".pdf")
@@ -546,24 +590,24 @@ public:
     std::string T3kResponse()
     {
         return "<html>\n"
-               "<head>\n"
-               "<script>\n"
-               "   window.close();"
-               "</script>\n"
-               "</head>\n"
-               "<body>\n"
-               "</body>\n"
-               "</html>\n";
+            "<head>\n"
+            "<script>\n"
+            "   window.close();"
+            "</script>\n"
+            "</head>\n"
+            "<body>\n"
+            "</body>\n"
+            "</html>\n";
     }
 
-    void DownloadTone3000Tone(const uri &requestUri)
+    void DownloadTone3000Tone(const uri& requestUri)
     {
     }
     virtual void get_response(
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         try
         {
@@ -579,7 +623,11 @@ public:
                 fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
                 if (!fs::exists(path))
                 {
-                    throw PiPedalException("File not found.");
+                    path = GetTone3000ThumbnailFile(this->model->OldTone3000ThumbnailDirectory(),id);
+                    if (!fs::exists(path))
+                    {
+                        throw PiPedalException("File not found.");
+                    }
                 }
                 auto mimeType = GetMimeType(path);
                 if (mimeType.empty())
@@ -690,7 +738,7 @@ public:
                 try
                 {
                     auto files = audioDirectory->GetFiles();
-                    for (const auto &file : files)
+                    for (const auto& file : files)
                     {
                         std::string fileNameOnly = path.filename();
                         if (file.fileName() == fileNameOnly)
@@ -703,7 +751,7 @@ public:
                         }
                     }
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     Lv2Log::error("Error getting audio directory info: %s - (%s)", path.c_str(), e.what());
                     throw e;
@@ -761,7 +809,7 @@ public:
 
                         thumbnailTemporaryFile = audioDirectory->GetThumbnail(path.filename(), width, height);
                     }
-                    catch (const std::exception &e)
+                    catch (const std::exception& e)
                     {
                         fs::path defaultThumbnail = model->GetWebRoot() / "img/missing_thumbnail.jpg";
                         thumbnailTemporaryFile.SetNonDeletedPath(defaultThumbnail, "image/jpeg");
@@ -776,7 +824,7 @@ public:
                     res.setBodyFile(t, thumbnailTemporaryFile.DeleteFile());
                     thumbnailTemporaryFile.Detach();
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     Lv2Log::error("Error getting thumbnail: %s - (%s)", request_uri.str().c_str(), e.what());
                     throw e;
@@ -809,7 +857,7 @@ public:
 
                     res.setBody(ss.str());
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     res.setBody("\"\"");
                 }
@@ -841,7 +889,7 @@ public:
 
                     res.setBody(ss.str());
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     res.setBody("\"\"");
                 }
@@ -852,7 +900,7 @@ public:
                 throw PiPedalException("Not found");
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             if (strcmp(e.what(), "Not found") == 0)
             {
@@ -864,9 +912,9 @@ public:
             }
         }
     }
-    static std::string GetFirstFolderOrFile(const std::vector<std::string> &fileNames)
+    static std::string GetFirstFolderOrFile(const std::vector<std::string>& fileNames)
     {
-        for (const auto &fileName : fileNames)
+        for (const auto& fileName : fileNames)
         {
             size_t nPos = fileName.find('/');
             if (nPos != std::string::npos)
@@ -883,11 +931,11 @@ public:
             return fileNames[0];
         }
     }
-    static bool HasSingleRootDirectory(ZipFileReader &zipFile)
+    static bool HasSingleRootDirectory(ZipFileReader& zipFile)
     {
         bool hasDirectory = false;
         std::string previousDirectory;
-        for (auto &file : zipFile.GetFiles())
+        for (auto& file : zipFile.GetFiles())
         {
             auto pos = file.find('/');
             if (pos == std::string::npos)
@@ -916,15 +964,15 @@ public:
     }
 
     void UploadEmbeddedZipFile(
-        PiPedalModel *model,
-        pipedal::zip_file_input_stream &si,
-        const std::string &inputFileName,
+        PiPedalModel* model,
+        pipedal::zip_file_input_stream& si,
+        const std::string& inputFileName,
         fs::path directory,
-        ExtensionChecker &extensionChecker,
+        ExtensionChecker& extensionChecker,
         int64_t instanceId,
-        const std::string &patchProperty)
+        const std::string& patchProperty)
     {
-        TemporaryFile tempFile{WEB_TEMP_DIR};
+        TemporaryFile tempFile{ WEB_TEMP_DIR };
         // Extract the zip_file_input_stream to the temporary file.
         {
             std::ofstream out(tempFile.Path(), std::ios::binary);
@@ -955,11 +1003,11 @@ public:
         {
             directory = (fs::path(directory) / fs::path(inputFileName).filename().stem()).string();
         }
-        for (const auto &inputFile : files)
+        for (const auto& inputFile : files)
         {
             if (!inputFile.ends_with("/")) // don't process directory entries.
             {
-                fs::path inputPath{inputFile};
+                fs::path inputPath{ inputFile };
                 std::string extension = inputPath.extension();
                 if (extensionChecker.IsValidExtension(extension) || isInfoFile(inputFile))
                 {
@@ -985,10 +1033,10 @@ public:
     }
 
     virtual void post_response(
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         try
         {
@@ -1004,7 +1052,7 @@ public:
                     {
                         throw std::runtime_error("Invalid path");
                     }
-                    if (!IsSafeMediaPath(targetPath) &&  !IsSafeThumbnailPath(targetPath))
+                    if (!IsSafeMediaPath(targetPath) && !IsSafeThumbnailPath(targetPath))
                     {
                         throw std::runtime_error("Unsafe path.");
                     }
@@ -1024,24 +1072,26 @@ public:
                         fs::rename(req.get_body_temporary_file(), targetPath);
                         req.detach_body_temporary_file();
 
-                    } catch (const std::exception &e) {
+                    }
+                    catch (const std::exception& e) {
                         // ok Copy into place instead.
                         fs::copy(req.get_body_temporary_file(), targetPath);
                     }
                     // set target permissions to "pipedal_d:pipedald -rw-rw-r-- if we can.
                     try {
-                        fs::permissions(targetPath, fs::perms::owner_read | fs::perms::owner_write | 
-                                        fs::perms::group_read | fs::perms::group_write | 
-                                        fs::perms::others_read,
-                                        fs::perm_options::replace);
-                    } catch (const std::exception&)
+                        fs::permissions(targetPath, fs::perms::owner_read | fs::perms::owner_write |
+                            fs::perms::group_read | fs::perms::group_write |
+                            fs::perms::others_read,
+                            fs::perm_options::replace);
+                    }
+                    catch (const std::exception&)
                     {
                         // ignore.
                     }
 
                     responseText = "{\"ok\": true}";
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     std::string jsonString = json_writer::encode_string(e.what());
                     std::ostringstream os;
@@ -1131,28 +1181,7 @@ public:
             else if (segment == "uploadBank")
             {
 
-                BankFile bankFile;
-
                 fs::path filePath = req.get_body_temporary_file();
-                if (filePath.empty())
-                {
-                    throw std::runtime_error("Unexpected.");
-                }
-                if (IsZipFile(filePath))
-                {
-                    auto presetReader = PresetBundleReader::LoadPresetsFile(*(this->model), filePath);
-                    presetReader->ExtractMediaFiles();
-
-                    std::stringstream ss(presetReader->GetPresetJson());
-                    json_reader reader(ss);
-                    reader.read(&bankFile);
-                }
-                else
-                {
-                    // legacy json format, no zip, no media files.
-                    json_reader reader(req.get_body_input_stream());
-                    reader.read(&bankFile);
-                }
 
                 uint64_t uploadAfter = -1;
                 std::string strUploadAfter = request_uri.query("uploadAfter");
@@ -1161,10 +1190,13 @@ public:
                     uploadAfter = std::stol(strUploadAfter);
                 }
 
-                uint64_t instanceId = model->UploadBank(bankFile, uploadAfter);
+                auto instanceId = ImportBankFile(*(this->model), filePath, uploadAfter);
+
 
                 res.set(HttpField::content_type, "application/json");
                 res.set(HttpField::cache_control, "no-cache");
+
+
                 std::stringstream sResult;
                 sResult << instanceId;
                 std::string result = sResult.str();
@@ -1187,7 +1219,7 @@ public:
 
                     int64_t instanceId;
                     {
-                        std::istringstream ss{instanceIdString};
+                        std::istringstream ss{ instanceIdString };
                         ss >> instanceId;
                         if (!ss)
                         {
@@ -1207,7 +1239,7 @@ public:
 
                     if (filename.ends_with(".zip"))
                     {
-                        ExtensionChecker extensionChecker{request_uri.query("ext")};
+                        ExtensionChecker extensionChecker{ request_uri.query("ext") };
                         namespace fs = std::filesystem;
 
                         try
@@ -1219,11 +1251,11 @@ public:
                             {
                                 directory = (fs::path(directory) / fs::path(filename).filename().replace_extension("")).string();
                             }
-                            for (const auto &inputFile : files)
+                            for (const auto& inputFile : files)
                             {
                                 if (!inputFile.ends_with("/")) // don't process directory entries.
                                 {
-                                    fs::path inputPath{inputFile};
+                                    fs::path inputPath{ inputFile };
                                     std::string extension = inputPath.extension();
                                     if (extensionChecker.IsValidExtension(extension) || isInfoFile(inputFile))
                                     {
@@ -1251,7 +1283,7 @@ public:
                             std::string returnPath = GetFirstFolderOrFile(files);
                             outputFileName = fs::path(directory) / returnPath;
                         }
-                        catch (const std::exception &e)
+                        catch (const std::exception& e)
                         {
                             Lv2Log::error(SS("Unzip failed. " << e.what()));
                             throw;
@@ -1269,7 +1301,7 @@ public:
                     }
                     result.path_ = outputFileName.string();
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     result.errorMessage_ = e.what();
                 }
@@ -1287,7 +1319,7 @@ public:
                 throw PiPedalException("Not found");
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error(SS("Error uploading file: " << e.what()));
             if (strcmp(e.what(), "Not found") == 0)
@@ -1302,7 +1334,7 @@ public:
     }
 };
 
-static std::string StripPortNumber(const std::string &fromAddress)
+static std::string StripPortNumber(const std::string& fromAddress)
 {
     std::string address = fromAddress;
 
@@ -1335,19 +1367,19 @@ static std::string StripPortNumber(const std::string &fromAddress)
 class InterceptConfig : public RequestHandler
 {
 private:
-    PiPedalModel&model;
+    PiPedalModel& model;
     uint64_t maxUploadSize;
     int portNumber;
 
 public:
-    InterceptConfig(PiPedalModel&model,int portNumber, uint64_t maxUploadSize)
+    InterceptConfig(PiPedalModel& model, int portNumber, uint64_t maxUploadSize)
         : RequestHandler("/var/config.json"),
-          model(model),
-          maxUploadSize(maxUploadSize),
-          portNumber(portNumber)
+        model(model),
+        maxUploadSize(maxUploadSize),
+        portNumber(portNumber)
     {
     }
-    std::string GetConfig(const std::string &fromAddress)
+    std::string GetConfig(const std::string& fromAddress)
     {
         std::string webSocketAddress = GetNonLinkLocalAddress(StripPortNumber(fromAddress));
         Lv2Log::info(SS("Web Socket Address: " << webSocketAddress << ":" << portNumber));
@@ -1355,32 +1387,32 @@ public:
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
-          << ", \"socket_server_address\": \"" << webSocketAddress
-          << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
-          << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
-          << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")
-          << ", \"tone3000_A2_models\": " << (model.Configuration().GetTone3000A2Models() ? " true" : "false")
-          << " }";
+            << ", \"socket_server_address\": \"" << webSocketAddress
+            << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
+            << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
+            << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")
+            << ", \"tone3000_A2_models\": " << (model.Configuration().GetTone3000A2Models() ? " true" : "false")
+            << " }";
 
         return s.str();
     }
     virtual ~InterceptConfig() {}
 
     virtual void head_response(
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         // intercepted. See the other overload.
     }
 
     virtual void head_response(
-        const std::string &fromAddress,
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const std::string& fromAddress,
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
@@ -1390,20 +1422,20 @@ public:
     }
 
     virtual void get_response(
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         // intercepted. see the other overload.
     }
 
     virtual void get_response(
-        const std::string &fromAddress,
-        const uri &request_uri,
-        HttpRequest &req,
-        HttpResponse &res,
-        std::error_code &ec) override
+        const std::string& fromAddress,
+        const uri& request_uri,
+        HttpRequest& req,
+        HttpResponse& res,
+        std::error_code& ec) override
     {
         std::string response = GetConfig(fromAddress);
         res.set(HttpField::content_type, "application/json");
@@ -1414,12 +1446,12 @@ public:
 };
 
 void pipedal::ConfigureWebServer(
-    WebServer &server,
-    PiPedalModel &model,
+    WebServer& server,
+    PiPedalModel& model,
     int port,
     size_t maxUploadSize)
 {
-    std::shared_ptr<RequestHandler> interceptConfig{new InterceptConfig(model,port, maxUploadSize)};
+    std::shared_ptr<RequestHandler> interceptConfig{ new InterceptConfig(model,port, maxUploadSize) };
     server.AddRequestHandler(interceptConfig);
 
     std::shared_ptr<DownloadIntercept> downloadIntercept = std::make_shared<DownloadIntercept>(&model);
