@@ -56,7 +56,7 @@ void PrintHelp()
     pp.width(78);
 
     pp << "PiPedal Latency Tester\n";
-    pp << "Copyright (c) 2022 Robin Davies\n";
+    pp << "Copyright (c) Robin E.R. Davies\n";
     pp << "\n";
     pp << Indent(0) << "Syntax\n\n";
     pp << Indent(2) << "pipedal_latency_test [<options>] <input-device> [<output-device>]\n\n";

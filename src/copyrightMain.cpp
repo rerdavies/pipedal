@@ -211,10 +211,19 @@ public:
             if (license->copyrights.size() != 0)
             {
                 f << "<div class='fossCopyrights'>" << endl;
+                f << "<p>";
+                bool firstLicense = true;
                 for (auto&copyright: license->copyrights) {
+                    if (!firstLicense) {
+                        f << "<br/>" << endl;
+                    } else {
+                        f << endl;
+                    }
+                    firstLicense = false;
                     std::string text = stripCopyrightPrefix(copyright);
-                    f << " <p>\u00A9 " << HtmlHelper::HtmlEncode(text) << "</p>" << endl;
+                    f << " \u00A9 " << HtmlHelper::HtmlEncode(text);
                 }
+                f << endl << "</p>";
                 f << "</div>" << endl;
                 f << "<div class='fossLicense' tag='" << license->tag << "'>" << endl;
                 if (license->tag == UNKNOWN_LICENSE) {

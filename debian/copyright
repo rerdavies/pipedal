@@ -1,18 +1,5 @@
 Files: *
-Copyright: 2012-2025, Sebastien Rombauts (sebastien.rombauts@gmail.com)
-License: Expat
-
-Files: NetworkManagerP2P/src/CommandLineParser.hpp
 Copyright: 2022-2026, Robin Davies
-License: Expat
-
-Files: NetworkManagerP2P/src/main.cpp
-Copyright: 2024, Robin E. R. Davies." << endl
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: NetworkManagerP2P/src/ss.hpp
-Copyright: 2022-2026, Robin E. R. Davies
 License: Expat
 
 Files: PiPedalCommon/src/AlsaSequencer.cpp
@@ -25,28 +12,19 @@ Files: PiPedalCommon/src/AlsaSequencer.cpp
  PiPedalCommon/src/json.cpp
  PiPedalCommon/src/json_variant.cpp
  PiPedalCommon/src/util.cpp
-Copyright: 2022-2026, Robin E. R. Davies
+Copyright: Robin E.R. Davies
 License: Expat
 
 Files: PiPedalCommon/src/NetLinkChannelInfo.cpp
-Copyright: 2024, Robin E. R. Davies
+Copyright: Robin E.R. Davies
  2008, Luis R. Rodriguez
  2007, Mike Kershaw
  2007, Andy Lutomirski
  2007, 2008, Johannes Berg
 License: BSD-3-clause
 
-Files: PiPedalCommon/src/RegDb.cpp
- PiPedalCommon/src/SysExec.cpp
- PiPedalCommon/src/WifiConfigSettings.cpp
- PiPedalCommon/src/WifiDirectConfigSettings.cpp
- PiPedalCommon/src/WifiRegs.cpp
- PiPedalCommon/src/WriteTemplateFile.cpp
- PiPedalCommon/src/ss.hpp
-Copyright: 2022-2026, Robin Davies
-License: Expat
-
 Files: PiPedalCommon/src/include/AlsaSequencer.hpp
+ PiPedalCommon/src/include/ChannelInfo.hpp
  PiPedalCommon/src/include/ConfigSerializer.hpp
  PiPedalCommon/src/include/ConfigUtil.hpp
  PiPedalCommon/src/include/P2pConfigFiles.hpp
@@ -57,224 +35,27 @@ Files: PiPedalCommon/src/include/AlsaSequencer.hpp
  PiPedalCommon/src/include/json_variant.hpp
  PiPedalCommon/src/include/restrict.hpp
  PiPedalCommon/src/include/util.hpp
-Copyright: 2022-2026, Robin E. R. Davies
-License: Expat
-
-Files: PiPedalCommon/src/include/Finally.hpp
- PiPedalCommon/src/include/HtmlHelper.hpp
- PiPedalCommon/src/include/Lv2Log.hpp
- PiPedalCommon/src/include/RegDb.hpp
- PiPedalCommon/src/include/SysExec.hpp
- PiPedalCommon/src/include/WifiConfigSettings.hpp
- PiPedalCommon/src/include/WifiRegs.hpp
- PiPedalCommon/src/include/WriteTemplateFile.hpp
- PiPedalCommon/src/include/json.hpp
-Copyright: 2022-2026, Robin Davies
+Copyright: Robin E.R. Davies
 License: Expat
 
 Files: PiPedalCommon/src/include/NetLinkChannelInfo.hpp.x
-Copyright: 2024, Robin Davies
+Copyright: Robin E.R. Davies
  2008, Luis R. Rodriguez
  2007, Mike Kershaw
  2007, Andy Lutomirski
  2007, 2008, Johannes Berg
 License: BSD-3-clause
 
-Files: artifacts/*
-Copyright: ­±±¶¶º¾¾ÃÃÇËËÐÐÔÔØÝÝááåêêîîò÷÷ûûÿ
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: artifacts/TestTracks/Track2.mp3
-Copyright: î
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: artifacts/v2 artwork/*
-Copyright: ¨¨§§¦¦
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: docs/_site/img/*
-Copyright: ®¥´Ð
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: docs/_site/press/Gallery_Rig.psd
-Copyright: ¨ª®ÿ©½ÎÑÓÙÚ×ÙÜÚÛÙØÚÛÜÝÝààáàÝþàÿâ
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: docs/img/*
-Copyright: ®¥´Ð
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: docs/press/Gallery_Rig.psd
-Copyright: ¨ª®ÿ©½ÎÑÓÙÚ×ÙÜÚÛÙØÚÛÜÝÝààáàÝþàÿâ
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/CabIR.ttl
-Copyright: Adventure Kid Research &amp; Technology, Kristoffer Ekstrand.
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/ConvolutionReverb.ttl
- lv2/aarch64/ToobAmp.lv2/ConvolutionReverbStereo.ttl
-Copyright: www.openairlib.net, University of York
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/Toob3BandEq.ttl
- lv2/aarch64/ToobAmp.lv2/Toob3BandEqStereo.ttl
- lv2/aarch64/ToobAmp.lv2/ToobNeuralAmpModeler.ttl
-Copyright: 2022, Steven Atkinson
-License: Expat
-
-Files: lv2/aarch64/ToobAmp.lv2/ToobAmp.so
-Copyright: õ[
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/ToobAmpUI.so
-Copyright: 
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/ToobFreeverb.ttl
-Copyright: no-info-found
-License: public-domain
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/*
-Copyright: ÿ]ÿn
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/*
-Copyright: ð7'H7ÎÒí7Ýg7
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/80s UK 001.wav
-Copyright: kC?©kC?¨/[?¨/[?l?l??t??t?Bðq?Bðq?äÏg?äÏg?
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/80s UK 002.wav
-Copyright: <÷&©<ÓÍþ<ÓÍþ<
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/80s US 001.wav
-Copyright: ¾j©¾ÚÈ¾ÚÈ¾~àc¾~àc¾vkN¾vkN¾²
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/80s US 002.wav
-Copyright: h¼J©h¼Õ¸¼Õ¸¼3½3½µ½µ½õÊ½õÊ½Mgï½Mgï½o­í½o­í½¢Ð½¢Ð½sx­½sx­½ú½ú½õg½õg½Ñ×P½Ñ×P½û%b½û%b½9Z½9Z½
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Modern UK 001.wav
-Copyright: /?©/?
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Modern UK 002.wav
-Copyright: ì;©ì;¨íª;¨íª;&¦:&¦:lØ»lØ»4·
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Modern US 001.wav
-Copyright: ö>v©ö>óÞ>óÞ>[
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Modern US 002.wav
-Copyright: ;`©;pi¼<pi¼<ê®4=ê®4=/u=/u=í.¬=í.¬=æÆ=æÆ=8Ô=8Ô=;Ï=;Ï=©à»=©à»=m_¢=m_¢=Ó=Ó=Âz~=Âz~=üp=üp=mk=mk=µ¤d=µ¤d=ªñ]=ªñ]=ñS=ñS=³¼I=³¼I=ÏkU=ÏkU=¬cw=¬cw=7]=7]=î÷¿=î÷¿=Kâè=Kâè=ä8
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Modern US 003.wav
-Copyright: b¼8©b¼+w¼+w¼q+£¼q+£¼F
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Modern US 004.wav
-Copyright: Ï¾©©Ï¾¯)×¾¯)×¾çxÞ¾çxÞ¾
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Speaker 001.wav
-Copyright: Þ©=©Þ©=ä¥µ=ä¥µ=³
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Speaker 002.wav
-Copyright: K>©ÃÓ¾©ÃÓ¾ÈÀ¾ÈÀ¾
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Vintage UK 001.wav
-Copyright: ö>3©ö>é>é>apÜ>apÜ>´Ï>´Ï>ù
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Vintage UK 002.wav
-Copyright: =:©=)´=)´=
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Vintage US 001.wav
-Copyright: ÿS>©ÿS>Ù
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/CabIR/Vintage US 002.wav
-Copyright: M=©M=ÕS=ÕS=Ü_=Ü_=ìãh=ìãh=Í°c=Í°c=MàJ=MàJ=*=*=Û
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/reverb/Arthur Sykes Rymer Auditorium.wav
-Copyright: ÿÿ¹ÿÿ
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/reverb/Genesis 6 Studio Live Room.wav
-Copyright: ÿ]mÿR°ÿ1ìÿcÿ]
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/reverb/Koli National Park - Winter.wav
-Copyright: ÿÿtÿÿùþÿ
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/aarch64/ToobAmp.lv2/impulseFiles/reverb/St. Margaret's Church.wav
-Copyright: ÿ
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: lv2/x86_64/toobamp_1.3.79_amd64.deb
-Copyright: xO
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: modules/SQLiteCpp/build.sh
-Copyright: 2012-2025, SÃ©bastien Rombauts (sebastien.rombauts@gmail.com)
+Files: modules/*
+Copyright: 2012-2025, Sebastien Rombauts (sebastien.rombauts@gmail.com)
 License: Expat
 
 Files: modules/SQLiteCpp/cpplint.py
-Copyright: 2005-2009, 2013, 2015, 2017, 2020, 2024, Google Inc.
+Copyright: 2005-2009, 2013, 2015, 2017, 2024, Google Inc.
 License: BSD-3-clause
 
-Files: modules/SQLiteCpp/examples/example2/build.sh
-Copyright: 2012-2025, SÃ©bastien Rombauts (sebastien.rombauts@gmail.com)
-License: Expat
-
 Files: modules/SQLiteCpp/googletest/*
-Copyright: 2005-2009, 2013, 2015, 2017, 2020, 2024, Google Inc.
+Copyright: 2005-2009, 2013, 2015, 2017, 2024, Google Inc.
 License: BSD-3-clause
 
 Files: modules/SQLiteCpp/include/SQLiteCpp/Backup.h
@@ -331,20 +112,6 @@ License: Expat
 Files: modules/libzip/*
 Copyright: 1999-2025, Dieter Baron and Thomas Klausner
 License: BSD-3-clause
-
-Files: modules/libzip/man/mkdocset.pl
-Copyright: 2016, Dieter Baron and Thomas Klausner</string>
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: modules/libzip/ossfuzz/ossfuzz.sh
-Copyright: 2011, 2019, Google Inc.
-License: Apache-2.0
-
-Files: modules/libzip/regress/large-uncompressible
-Copyright: (»9¸]IÐ÷bvÔúõÆ
-License: UNKNOWN
- Please fill license text from header of files
 
 Files: modules/libzip/src/getopt.c
 Copyright: 1987-2002, The Regents of the University of California.
@@ -435,9 +202,8 @@ Copyright: 2012, 2014-2016, Peter Thorson.
 License: BSD-3-clause
 
 Files: modules/websocketpp/websocketpp/base64/*
-Copyright: 2004-2008, RenÃNyffenegger
-License: UNKNOWN
- Please fill license text from header of files
+Copyright: 2004-2008, René Nyffenegger
+License: BSD-3-clause
 
 Files: modules/websocketpp/websocketpp/common/md5.hpp
 Copyright: 1999, 2002, Aladdin Enterprises.
@@ -449,171 +215,6 @@ License: BSD-3-clause
 
 Files: modules/websocketpp/websocketpp/utf8_validator.hpp
 Copyright: 2008, 2009, Bjoern Hoehrmann <bjoern@hoehrmann.de>
-License: Expat
-
-Files: src/*
-Copyright: const char*name)
-License: UNKNOWN
- Please fill license text from header of files
-
-Files: src/AdminClient.cpp
- src/AdminClient.hpp
- src/AdminInstallUpdate.cpp
- src/AdminInstallUpdate.hpp
- src/AdminMain.cpp
- src/AtomConverterTest.cpp
- src/AudioFilesTest.cpp
- src/AuxIn.hpp
- src/AuxInTest.cpp
- src/Banks.cpp
- src/Banks.hpp
- src/BufferPool.hpp
- src/CapturePresetsMain.cpp
- src/ChannelRouterSettings.cpp
- src/ChannelRouterSettings.hpp
- src/CommandLineParser.hpp
- src/ConfigMain.cpp
- src/CpuGovernor.cpp
- src/CpuGovernor.hpp
- src/CpuTemperatureMonitor.cpp
- src/CpuTemperatureMonitor.hpp
- src/DBusToLv2Log.cpp
- src/DBusToLv2Log.hpp
- src/FileEntry.cpp
- src/FileEntry.hpp
- src/FileMetadataFeature.cpp
- src/FileMetadataFeature.hpp
- src/FilePropertyDirectoryTree.cpp
- src/FilePropertyDirectoryTree.hpp
- src/Finally.hpp
- src/GithubResponseHeaders.hpp
- src/GovernorSettings.cpp
- src/GovernorSettings.hpp
- src/HotspotManager.cpp
- src/HotspotManager.hpp
- src/IEffect.hpp
- src/IHost.hpp
- src/InheritPriorityMutex.hpp
- src/InvertingMutexTest.cpp
- src/IpSubnet.hpp
- src/Ipv6Helpers.cpp
- src/Ipv6Helpers.hpp
- src/JackConfiguration.cpp
- src/JackConfiguration.hpp
- src/LRUCacheTest.cpp
- src/Locale.hpp
- src/LocaleTest.cpp
- src/LogFeature.cpp
- src/LogFeature.hpp
- src/Lv2Effect.cpp
- src/Lv2Effect.hpp
- src/Lv2EventBufferWriter.cpp
- src/Lv2EventBufferWriter.hpp
- src/Lv2HostLeakTest.cpp
- src/Lv2Pedalboard.cpp
- src/Lv2Pedalboard.hpp
- src/Lv2PluginChangeMonitor.cpp
- src/Lv2PluginChangeMonitor.hpp
- src/Lv2SystemdLogger.cpp
- src/Lv2SystemdLogger.hpp
- src/MapFeature.cpp
- src/MapFeature.hpp
- src/MapPathFeature.cpp
- src/MapPathFeature.hpp
- src/MemDebug.cpp
- src/MemDebug.hpp
- src/MidiBinding.cpp
- src/MidiBinding.hpp
- src/MimeTypes.cpp
- src/MimeTypes.hpp
- src/ModFileTypes.cpp
- src/ModFileTypes.hpp
- src/ModFileTypesTest.cpp
- src/ModGuiTest.cpp
- src/OptionsFeature.cpp
- src/OptionsFeature.hpp
- src/PatchPropertyWriter.hpp
- src/Pedalboard.cpp
- src/Pedalboard.hpp
- src/PiPedalAlsaTest.cpp
- src/PiPedalCommon.hpp
- src/PiPedalConfiguration.cpp
- src/PiPedalConfiguration.hpp
- src/PiPedalException.hpp
- src/PiPedalMath.hpp
- src/PiPedalModel.cpp
- src/PiPedalModel.hpp
- src/PiPedalSocket.cpp
- src/PiPedalSocket.hpp
- src/PiPedalVersion.cpp
- src/PiPedalVersion.hpp
- src/PipewireInputStreamTest.cpp
- src/PluginHost.cpp
- src/PluginPreset.hpp
- src/PluginType.cpp
- src/PluginType.hpp
- src/PresetBundle.cpp
- src/PresetBundle.hpp
- src/Presets.cpp
- src/Presets.hpp
- src/Promise.hpp
- src/PromiseTest.cpp
- src/RealtimeMidiEventType.hpp
- src/RequestHandler.hpp
- src/RingBuffer.hpp
- src/RingBufferReader.hpp
- src/Scratch.cpp
- src/SetWifiConfig.cpp
- src/SetWifiConfig.hpp
- src/Shutdown.hpp
- src/SplitEffect.cpp
- src/SplitEffect.hpp
- src/StateInterface.cpp
- src/StateInterface.hpp
- src/StdErrorCapture.cpp
- src/StdErrorCapture.hpp
- src/Storage.hpp
- src/SystemConfigFile.cpp
- src/SystemConfigFile.hpp
- src/SystemConfigFileTest.cpp
- src/TemporaryFile.cpp
- src/TemporaryFile.hpp
- src/Units.cpp
- src/Units.hpp
- src/UpdateMain.cpp
- src/UpdateResults.cpp
- src/UpdateResults.hpp
- src/Updater.cpp
- src/Updater.hpp
- src/UpdaterStatus.hpp
- src/UpdaterTest.cpp
- src/Uri.cpp
- src/Uri.hpp
- src/VuUpdate.cpp
- src/VuUpdate.hpp
- src/WebServer.cpp
- src/WebServerConfig.cpp
- src/WebServerConfig.hpp
- src/WebServerTest.cpp
- src/WifiChannelSelectors.cpp
- src/WifiChannelSelectors.hpp
- src/WifiChannelsTest.cpp
- src/Worker.hpp
- src/ZipFile.cpp
- src/ZipFile.hpp
- src/asan_options.cpp
- src/atom_object.cpp
- src/atom_object.hpp
- src/config.hpp.in
- src/defer.hpp
- src/inverting_mutex.hpp
- src/jsonTest.cpp
- src/main.cpp
- src/pch.h
- src/ss.hpp
- src/testMain.cpp
- src/viewstream.hpp
-Copyright: 2022-2026, Robin Davies
 License: Expat
 
 Files: src/AesDigest.hpp
@@ -702,7 +303,7 @@ Files: src/AesDigest.hpp
  src/alsaCheck.hpp
  src/kconfigMain.cpp
  src/utilTest.cpp
-Copyright: 2022-2026, Robin E. R. Davies
+Copyright: Robin E.R. Davies
 License: Expat
 
 Files: src/AudioHost.cpp
@@ -712,12 +313,18 @@ Files: src/AudioHost.cpp
  src/PiPedalAlsa.cpp
  src/PiPedalAlsa.hpp
  src/Storage.cpp
-Copyright: Robin E. R. Davies
+Copyright: Robin E.R. Davies
  Gabriel Hernandez
 License: Expat
 
 Files: src/Base64.hpp
 Copyright: 2016, tomykaira
+License: Expat
+
+Files: src/RingBufferReader.hpp
+ src/atom_object.cpp
+ src/atom_object.hpp
+Copyright: Robin E.R Davies
 License: Expat
 
 Files: src/Vst3MidiToEvent.hpp
@@ -737,29 +344,16 @@ Files: src/gsl/*
 Copyright: 2015, Microsoft Corporation.
 License: Expat
 
-Files: src/lv2ext/*
-Copyright: 2022-2026, Robin E. R. Davies
-License: Expat
-
 Files: src/mustache.hpp
 Copyright: 2015-2020, Kevin Wojniak
 License: BSL-1.0
 
-Files: src/profilePluginMain.cpp
-Copyright: 2024, Robin E. R. Davies" << endl;
-License: UNKNOWN
- Please fill license text from header of files
-
 Files: src/vst3/*
-Copyright: 2022-2026, Robin E. R. Davies
-License: Expat
-
-Files: submodules/pipedal_p2pd/*
-Copyright: 2022-2026, Robin Davies
+Copyright: Robin E.R. Davies
 License: Expat
 
 Files: submodules/pipedal_p2pd/lib/*
-Copyright: 2022-2026, Robin E. R. Davies
+Copyright: 2022, Robin E. R. Davies
 License: Expat
 
 Files: submodules/pipedal_p2pd/lib/ss.h
@@ -767,7 +361,7 @@ Copyright: 2022-2026, Robin Davies
 License: Expat
 
 Files: submodules/pipedal_p2pd/pipedal_p2pd/*
-Copyright: 2022-2026, Robin E. R. Davies
+Copyright: 2022, Robin E. R. Davies
 License: Expat
 
 Files: submodules/pipedal_p2pd/pipedal_p2pd/CommandLineParser.h
@@ -968,7 +562,7 @@ Copyright: no-info-found
 License: Apache-2.0
 
 Files: vite/node_modules/@fontsource/roboto/*
-Copyright: 2011, 2019, Google Inc.
+Copyright: 2011, Google Inc.
 License: Apache-2.0
 
 Files: vite/node_modules/@humanfs/core/*
@@ -1415,9 +1009,8 @@ Copyright: 2018, Kilian Valkhof
 License: ISC
 
 Files: vite/node_modules/entities/*
-Copyright: Felix BÃ¶hm
-License: UNKNOWN
- Please fill license text from header of files
+Copyright: Felix Böhm
+License: ISC
 
 Files: vite/node_modules/error-ex/*
 Copyright: 2015, JD Ballard
@@ -1436,7 +1029,7 @@ Copyright: Meta Platforms, Inc. and affiliates.
 License: Expat
 
 Files: vite/node_modules/eslint-plugin-react-refresh/*
-Copyright: Arnaud BarrÃ© (https://github.com/ArnaudBarre)
+Copyright: Arnaud Barré (https://github.com/ArnaudBarre)
 License: Expat
 
 Files: vite/node_modules/eslint-scope/*
@@ -2112,9 +1705,8 @@ Copyright: 2013-2019, Ivan Nikulin (ifaaan@gmail.com, https://github.com/inikuli
 License: Expat
 
 Files: vite/node_modules/parse5/node_modules/entities/*
-Copyright: Felix BÃ¶hm
-License: UNKNOWN
- Please fill license text from header of files
+Copyright: Felix Böhm
+License: ISC
 
 Files: vite/node_modules/path-exists/*
 Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
@@ -2359,7 +1951,7 @@ Copyright: 2011-2023, Isaac Z. Schlueter and Contributors
 License: ISC
 
 Files: vite/node_modules/shebang-command/*
-Copyright: Kevin MÃ¥rtensson <kevinmartensson@gmail.com> (github.com/kevva)
+Copyright: Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
 License: Expat
 
 Files: vite/node_modules/shebang-regex/*
@@ -2372,8 +1964,7 @@ License: Expat
 
 Files: vite/node_modules/source-map-js/*
 Copyright: 2009-2011, Mozilla Foundation and contributors
-License: UNKNOWN
- Please fill license text from header of files
+License: Expat
 
 Files: vite/node_modules/space-separated-tokens/*
 Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
@@ -2416,7 +2007,7 @@ Copyright: 2019, Alexander Reardon
 License: Expat
 
 Files: vite/node_modules/tinyglobby/*
-Copyright: 2024, Madeline GurriarÃ¡n
+Copyright: 2024, Madeline Gurriarán
 License: Expat
 
 Files: vite/node_modules/tinyglobby/node_modules/fdir/*
