@@ -333,7 +333,7 @@ int main(int argc, char **argv)
         if (argumentError || help)
         {
             cout << "profilePlugin - Generate profiling data for LV2 Plugins" << endl;
-            cout << "Copyright (c) 2024 Robin E. R. Davies" << endl;
+            cout << "Copyright (c) Robin E.R. Davies" << endl;
             cout << endl;
             cout << "Syntax:  profilePlugin [preset_name] [options...]" << endl;
             cout << "         where preset_name is the name of a PiPedal preset." << endl;

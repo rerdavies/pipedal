@@ -1,4 +1,4 @@
-// Copyright (c) Robin E. R. Davies
+// Copyright (c) Robin E.R. Davies
 // Copyright (c) Gabriel Hernandez
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of

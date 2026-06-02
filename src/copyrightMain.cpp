@@ -19,9 +19,9 @@ std::vector<std::string> unknownLicense ={
     "These copyright notices were found, but we were unable to automatically identify an associated license."
 };
 
-bool ContainsName(const std::string &copyright, const char*name)
+bool ContainsName(const std::string &value, const char*name)
 {
-    return copyright.find(name) != -1;
+    return value.find(name) != -1;
 }
 
 class Copyrights {
@@ -60,30 +60,30 @@ class Copyrights {
 
     }
 
-    void addCopyright(std::string license,std::string copyright)
+    void addCopyright(std::string license,std::string copyrightString)
     {
-        if (copyright.length() == 0) return;
-        if (copyright ==  "no-info-found") return;
-        if (copyright == "info-missing") return;
+        if (copyrightString.length() == 0) return;
+        if (copyrightString ==  "no-info-found") return;
+        if (copyrightString == "info-missing") return;
         if (license == "")
         {
             license = UNKNOWN_LICENSE;
         }
         const static std::string UNSPECIFIED = "(unspecified) ";
-        if (copyright.starts_with(UNSPECIFIED))
+        if (copyrightString.starts_with(UNSPECIFIED))
         {
-            copyright = copyright.substr(UNSPECIFIED.length());
+            copyrightString = copyrightString.substr(UNSPECIFIED.length());
         }
         auto currentLicense = licenseMap.find(license);
         if (currentLicense == licenseMap.end())
         {
             std::shared_ptr<License> l = std::make_shared<License>();
             l->tag = license;
-            l->copyrights.insert(copyright);
+            l->copyrights.insert(copyrightString);
             licenseMap[license] = l;
         } else {
             auto & copyrights = (*currentLicense).second->copyrights;
-            copyrights.insert(copyright);
+            copyrights.insert(copyrightString);
         }
     }
     bool splitLicense(const std::string & license, const std::string &match, std::string*pLeft, std::string *pRight)

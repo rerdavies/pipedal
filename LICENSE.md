@@ -2,7 +2,7 @@ Original content in this project is covered under the following license.
 
 MIT License
 
-© Robin E. R. Davies
+© Robin E.R. Davies
 
 Permission is hereby granted, free of charge, to any person obtaining 
 a copy of this software and associated documentation files (the "Software"), 
@@ -28,7 +28,7 @@ Tone3000.com, permission has been granted
 to Robin Davies to distribute these files ONLY with Pipedal.
 
 - `default_presets/V3 Factory Presets.piBank` (contains compressed versions and bundled version 
-of the protected files).)
+of the protected files).
 - The installed file "/etc/pipedal/config/default_presets/presets/V3 Factory Presets.piBank"
 - Files installed in "/var/pipedal/audio_uploads/NeuralAmpModels/Factory Models"
 - Files installedcd  in "/var/pipedal/audio_uploads/IRs/Factory IRs"

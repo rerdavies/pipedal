@@ -1,5 +1,5 @@
 /**
- * Modified by Robin E. R. Davies from tone3000-client.ts, original from github tone3000/api repository.
+ * Modified by Robin E.R. Davies from tone3000-client.ts, original from github tone3000/api repository.
  * 
  * The file has been modified to address the following scenario.
  * 
