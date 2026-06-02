@@ -55,4 +55,4 @@ You may want to watch out for temperature throttling of the CPUs. PiPedal can be
 My development system has both a heat sink, and a fan. The CPU temperature rarely goes above 60C.
 
 --------
-[<< System Requirements](ChoosingAUsbAudioAdapter.md)  | [Up](Documentation.md) | [Command-Line Configuration of PiPedal >>](CommandLine.md)
+[<< Choosing a USB Audio Adapter](ChoosingAUsbAudioAdapter.md) | [Up](Documentation.md) | [Command-Line Configuration of PiPedal >>](CommandLine.md)

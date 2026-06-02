@@ -3,17 +3,20 @@
 
 &nbsp;
 
-#### [What PiPedal Is](AboutPiPedal.md)
-
 #### [System Requirements](SystemRequirements.md)
+&nbsp;
 
 #### [Installing PiPedal](Installing.md)
-#### [PiPedal on Ubuntu](Ubuntu.md)
+#### [Installing PiPedal on Ubuntu](Ubuntu.md)
 #### [Headless Operation](HeadlessOperation.md)
 #### [Configuring PiPedal After Installation](Configuring.md)  
 &nbsp;
-#### [Using TooB Neural Amp Modeler](UsingNAM.md)  
-#### [An intro to Snapshots](Snapshots.md)  
+#### [What PiPedal Is](WhatPiPedalIs.md)
+#### [Machine Learning in PiPedal (A History)](PiPedalHistory.md)
+#### [How to Use PiPedal](HowToUsePiPedal.md)
+#### [How to Build Presets With PiPedal](BuildingPresets.md)
+#### [An Intro to Snapshots](Snapshots.md)  
+#### [Neural Amp Modeler Calibration](NamCalibration.md)  
 #### [Choosing a USB Audio Adapter](ChoosingAUsbAudioAdapter.md)  
 #### [Optimizing Audio Latency](AudioLatency.md)  
 #### [Command-Line Configuration of PiPedal](CommandLine.md)
@@ -34,9 +37,5 @@
 #### [Build Prerequisites](BuildPrerequisites.md)
 #### [The Build Systems](TheBuildSystem.md)
 #### [How to Debug PiPedal](Debugging.md)
-
-&nbsp;
- 
-
 #### [PiPedal Architecture](Architecture.md)
 

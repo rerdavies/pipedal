@@ -1,20 +1,4 @@
-# Using TooB Neural Amp Modeler
-
-The living breathing heart of Pipedal is actually the TooB Neural Amp Modeler plugin, although you would be forgiven for not guessing that's the case.
-
-Steven Atkinson's [Neural Amp Modeler](https://www.neuralampmodeler.com/) project is an open-source project that provides a framework for creating digital models of guitar amplifiers, speaker cabinets, and effects pedals, using machine learning techniques. The models are created by training a neural network on input-output pairs of audio data, where the input is the signal from a guitar plugged into a real amplifier or effect pedal, and the output is the signal recorded from the output of that amplifier or pedal. The result is a digital model that can replicate the sound of the original hardware with remarkable fidelity.
-
-The results are astonishing. Models are capable of producing sounds that are virtually indistinguishable from the real hardware, including the complex nonlinearities and dynamic response characteristics that are difficult to capture with traditional modeling techniques. "This changes everything" is a phrase that comes up often when discussing Neural Amp Modeler. PiPedal didn't really start out this way, but it has gradually evolved into a platform whose principle purpose is providing access to Neural Amp Modeler models in a live performance context. That's how good NAM is.
-
-PiPedal allows you to use Neural Amp Modeler models (.nam files) with the TooB Neural Amp Modeler plugin, which is bundled with PiPedal.
-
-Although TooB ML models produce exceptionally good results, TooB Neural Amp Modeler produces significantly better results. Awkwardly, none of the built-in factory presets for Pipedal currently contain TooB Neural Amp Modeler plugins, because I am still working on obtaining NAM models that are licensed under terms that are compatible with Pipedal's MIT license. (Expect some progress soon). 
-
-So I would urge you, in the meantime, to experiment with TooB Neural Amp Modeler using free .nam files downloaded from [Tone 3000](www.tone3000.com), or perhaps purchase some commercial NAM models from any of several providers of non-free NAM models on the Internet. (Totally worth it!)
-
-The remainder of this page deals with issues relating to how to get the absolute best results out of TooB Neural Amp Modeler. This is not required reading. You will get excellent results if you never read what follows. The purpose of what follows is to provide an explanation of model calibration in TooB Neural Amp Modeler&mdash;how it works, why you might or might not want to use it, and how to get good results even if you don't use it. "Calibration" is a confusing feature. It doesn't entirely do what you might it expect it do do. But it does provide useful functionality that may allow you to make even better use of NAM.
-
-### Calibrating TooB Neural Amp Modeler
+## TooB Neural Amp Modeler Calibration
 
 This feature isn't what you think it is.
 
@@ -111,4 +95,4 @@ If you must feed output of a NAM effect simulation to a downstream NAM amp model
 
 
 --------
-[<< Configuring PiPedal After Installation](Configuring.md)  | [Up](Documentation.md) | [An Intro to Snapshots >>](Snapshots.md)
+[<< An Intro to Snapshots](Snapshots.md) | [Up](Documentation.md) | [Choosing a USB Audio Adapter >>](ChoosingAUsbAudioAdapter.md)  
