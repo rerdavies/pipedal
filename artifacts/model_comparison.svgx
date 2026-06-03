@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1140.9839"
+   height="448.54855"
+   viewBox="0 0 1140.9838 448.54855"
+   version="1.1"
+   id="svg12"
+   sodipodi:docname="model_comparison.svgx"
+   inkscape:export-filename="../../rerdavies.github.io/public/img/model_comparison.png"
+   inkscape:export-xdpi="67.310326"
+   inkscape:export-ydpi="67.310326"
+   inkscape:version="1.4.4 (1:1.4.4+202605061436+dcaf3e7d9e)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs12">
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter38"
+       x="-0.031952661"
+       y="-0.058299596"
+       width="1.0639053"
+       height="1.137112">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="0.741176"
+         flood-color="rgb(0,0,0)"
+         id="feFlood37" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="4.500000"
+         id="feGaussianBlur37" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="0.000000"
+         dy="3.800000"
+         id="feOffset37" />
+      <feComposite
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset"
+         id="feComposite37" />
+      <feComposite
+         result="fbSourceGraphic"
+         operator="over"
+         in="SourceGraphic"
+         in2="comp1"
+         id="feComposite38" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix38" />
+      <feFlood
+         id="feFlood38"
+         result="flood"
+         in="fbSourceGraphic"
+         flood-opacity="0.741176"
+         flood-color="rgb(0,0,0)" />
+      <feGaussianBlur
+         id="feGaussianBlur38"
+         result="blur"
+         in="fbSourceGraphic"
+         stdDeviation="4.500000" />
+      <feOffset
+         id="feOffset38"
+         result="offset"
+         in="blur"
+         dx="0.000000"
+         dy="3.800000" />
+      <feComposite
+         id="feComposite39"
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset" />
+      <feComposite
+         id="feComposite40"
+         result="comp2"
+         operator="over"
+         in="fbSourceGraphic"
+         in2="comp1" />
+    </filter>
+  </defs>
+  <sodipodi:namedview
+     id="namedview12"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.72407734"
+     inkscape:cx="432.27426"
+     inkscape:cy="134.65412"
+     inkscape:window-width="2192"
+     inkscape:window-height="1161"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg12" />
+  <style
+     id="style1">text{font-family:Arial,sans-serif;font-size:14px}</style>
+  <rect
+     style="fill:#ffffff;fill-opacity:1;stroke-width:14.1;stroke-linejoin:round"
+     id="rect12"
+     width="1140.9839"
+     height="448.54855"
+     x="0"
+     y="0"
+     ry="0"
+     rx="0" />
+  <line
+     x1="338.01517"
+     y1="39.095417"
+     x2="338.01517"
+     y2="429.09543"
+     stroke="#000000"
+     id="line1"
+     style="display:none" />
+  <path
+     id="rect1"
+     d="m 382.01517,39.095418 v 45.5 h 471.23829 v -45.5 z m 0,65.000002 v 45.49999 h 543.99022 v -45.49999 z m 0,64.99999 v 45.5 h 613.25 v -45.5 z m 0,65 v 45.5 H 1017.148 v -45.5 z m 0,65 v 45.5 h 645.65823 v -45.5 z m 0,65 v 45.5 h 676.00003 v -45.5 z"
+     style="fill:#3c16bf;fill-opacity:1;filter:url(#filter38)"
+     sodipodi:nodetypes="cccccccccccccccccccccccccccccc" />
+  <text
+     x="328.01517"
+     y="66.845421"
+     text-anchor="end"
+     id="text1"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-anchor:end">Line 6 Proxy</text>
+  <text
+     x="861.25439"
+     y="66.845421"
+     id="text2"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">58.55</text>
+  <text
+     x="328.01517"
+     y="131.84543"
+     text-anchor="end"
+     id="text3"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">IK Multimedia TONEX</text>
+  <text
+     x="934.00513"
+     y="131.84543"
+     id="text4"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">66.82</text>
+  <text
+     x="328.01517"
+     y="196.84541"
+     text-anchor="end"
+     id="text5"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Neural DSP Neural Capture V2</text>
+  <text
+     x="1003.2649"
+     y="196.84541"
+     id="text6"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">74.69</text>
+  <text
+     x="328.01517"
+     y="261.84543"
+     text-anchor="end"
+     id="text7"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">NAM A2 Lite</text>
+  <text
+     x="1025.1488"
+     y="261.84543"
+     id="text8"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">77.18</text>
+  <text
+     x="328.01517"
+     y="326.84543"
+     text-anchor="end"
+     id="text9"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">NAM A1 Standard</text>
+  <text
+     x="1035.673"
+     y="326.84543"
+     id="text10"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">78.37</text>
+  <text
+     x="328.01517"
+     y="391.84543"
+     text-anchor="end"
+     id="text11"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">NAM A2 Full</text>
+  <text
+     x="1066.0151"
+     y="391.84543"
+     id="text12"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Noto Sans Display';-inkscape-font-specification:'Noto Sans Display, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">81.82</text>
+</svg>

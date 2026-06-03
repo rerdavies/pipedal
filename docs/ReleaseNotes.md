@@ -4,10 +4,13 @@
 
 PiPedal 2.0 is a big release, with exciting new features, improvements, and bug fixes. 
 
-The headline feature of PiPedal 2.0 is support for TooB Neural Amp Modeler A2 models. TooB Neural Amp Modeler A2 models provide significant improvements in sound quality and performance compared to NAM A1 models, while consuming significantly less CPU resources. This is particularly important for users of Raspberry Pi 4, since NAM A2 models can provide better sound quality than NAM A1 models, while consuming significantly less CPU resources.
+The headline feature of PiPedal 2.0 is support for TooB Neural Amp Modeler A2 models. TooB Neural Amp Modeler A2 models provide significant improvements in sound quality and performance compared to NAM A1 models, while consuming significantly less CPU resources. This is particularly important for users of Raspberry Pi 4, since it allows Pi 4 users to use an additional NAM instance in a preset.  
 
-A new integrated Tone3000 model downloader provides a convenient way to download the latest NAM A2 models and IIR files from Tone3000 directly to the PiPedal server. All existing NAM A1 models on Tone3000 have been retrained for NAM A2. When 
-you download from Tone3000 using the integrated downloader, you will get NAM A2 models. Just click on the DOWNLOAD MODELS FROM TONE3000 button. 
+
+PiPedal 2.0 connects to [Tone3000.com](https://www.tone3000.com) web services,  so that you can 
+download Tone3000 NAM models and IRs directly to the PiPedal server, without ever having to leave 
+the PiPedal web application interface. All existing NAM A1 models on Tone3000 have been retrained for NAM A2. When you download from Tone3000 using the integrated downloader, you will get NAM A2 models. Just click on the DOWNLOAD MODELS FROM TONE3000 button in the File Selection dialog for Toob Neural Amp Modeler, in order to download NAM A2 models directly
+to the PiPedal server.
 
 Currently, the best way to get access to NAM A2 models is via the integrated Tone3000 model downloader. Models downloaded externally from the Tone3000 website will still be NAM A1 models; however this should change soon with a forthcoming announcement from Tone3000. 
 
@@ -33,7 +36,7 @@ PiPedal 2.0 can now be installed as a Progressive Web Application (PWA). This al
 
 - Copy and Paste plugins (and their settings) between pedalboards. Accessible via the "Copy Plugin" and "Paste Plugin" menu items in the former Plugin Preset selector menu. 
 
-### Minor features and bug fixes
+### Miscellaneous features and bug fixes
 
 - Runtime detection and use of AVX extensions for TooB plugins. Reduces CPU use of TooB NAM by 50% on most x86_64/amd64 computers.
 
