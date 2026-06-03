@@ -602,7 +602,9 @@ export class PiPedalModel //implements PiPedalModel
         (
             [
                 MidiBinding.systemBinding("prevProgram"),
-                MidiBinding.systemBinding("nextProgram")
+                MidiBinding.systemBinding("nextProgram"),
+                MidiBinding.systemBinding("prevSnapshot"),
+                MidiBinding.systemBinding("nextSnapshot")
             ]
         );
     zoomedUiControl: ObservableProperty<ZoomedControlInfo | undefined> = new ObservableProperty<ZoomedControlInfo | undefined>(undefined);

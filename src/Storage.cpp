@@ -2180,6 +2180,9 @@ std::vector<MidiBinding> Storage::GetSystemMidiBindings()
     result.push_back(MidiBinding::SystemBinding("snapshot5"));
     result.push_back(MidiBinding::SystemBinding("snapshot6"));
 
+    result.push_back(MidiBinding::SystemBinding("prevSnapshot"));
+    result.push_back(MidiBinding::SystemBinding("nextSnapshot"));
+
     result.push_back(MidiBinding::SystemBinding("stopHotspot"));
     result.push_back(MidiBinding::SystemBinding("startHotspot"));
     result.push_back(MidiBinding::SystemBinding("shutdown"));

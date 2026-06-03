@@ -159,6 +159,11 @@ export const SystemMidiBindingDialog =
                     }
                     else if (item.symbol === "snapshot6") {
                         displayName = "Snapshot 6";
+                    }
+                    else if (item.symbol === "nextSnapshot") {
+                        displayName = "Next Snapshot";
+                    } else if (item.symbol === "prevSnapshot") {
+                        displayName = "Previous Snapshot";
                     } else if (item.symbol === "startHotspot") {
                         displayName = "Enable Hotspot";
                     } else if (item.symbol === "stopHotspot") {
