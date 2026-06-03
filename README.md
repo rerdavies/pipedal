@@ -13,7 +13,7 @@ Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### Announcing PiPedal 2.0 (2.0.103)&mdash;a major update to PiPedal, including big new features. See the [documentation](https://rerdavies.github.io/pipedal/PiPedal.html) for information, and instructions on how to install Pipedal 2.0. 
+#### Announcing PiPedal 2.0 (2.0.103)&mdash;a major update to PiPedal, including exciting new features, ioncluding support for NAM A2. See the Pipedal website [documentation](https://rerdavies.github.io/pipedal/PiPedal.html) for more information.
 
 &nbsp;
 

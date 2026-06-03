@@ -21,7 +21,7 @@ instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure
 
 {% include gallery.html %}
 
-New in PiPedal v2.0:
+## New in PiPedal v2.0:
 
 - Support for Neural Amp Modeler (NAM) A2 models.
 - Direct single-step downloads of NAM A2 models to the Pipedal server using web services provided by <a href="https://tone3000.com/">Tone3000.com</a>.
@@ -29,11 +29,22 @@ New in PiPedal v2.0:
 - A new Channel Routing dialog which allows you to pass through Auxilliary audio channels, or unprocessed guitar inputs for later re-amping in a DAW or external hardware. 
 - New NAM A2-based Factory Presets, and a small selection of NAM A2 models pre-installed and ready to use.
 
-PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB Neural Amp Modeler technology. And PiPedal 2.0 now includes support for the brand new NAM A2 technology, which provides event more accurate amp simulations than NAM A1, while using even less CPU. Experience the ground-breaking quality of NAM A2 models now, with PiPedal's low-latency audio engine running on your Raspberry Pi or Ubuntu computer.
+PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB Neural Amp Modeler plugin, which now includes support for the brand new NAM A2 technology. NAM A2 provides event more accurate amp simulations than NAM A1, while using even less CPU. Experience the ground-breaking quality of NAM A2 models now, with PiPedal's low-latency audio engine running on your Raspberry Pi or Ubuntu AMD64/x86_64 computer. 
 
-NAM changes everything! The quality of NAM A1 and A2 models is better than than amp emulations on top-of-the-line commercial guitar stomp boxes costing thousands of dollars. Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp.
+NAM changes everything! Again! NAM A2 models provide even better quality, and even lower CPU use that the previous NAM A1 models did. And NAM A2 provides amp and effect emulations that are demonstrably, and measurably better than competing commercial amp modeling technologies. And it is available for free to PiPedal users now!
 
-PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or download and install commercially-developed NAM models from a rich ecosystem of model providers.
+<img src="img/model_comparison.png" style="width: 100%; height: auto"/>
+
+<p style="margin-left: 64px; margin-right: 64px; font-size: 0.8em;">
+    <strong>Fig 1:</strong> Unscreened ratings from a large-scale blind MUSHRA listening test evaluating
+    NAM A2 amp/effect modeling against other commercial
+    modelers. 105,842 ratings from
+    1,184 participants across 37 tones. Data provided by <a href="https://www.tone3000.com" target="_blank" rel="noreferrer">TONE3000</a> and <a href="https://www.neuralampmodeler.com/">Steve Atkinson</a> under a CC-BY 4.0 license. 
+    <sup><a id="fnref1" href="#fn1">1</a></sup>
+</p>
+
+
+PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or you can download and install commercially-developed NAM models from a rich ecosystem of model providers.
 
 
 {% include demo.html %}
@@ -48,6 +59,20 @@ PiPedal's user interface has been specifically designed to work well on small fo
 PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.
 
 If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
+
+<hr style="margin-top: 32px; margin-left: 32px; width: 50%;" />
+<p id="fn1" style="margin-left: 32px; margin-right: 32px; font-size: 0.8em;">
+    <sup><a href="#fnref1" aria-label="Back to figure note reference">1</a></sup> TONE3000, &amp; Atkinson, S. (2026). <em>A2 MUSHRA Listening
+        Test Raw Data</em> [Data set].
+    Tone3000. <a href="https://www.tone3000.com/guides/nam-a2-the-complete-guide" target="_blank" rel="noreferrer">
+        https://www.tone3000.com/guides/nam-a2-the-complete-guide
+    </a>
+    . Repository:
+    <a href="https://github.com/tone-3000/a2-mushra-data" target="_blank" rel="noreferrer">
+        https://github.com/tone-3000/a2-mushra-data
+    </a>
+    . License: CC BY 4.0. <a href="#fnref1" aria-label="Back to figure note reference">↩</a>
+</p>
 
 
 
