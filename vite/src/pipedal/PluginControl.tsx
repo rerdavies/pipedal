@@ -1,4 +1,5 @@
-// Copyright (c) Robin E.R. Davies
+// Copyright (c) 2022 Robin Davies
+// Copyright (c) Fulgencio Ruiz Rubio.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -203,7 +204,6 @@ const CustomPluginControl =
 
                     </div>
                 );
-                return (<div />);
             }
 
         },
@@ -342,8 +342,9 @@ const PluginControl =
                         result = this.currentValue; // reset the value!
                     }
                     // clamp and quantize.
-                    let range = this.valueToRange(result);
-                    result = this.rangeToValue(range);
+                    let range = this.props.uiControl?.valueToRange(result) ?? 0;
+                    result = this.props.uiControl?.rangeToValue(range) ?? 0;
+
                     let displayVal = this.props.uiControl?.formatShortValue(result) ?? "";
                     if (event.currentTarget) {
                         event.currentTarget.value = displayVal;
@@ -682,8 +683,8 @@ const PluginControl =
                 this.setState({ previewValue: undefined });
             }
             previewInputValue(value: number, commitValue: boolean) {
-                let range = this.valueToRange(value);
-                value = this.rangeToValue(range);
+                let range = this.props.uiControl?.valueToRange(value) ?? 0;
+                value = this.props.uiControl?.rangeToValue(range) ?? 0;
 
                 let imgElement = this.imgRef.current
                 if (imgElement) {
@@ -712,13 +713,13 @@ const PluginControl =
 
             }
             previewRange(dRange: number, commitValue: boolean): void {
-                let range = this.valueToRange(this.currentValue) + dRange;
+                let range = (this.props.uiControl?.valueToRange(this.currentValue) ?? 0) + dRange;
                 if (range > 1) range = 1;
                 if (range < 0) range = 0;
-                let value = this.rangeToValue(range);
+                let value = this.props.uiControl?.rangeToValue(range) ?? 0;
 
                 // apply value quantization and clipping.
-                range = this.valueToRange(value);
+                range = this.props.uiControl?.valueToRange(value) ?? 0;
 
                 if (this.props.uiControl?.isGraphicEq()) {
                     let imgElement = this.imgRef.current
@@ -835,89 +836,6 @@ const PluginControl =
                 if (!uiControl) return "";
 
                 return uiControl.formatDisplayValue(value);
-
-
-            }
-
-            valueToRange(value: number): number {
-                let uiControl = this.props.uiControl;
-                if (uiControl) {
-                    if (uiControl.integer_property) {
-                        value = Math.round(value);
-                    }
-                    let range: number;
-                    if (uiControl.is_logarithmic) {
-                        let minValue = uiControl.min_value;
-                        if (minValue === 0) // LSP plugins do this.
-                        {
-                            minValue = 0.0001;
-                        }
-                        range = Math.log(value / minValue) / Math.log(uiControl.max_value / minValue);
-                        if (!isFinite(range)) {
-                            if (range < 0) {
-                                range = 0;
-                            } else {
-                                range = 1.0;
-                            }
-                        } else if (isNaN(range)) {
-                            range = 0;
-                        }
-                        if (uiControl.range_steps > 1) {
-                            range = Math.round(range * (uiControl.range_steps - 1)) / (uiControl.range_steps - 1);
-                        }
-                    } else {
-                        range = (value - uiControl.min_value) / (uiControl.max_value - uiControl.min_value);
-                        if (!isFinite(range)) {
-                            if (range < 0) {
-                                range = 0;
-                            } else {
-                                range = 1.0;
-                            }
-                        } else if (isNaN(range)) {
-                            range = 0;
-                        }
-                    }
-
-                    if (range > 1) range = 1;
-                    if (range < 0) range = 0;
-                    return range;
-                }
-                return 0;
-            }
-            rangeToValue(range: number): number {
-                if (range < 0) range = 0;
-                if (range > 1) range = 1;
-                let uiControl = this.props.uiControl;
-                if (uiControl) {
-                    if (uiControl.range_steps > 1) {
-                        range = Math.round(range * (uiControl.range_steps - 1)) / (uiControl.range_steps - 1);
-                    }
-                    let value: number;
-                    if (uiControl.min_value === uiControl.max_value) {
-                        value = uiControl.min_value;
-                    } else {
-                        if (uiControl.is_logarithmic) {
-                            let minValue = uiControl.min_value;
-                            if (minValue === 0) // LSP controls.    
-                            {
-                                minValue = 0.0001;
-                            }
-                            value = minValue * Math.pow(uiControl.max_value / minValue, range);
-                            if (!isFinite(value)) {
-                                value = uiControl.max_value;
-                            } else if (isNaN(value)) {
-                                value = uiControl.min_value;
-                            }
-                        } else {
-                            value = range * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
-                        }
-                        if (uiControl.integer_property) {
-                            value = Math.round(value);
-                        }
-                    }
-                    return value;
-                }
-                return 0;
             }
 
             rangeToRotationTransform(range: number): string {
@@ -926,22 +844,10 @@ const PluginControl =
             }
 
             getEqPosition(): number {
-                let range = 0;
-                let uiControl = this.props.uiControl;
-                if (uiControl) {
-                    let value = this.props.value;
-                    range = this.valueToRange(value);
-                }
-                return range;
-
+                return this.props.uiControl?.valueToRange(this.props.value) ?? 0;
             }
             getRotationTransform(): string {
-                let range = 0;
-                let uiControl = this.props.uiControl;
-                if (uiControl) {
-                    let value = this.props.value;
-                    range = this.valueToRange(value);
-                }
+                let range = this.props.uiControl?.valueToRange(this.props.value) ?? 0;
                 return this.rangeToRotationTransform(range);
             }
 
