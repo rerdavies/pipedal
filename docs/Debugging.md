@@ -138,7 +138,7 @@ vite/vite.config.ts:
         target: 'http://localhost:80',
         changeOrigin: false,
       },
-      '^/var/(?!config\\.json$).*': {
+      '^/var': {
         target: 'http://localhost:80',
         changeOrigin: false,
       },
