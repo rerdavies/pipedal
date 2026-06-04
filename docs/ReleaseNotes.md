@@ -1,6 +1,12 @@
 # Release Notes
 
-## PiPedal 2.0.103
+## PiPedal 2.0.104-Release
+
+Bug fix:
+
+- Revert a breaking change to TooB Cab IR that changes the output levels of existing presets that use TooB Cab IR. (The volume of output from TooB Cab IR was dramatically louder than it should have been in version 2.0.103). 
+
+## PiPedal 2.0.103-Release
 
 PiPedal 2.0 is a big release, with exciting new features, improvements, and bug fixes. 
 

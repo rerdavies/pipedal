@@ -1,13 +1,13 @@
 ## Download
 
-# Download PiPedal 2.0.103-alpha
+# Download PiPedal 2.0.104-alpha
 
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (aarch64) v2.0.103 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.103/pipedal_2.0.103_arm64.deb)
-- [Ubuntu 24.x, 25.04 (aarch64) v2.0.103 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.103/pipedal_2.0.103_arm64.deb)
-- [Ubuntu 24.x, 25.04 (amd64/x86_64) v2.0.103 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.103/pipedal_2.0.103_amd64.deb)
+- [Raspberry Pi OS bookworm (aarch64) v2.0.104 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.104/pipedal_2.0.104_arm64.deb)
+- [Ubuntu 24.x, 25.04 (aarch64) v2.0.104 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.104/pipedal_2.0.104_arm64.deb)
+- [Ubuntu 24.x, 25.04 (amd64/x86_64) v2.0.104 Alpha](https://github.com/rerdavies/pipedal/releases/download/v2.0.104/pipedal_2.0.104_amd64.deb)
 
 
 Install the package by running 
@@ -15,7 +15,7 @@ Install the package by running
 ```
   sudo apt update
   cd ~/Downloads  
-  sudo apt install ./pipedal_2.0.103_arm64.deb  
+  sudo apt install ./pipedal_2.0.104_arm64.deb  
         # or ... _amd64.deb as appropriate for your platform
 ```
 The message about missing permissions given by `apt` is
