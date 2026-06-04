@@ -183,6 +183,67 @@ static fs::path GetTone3000ThumbnailFile(const fs::path& thumbnailDirectory, con
 
 namespace pipedal::implementation {
 
+    void UpgradeBank(PiPedalModel& model,
+        const std::filesystem::path& existingBankFilePath,
+        const std::filesystem::path& piBankFilePath,
+        const std::vector<std::string>& presetsToUpgrade
+    ) {
+        BankFile sourceBankFile;
+
+
+        if (piBankFilePath.empty())
+        {
+            throw std::runtime_error("Unexpected.");
+        }
+        if (IsZipFile(piBankFilePath))
+        {
+            auto presetReader = PresetBundleReader::LoadPresetsFile(model, piBankFilePath);
+            presetReader->ExtractMediaFiles();
+
+            std::stringstream ss(presetReader->GetPresetJson());
+            json_reader reader(ss);
+            reader.read(&sourceBankFile);
+        }
+        else
+        {
+            std::ifstream f{ piBankFilePath };
+            if (!f.is_open()) {
+                throw std::runtime_error(SS("Unable to open file " << piBankFilePath));
+            }
+            // legacy json format, no zip, no media files.
+            json_reader reader(f);
+            reader.read(&sourceBankFile);
+        }
+
+        BankFile existingBankFile;
+        {
+            std::ifstream ifs{ existingBankFilePath };
+            if (!ifs.is_open()) {
+                return;
+            }
+            json_reader reader{ ifs };
+            reader.read(&existingBankFile);
+        }
+
+        for (const std::string& presetToUpgrade : presetsToUpgrade)
+        {
+            BankFileEntry* existingEntry = existingBankFile.getPresetByName(presetToUpgrade);
+            if (existingEntry) {
+                BankFileEntry* newEntry = sourceBankFile.getPresetByName(presetToUpgrade);
+                if (newEntry)
+                {
+                    existingEntry->preset(newEntry->preset());
+                }
+            }
+        }
+        {
+            std::ofstream ofs{ existingBankFilePath };
+            json_writer writer{ ofs };
+            writer.write(existingBankFile);
+        }
+
+
+    }
     int64_t ImportBankFile(PiPedalModel& model, const std::filesystem::path& filePath, uint64_t uploadAfter = -1)
     {
         BankFile bankFile;
@@ -211,6 +272,7 @@ namespace pipedal::implementation {
             json_reader reader(f);
             reader.read(&bankFile);
         }
+
         uint64_t instanceId = model.UploadBank(bankFile, uploadAfter);
 
         return instanceId;
@@ -623,7 +685,7 @@ public:
                 fs::path path = GetTone3000ThumbnailFile(this->model->Tone3000ThumbnailDirectory(), id);
                 if (!fs::exists(path))
                 {
-                    path = GetTone3000ThumbnailFile(this->model->OldTone3000ThumbnailDirectory(),id);
+                    path = GetTone3000ThumbnailFile(this->model->OldTone3000ThumbnailDirectory(), id);
                     if (!fs::exists(path))
                     {
                         throw PiPedalException("File not found.");

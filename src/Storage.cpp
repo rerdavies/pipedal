@@ -294,7 +294,32 @@ void Storage::MoveExistingFactoryPresetsBank()
 
 namespace pipedal::implementation {
     extern  int64_t ImportBankFile(PiPedalModel &model, const std::filesystem::path& filePath,uint64_t uploadAfter = -1);
+    extern void UpgradeBank(
+        PiPedalModel&model,
+        const std::filesystem::path &existingBankFile,
+        const std::filesystem::path &piBank,
+        const std::vector<std::string>&presetsToUpgrade
+    );
+
 }
+
+void Storage::UpgradeV3FactoryPresets()
+{
+    std::vector<std::string> presetsToUpgrade = {
+        "Marshall JCM800 + TS9",
+        "Huge Lead 2"
+    };
+
+    fs::path factoryPresetPath = GetBankFileName("Factory Presets");
+
+    UpgradeBank(
+        *this->model,
+        factoryPresetPath, 
+        this->configRoot / "default_presets" / "presets" / "Factory Presets.piBank",
+        presetsToUpgrade
+    );
+
+}   
 
 void Storage::InstallFactoryPresets() 
 {
@@ -367,14 +392,22 @@ void Storage::ProvisionDefaultBanks()
     
     constexpr uint32_t V2_VERSION_NUMBER = 2; // first to have a Factory Presets
     constexpr uint32_t V3_VERSION_NUMBER = 3; // New A2 Presets, completely replacing the previons version.
+    constexpr uint32_t V4_VERSION_NUMBER = 4; // Fix incorrect Cab IR settings.
 
-    if (varPresetVersion < V3_VERSION_NUMBER) {
+    if (varPresetVersion < V4_VERSION_NUMBER) {
         Lv2Log::info("Installing Factory Presets");
 
         // Move the old factory presets bank out of the way. 
-        MoveExistingFactoryPresetsBank();
-        InstallFactoryPresets();
-        SetVarPresetVersion(V3_VERSION_NUMBER);
+        if (varPresetVersion < V3_VERSION_NUMBER) {
+            MoveExistingFactoryPresetsBank();
+        }
+        if (varPresetVersion == V3_VERSION_NUMBER) 
+        {
+            UpgradeV3FactoryPresets();
+        } else {
+            InstallFactoryPresets();
+        }
+        SetVarPresetVersion(V4_VERSION_NUMBER);
         SaveBankIndex(); // checkpoint.
     }
     // Next time we will have to MERGE factor presets.

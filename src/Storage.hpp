@@ -86,6 +86,7 @@ private:
     void SetVarPresetVersion(int32_t version);
     void UpgradeV1FactoryPresets();
     void MoveExistingFactoryPresetsBank();
+    void UpgradeV3FactoryPresets();
     void InstallFactoryPresets();
     void CopyFactoryPresetsToDefaultBank();
     void ProvisionDefaultBanks();
