@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 2.0.104-Release
+## PiPedal 2.0.105-Release
 
 Bug fix:
 

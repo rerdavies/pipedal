@@ -188,6 +188,18 @@ namespace pipedal
             }
             return false;
         }
+
+        BankFileEntry* getPresetByName(const std::string&presetName) {
+            for (std::unique_ptr<BankFileEntry> &preset: presets_) 
+            {
+                if (preset->preset().name() == presetName)
+                {
+                    return &(*preset);
+                }
+            }
+            return nullptr;
+        }
+
         bool renamePreset(int64_t instanceId, const std::string &name)
         {
             if (hasName(name))

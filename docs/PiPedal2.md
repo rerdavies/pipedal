@@ -11,7 +11,7 @@
 <a href="https://rerdavies.github.io/pipedal/download2"><img src="https://img.shields.io/badge/Download-008060" /></a>
 <a href="https://rerdavies.github.io/pipedal/Documentation"><img src="https://img.shields.io/badge/Documentation-0060d0"/></a>
  
-_To download PiPedal v2.0.104-alpha, click [*here*](download.md). 
+_To download PiPedal v2.0.105-alpha, click [*here*](download.md). 
 To view PiPedal documentation, click [*here*](Documentation.md)._
 
 Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal with your phone or tablet.

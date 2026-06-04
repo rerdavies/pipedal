@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-export SRC_ZIP="V3 Factory Presets.piBank"
+export SRC_ZIP="V4 Factory Presets.piBank"
 export DST_ZIP="Factory Presets.piBank"
 
 rm "presets/$DST_ZIP"
