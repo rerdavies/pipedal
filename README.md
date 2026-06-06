@@ -17,7 +17,7 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 
 &nbsp;
 
-_To download PiPedal v2.0.102, click [*here*](download.md). 
+_To download PiPedal v2.0.105 Release, click [*here*](download.md). 
 To view PiPedal documentation, click [*here*](Documentation.md)._
 
 Use your Raspberry Pi, or Ubuntu amd/x86-64 computer as a guitar effects pedal. Configure and control PiPedal remotedly, with your phone or tablet, or via a web browser.
