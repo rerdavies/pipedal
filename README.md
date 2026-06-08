@@ -47,14 +47,11 @@ NAM changes everything! The quality of NAM A1 and A2 models is better than than 
 
 xxx
 
-<audio controls="margin-top: 16px;margin-left: 24px;" >
-    <!-- Replace this source with your actual audio file path -->
-    <source src="docs/img/DemoTrack.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
+![DemoTrack.mp3](https://github.com/user-attachments/files/28694394/DemoTrack.mp3)
 
 xxx
-![Audio Demo](docs/img/DemoTrack.mp3)
+
+[DemoTrack.mp3](https://github.com/user-attachments/files/28694394/DemoTrack.mp3)
 
 xxx
 
