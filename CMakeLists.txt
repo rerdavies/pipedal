@@ -5,6 +5,14 @@ project(pipedal
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
+set (DISPLAY_VERSION "PiPedal v2.0.105-Release")
+
+option(PIPEDAL_DISABLE_COPYRIGHT_BUILD "Skip generation of copyright notices (use on non-Debian distros)" OFF)
+option(PIPEDAL_EXCLUDE_TESTS "Exclude test targets from default build" OFF)
+
+set(PIPEDAL_T3K_PUBLISHABLE_KEY "t3k_pub_bHrH8btdwXXTtxz5ryEU8sNLF-2TGRT9")
+
+
 # Determine Debian-compatible architecture name (portable across distros)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
     set(DEBIAN_ARCHITECTURE "amd64")
@@ -20,11 +28,8 @@ else()
 endif()
 message(STATUS "DEBIAN_ARCHITECTURE=${DEBIAN_ARCHITECTURE}")
 
-set (DISPLAY_VERSION "PiPedal v2.0.105-Release")
 set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
 set (CMAKE_INSTALL_PREFIX "/usr/")
-
-set(PIPEDAL_T3K_PUBLISHABLE_KEY "t3k_pub_bHrH8btdwXXTtxz5ryEU8sNLF-2TGRT9")
 
 
 set (LIBZIP_DO_INSTALL OFF CACHE BOOL "Disable libzip install" FORCE)
@@ -37,7 +42,6 @@ set(CPACK_SOURCE_IGNORE_FILES
     "*.a;sqlite3.h;$(CPACK_SOURCE_IGNORE_FILES)"
 )
 
-option(PIPEDAL_EXCLUDE_TESTS "Exclude test targets from default build" OFF)
 include(CTest)
 enable_testing()
 

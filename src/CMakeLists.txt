@@ -883,9 +883,7 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Updating copyright notices."
 )
 
-option(DISABLE_COPYRIGHT_BUILD "Skip generation of copyright notices (use on non-Debian distros)" OFF)
-
-if(NOT DISABLE_COPYRIGHT_BUILD)
+if(NOT PIPEDAL_DISABLE_COPYRIGHT_BUILD)
     add_custom_target (
         CopyrightBuild ALL
         DEPENDS ${REACT_NOTICES_FILE}
