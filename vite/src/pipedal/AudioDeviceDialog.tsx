@@ -67,7 +67,7 @@ function sortDevices(devices: AlsaDeviceInfo[]): AlsaDeviceInfo[] {
         let ca = category(a);
         let cb = category(b);
         if (ca !== cb) return ca - cb;
-        return a.name.localeCompare(b.name);
+        return a.shortDeviceName().localeCompare(b.shortDeviceName());
     });
     return copy;
 }
@@ -584,7 +584,7 @@ const AudioDeviceDialog = withStyles(
             if (!this.state.alsaDevices) return deviceId;
             for (let i = 0; i < this.state.alsaDevices.length; ++i) {
                 if (this.state.alsaDevices[i].id === deviceId) {
-                    return this.state.alsaDevices[i].name;
+                    return this.state.alsaDevices[i].shortDeviceName();
                 }
             }
             return deviceId;
@@ -673,7 +673,7 @@ const AudioDeviceDialog = withStyles(
                                                     <MenuItem key={d.id} disabled={d.captureBusy}
                                                         value={d.id}
                                                         style={{ opacity: d.captureBusy ? 0.3 : 1 }}
-                                                    >{d.name}</MenuItem>
+                                                    >{d.shortDeviceName()}</MenuItem>
                                                 ))}
                                             </Select>
                                         </FormControl>
@@ -695,7 +695,7 @@ const AudioDeviceDialog = withStyles(
                                                     <MenuItem key={d.id} value={d.id}
                                                         style={{ opacity: d.playbackBusy ? 0.3 : 1.0 }}
                                                         disabled={d.playbackBusy}
-                                                    >{d.name}</MenuItem>
+                                                    >{d.shortDeviceName()}</MenuItem>
                                                 ))}
                                             </Select>
                                         </FormControl>

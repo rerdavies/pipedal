@@ -83,6 +83,14 @@ export default class AlsaDeviceInfo {
         }
         return result;
     }
+    shortDeviceName() : string {
+        // The best device names for USB devices are buried in the long name, so we try to extract them if we can.
+        let pos = this.longName.indexOf(" at usb-");
+        if (pos > 0) {
+            return this.longName.substring(0, pos);
+        }   
+        return this.name;
+    }
 
     cardId: number = -1;
     id: string = "";
