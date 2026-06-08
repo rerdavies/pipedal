@@ -1,4 +1,5 @@
-// Copyright (c) Robin E.R. Davies
+// Copyright (c) 2022 Robin Davies
+// Copyright (c) Fulgencio Ruiz Rubio.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -25,7 +26,7 @@ import { withStyles } from "tss-react/mui";
 import { createStyles } from './WithStyles';
 import Snackbar from '@mui/material/Snackbar';
 
-import { UiPlugin } from './Lv2Plugin';
+import { UiPlugin, UiControl } from './Lv2Plugin';
 
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -96,6 +97,7 @@ interface MidiBindingViewProps extends WithStyles<typeof styles> {
     midiBinding: MidiBinding;
     midiControlType: MidiControlType;
     canDoTapTempo: boolean;
+    uiControl?: UiControl;
     onChange: (instanceId: number, newBinding: MidiBinding) => void;
 }
 
@@ -188,14 +190,27 @@ const MidiBindingView =
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleMinChange(value: number): void {
+                if (!this.props.uiControl) return;
                 let newBinding = this.props.midiBinding.clone();
-                newBinding.minValue = value;
+                newBinding.minValue = this.props.uiControl.valueToRange(value) ;
                 this.props.onChange(this.props.instanceId, newBinding);
             }
             handleMaxChange(value: number): void {
+                if (!this.props.uiControl) return;
                 let newBinding = this.props.midiBinding.clone();
-                newBinding.maxValue = value;
+                newBinding.maxValue = this.props.uiControl.valueToRange(value);
+                console.log(value, newBinding.maxValue)
                 this.props.onChange(this.props.instanceId, newBinding);
+            }
+
+            private getDisplayUnit(): string {
+                let control = this.props.uiControl;
+                if (!control) return "";
+                if (control.custom_units !== "") {
+                    return control.custom_units.replace("%f", "");
+                }
+                
+                return ` ${control.getDisplayUnits()}`
             }
             handleCtlMinChange(value: number): void {
                 let newBinding = this.props.midiBinding.clone();
@@ -638,21 +653,36 @@ const MidiBindingView =
                         )
                         }
                         {
-                            showLinearRange && (
+                            showLinearRange && (() => {
+                                let uiControl = this.props.uiControl;
+                                let displayMin = uiControl ? uiControl.min_value : 0;
+                                let displayMax = uiControl ? uiControl.max_value : 1;
+                                let unit = this.getDisplayUnit();
+                                let isInteger = uiControl?.integer_property ?? false;
+                                return (
                                 <div style={{ display: "flex", flexFlow: "row wrap", alignItems: "center" }}>
                                     <div className={classes.controlDiv}>
                                         <Typography noWrap display="inline">Min Val:&nbsp;</Typography>
-                                        <NumericInput value={midiBinding.minValue} ariaLabel='min'
-                                            min={0} max={1} onChange={(value) => { this.handleMinChange(value); }}
+                                        <NumericInput value={this.props.uiControl?.rangeToValue(midiBinding.minValue) ?? 0} ariaLabel='min'
+                                            min={displayMin} max={displayMax} integer={isInteger}
+                                            onChange={(value) => { this.handleMinChange(value); }}
                                         />
+                                        {unit !== "" && (
+                                            <Typography noWrap display="inline">&nbsp;{unit.trim()}</Typography>
+                                        )}
                                     </div>
                                     <div className={classes.controlDiv}>
                                         <Typography noWrap display="inline">Max Val:&nbsp;</Typography>
-                                        <NumericInput value={midiBinding.maxValue} ariaLabel='max'
-                                            min={0} max={1} onChange={(value) => { this.handleMaxChange(value); }} />
+                                        <NumericInput value={this.props.uiControl?.rangeToValue(midiBinding.maxValue) ?? 0} ariaLabel='max'
+                                            min={displayMin} max={displayMax} integer={isInteger}
+                                            onChange={(value) => { this.handleMaxChange(value); }} />
+                                        {unit !== "" && (
+                                            <Typography noWrap display="inline">&nbsp;{unit.trim()}</Typography>
+                                        )}
                                     </div>
                                 </div>
-                            )
+                                );
+                            })()
                         }
                         {
                             canRotaryScale && (
