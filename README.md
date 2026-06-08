@@ -44,7 +44,21 @@ PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB 
 
 NAM changes everything! The quality of NAM A1 and A2 models is better than than amp emulations on top-of-the-line commercial guitar stomp boxes costing thousands of dollars. Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp.
 
-![Model Comparisons](img/model_comparison.png)
+
+xxx
+
+<audio controls="margin-top: 16px;margin-left: 24px;" >
+    <!-- Replace this source with your actual audio file path -->
+    <source src="docs/img/DemoTrack.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+
+xxx
+![Audio Demo](docs/img/DemoTrack.mp3)
+
+xxx
+
+![Model Comparisons](docs/img/model_comparison.png)
 
 <p style="margin-left: 64px; margin-right: 64px; font-size: 0.8em;">
     <strong>Fig 1:</strong> Unscreened ratings from a large-scale blind MUSHRA listening test evaluating
