@@ -25,5 +25,7 @@ option(BUILD_REGRESS "Build regression tests" OFF)
 option(BUILD_OSSFUZZ "Build fuzzers for ossfuzz" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_DOC "Build documentation" OFF)
+# Ensure BUILD_SHARED_LIBS is ON for libzip (SQLiteCpp may have set it OFF)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries (.so) instead of static ones (.a)" FORCE)
 add_subdirectory("libzip")
 
