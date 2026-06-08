@@ -3,6 +3,7 @@
 #include <sdbus-c++/IConnection.h>
 #include <poll.h>
 #include <sys/eventfd.h>
+#include <unistd.h>
 #include "ss.hpp"
 #include <chrono>
 #include <cassert>

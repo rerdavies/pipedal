@@ -19,6 +19,7 @@
 
 
 #include "AuxIn.hpp"
+#include <unistd.h>
 using namespace pipedal;
 
 int main(int argc, char**argv) {

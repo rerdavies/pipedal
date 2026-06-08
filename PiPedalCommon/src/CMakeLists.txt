@@ -97,7 +97,7 @@ add_library(PiPedalCommon STATIC
   ss.hpp
 )
 target_include_directories(PiPedalCommon PUBLIC "include" ${LIBNL3_INCLUDE_DIRS})
-target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} sdbus-c++-objlib
+target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} sdbus-c++-objlib asound
  )
 
 
