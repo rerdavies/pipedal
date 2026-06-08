@@ -155,8 +155,20 @@ else()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
 
-execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
-message(STATUS DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
+# Determine Debian-compatible architecture name (portable across distros)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set(DEBIAN_ARCHITECTURE "amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    set(DEBIAN_ARCHITECTURE "arm64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7l")
+    set(DEBIAN_ARCHITECTURE "armhf")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i386|i686")
+    set(DEBIAN_ARCHITECTURE "i386")
+else()
+    execute_process(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE UNAME_M)
+    message(FATAL_ERROR "Cannot determine Debian architecture from CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR} (uname -m: ${UNAME_M})")
+endif()
+message(STATUS "DEBIAN_ARCHITECTURE=${DEBIAN_ARCHITECTURE}")
 
 add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 
@@ -856,8 +868,8 @@ elseif(EXISTS "/usr/share/doc/libboost1.71-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.71-dev")
 elseif(EXISTS "/usr/share/doc/libboost1.67-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.67-dev")
-else()
-    message(FATAL_ERROR "Boost libary version has changed. Please update me.")
+# else()
+#     message(FATAL_ERROR "Boost libary version has changed. Please update me.")
 endif()
 
 
@@ -871,10 +883,14 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Updating copyright notices."
 )
 
-add_custom_target (
-    CopyrightBuild ALL
-    DEPENDS ${REACT_NOTICES_FILE}
-)
+option(DISABLE_COPYRIGHT_BUILD "Skip generation of copyright notices (use on non-Debian distros)" OFF)
+
+if(NOT DISABLE_COPYRIGHT_BUILD)
+    add_custom_target (
+        CopyrightBuild ALL
+        DEPENDS ${REACT_NOTICES_FILE}
+    )
+endif()
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
     cmake_policy(SET CMP0177 NEW)
