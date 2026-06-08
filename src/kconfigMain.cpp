@@ -55,6 +55,7 @@
 #include <atomic>
 #include "BootConfig.hpp"
 #include <array>
+#include <unistd.h>
 #include "CommandLineParser.hpp"
 #include "PrettyPrinter.hpp"
 #include "SysExec.hpp"
