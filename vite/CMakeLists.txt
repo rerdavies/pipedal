@@ -293,7 +293,7 @@ add_custom_command(
     src/pipedal/IconColorDropdownButton.tsx
     src/pipedal/PluginOutputControl.tsx
     src/pipedal/PluginPresetsDialog.tsx
-    src/pipedal/JackServerSettingsDialog.tsx
+    src/pipedal/AudioDeviceDialog.tsx
     src/pipedal/TextInfo_RewriteT3kUrls.ts
     src/pipedal/MidiBindingsDialog.tsx
     src/pipedal/DialogStack.tsx
