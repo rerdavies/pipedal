@@ -91,7 +91,7 @@ enum WarningDialogType {
     Apply,
     Ok,
 };
-interface JackServerSettingsDialogState {
+interface AudioDeviceDialogState {
     latencyText: string;
     jackServerSettings: JackServerSettings;
     jackHostStatus?: JackHostStatus;
@@ -117,7 +117,7 @@ const styles = (theme: Theme) =>
             whiteSpace: "nowrap"
         }
     });
-export interface JackServerSettingsDialogProps extends WithStyles<typeof styles> {
+export interface AudioDeviceDialogProps extends WithStyles<typeof styles> {
     open: boolean;
     jackServerSettings: JackServerSettings;
     onClose: () => void;
@@ -287,12 +287,12 @@ function isOkEnabled(jackServerSettings: JackServerSettings, alsaDevices?: AlsaD
 }
 
 
-const JackServerSettingsDialog = withStyles(
-    class extends ResizeResponsiveComponent<JackServerSettingsDialogProps, JackServerSettingsDialogState> {
+const AudioDeviceDialog = withStyles(
+    class extends ResizeResponsiveComponent<AudioDeviceDialogProps, AudioDeviceDialogState> {
 
         model: PiPedalModel;
 
-        constructor(props: JackServerSettingsDialogProps) {
+        constructor(props: AudioDeviceDialogProps) {
             super(props);
             this.model = PiPedalModelFactory.getInstance();
 
@@ -456,7 +456,7 @@ const JackServerSettingsDialog = withStyles(
         }
 
 
-        componentDidUpdate(oldProps: JackServerSettingsDialogProps) {
+        componentDidUpdate(oldProps: AudioDeviceDialogProps) {
 
             this.updateActive();
         }
@@ -819,4 +819,4 @@ const JackServerSettingsDialog = withStyles(
     },
     styles);
 
-export default JackServerSettingsDialog;
+export default AudioDeviceDialog;
