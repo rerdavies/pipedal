@@ -31,6 +31,7 @@ instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure
 
 <img src="docs/gallery/nam_models.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img> <img src="docs/gallery/tuner.png" width="45%"></img><img src="docs/gallery/rig.jpg" width="45%"></img>
 
+https://github.com/user-attachments/assets/6ff585ff-69fa-4b54-8009-50ad071e328e
 
 New in PiPedal v2.0:
 
@@ -43,17 +44,6 @@ New in PiPedal v2.0:
 PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB Neural Amp Modeler technology. And PiPedal 2.0 now includes support for the brand new NAM A2 technology, which provides event more accurate amp simulations than NAM A1, while using even less CPU. Experience the ground-breaking quality of NAM A2 models now, with PiPedal's low-latency audio engine running on your Raspberry Pi or Ubuntu computer.
 
 NAM changes everything! The quality of NAM A1 and A2 models is better than than amp emulations on top-of-the-line commercial guitar stomp boxes costing thousands of dollars. Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp.
-
-
-xxx
-
-
-
-https://github.com/user-attachments/assets/6ff585ff-69fa-4b54-8009-50ad071e328e
-
-
-
-xxx
 
 ![Model Comparisons](docs/img/model_comparison.png)
 
@@ -69,7 +59,6 @@ xxx
 PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or download and install commercially-developed NAM models from a rich ecosystem of model providers.
 
 
-{% include demo.html %}
 
 PiPedal can be remotely controlled via a web interface over Ethernet, or Wi-Fi. If you don't have access to a Wi-Fi router, PiPedal can be configured to 
 start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to your home network.
