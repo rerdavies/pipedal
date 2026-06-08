@@ -13,7 +13,7 @@ Download:&nbsp;<a href='https://rerdavies.github.io/pipedal/download.html'>v2.0.
 Website:&nbsp;[https://rerdavies.github.io/pipedal](https://rerdavies.github.io/pipedal).
 Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](https://rerdavies.github.io/pipedal/Documentation.html).
 
-#### Announcing PiPedal 2.0 (2.0.105)&mdash;a major update to PiPedal, including exciting new features, ioncluding support for NAM A2. See the Pipedal website [documentation](https://rerdavies.github.io/pipedal/PiPedal.html) for more information.
+#### Announcing PiPedal 2.0 (2.0.105)&mdash;a major update to PiPedal, including exciting new features. See the Pipedal website [documentation](https://rerdavies.github.io/pipedal/PiPedal.html) for more information.
 
 &nbsp;
 
@@ -27,7 +27,10 @@ PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency au
 PiPedal runs on Raspbery Pi OS (Bookworm or Trixie), or Ubuntu 24.x or later (amd64/x86-64 and aarch64). Make sure you follow the [Ubuntu post-install 
 instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
 
-{% include gallery.html %}
+<img src="docs/gallery/dark-sshot1.png"></img>
+
+<img src="docs/gallery/nam_models.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img> <img src="docs/gallery/tuner.png" width="45%"></img><img src="docs/gallery/rig.jpg" width="45%"></img>
+
 
 New in PiPedal v2.0:
 
@@ -40,6 +43,17 @@ New in PiPedal v2.0:
 PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB Neural Amp Modeler technology. And PiPedal 2.0 now includes support for the brand new NAM A2 technology, which provides event more accurate amp simulations than NAM A1, while using even less CPU. Experience the ground-breaking quality of NAM A2 models now, with PiPedal's low-latency audio engine running on your Raspberry Pi or Ubuntu computer.
 
 NAM changes everything! The quality of NAM A1 and A2 models is better than than amp emulations on top-of-the-line commercial guitar stomp boxes costing thousands of dollars. Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp.
+
+![Model Comparisons](img/model_comparison.png)
+
+<p style="margin-left: 64px; margin-right: 64px; font-size: 0.8em;">
+    <strong>Fig 1:</strong> Unscreened ratings from a large-scale blind MUSHRA listening test evaluating
+    NAM A2 amp/effect modeling against other commercial
+    modelers. 105,842 ratings from
+    1,184 participants across 37 tones. Data provided by <a href="https://www.tone3000.com" target="_blank" rel="noreferrer">TONE3000</a> and <a href="https://www.neuralampmodeler.com/">Steve Atkinson</a> under a CC-BY 4.0 license. 
+    <sup><a id="fnref1" href="#fn1">1</a></sup>
+</p>
+
 
 PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or download and install commercially-developed NAM models from a rich ecosystem of model providers.
 
@@ -56,35 +70,6 @@ PiPedal's user interface has been specifically designed to work well on small fo
 PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.
 
 If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
-
-
-
-##################################################################################################
-
-Use your Raspberry Pi as a guitar effects pedal. Configure and control PiPedal using a remote web browsers, from your phone or tablet.
-PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats. 
-
-PiPedal will also run on Ubuntu 24.04,  24.10, or 25.04 (amd64/x64 or aarch64). Make sure you follow the [Ubuntu post-install instructions](https://rerdavies.github.io/pipedal/Configuring.html) to ensure that your Ubuntu OS is using a  realtime-capable kernel.
-
-PiPedal's user interface has been specifically designed to work well on small form-factor touch devices like phones or tablets. Clip a phone or tablet on your microphone stand on stage, and you're ready to play! Or connect via a desktop browser, for a slightly more luxurious experience. The PiPedal user-interface adapts to the screen size and orientation of your device, providing easy control of your guitar effects across a broad variety devices and screen sizes.
-
-Install the [PiPedal Remote Android app](https://play.google.com/store/apps/details?id=com.twoplay.pipedal) to get one-click access to PiPedal via Wi-Fi or via the PiPedal Wi-Fi hotspot. Or connect from PC or Laptop via a web browser. PiPedal provides a simple configuration tool that allows you to set up the PiPedal's Wi-Fi auto-hotspot access point on your Raspberry Pi.
-
-PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp collection of plugins; but it works with most LV2 Audio plugins. There are literally hundreds of free high-quality LV2 audio plugins that will work with PiPedal. Just install them on your Raspberry Pi, and they will show up in PiPedal.  
-
-
-
-If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages.
-
-&nbsp;
-
-<img src="docs/gallery/dark-sshot1.png"></img>
-
-<img src="docs/gallery/nam_models.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img> <img src="docs/gallery/tuner.png" width="45%"></img><img src="docs/gallery/rig.jpg" width="45%"></img>
-
- 
-
-https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 
 
 ----
@@ -127,6 +112,20 @@ https://github.com/user-attachments/assets/9a9fd0c6-78fc-4284-8b44-6a1929c00cc6
 #### [PiPedal Architecture](https://rerdavies.github.io/pipedal/Architecture.html)
 
  
+<hr style="margin-top: 32px; margin-left: 32px; width: 50%;" />
+<p id="fn1" style="margin-left: 32px; margin-right: 32px; font-size: 0.8em;">
+    <sup><a href="#fnref1" aria-label="Back to figure note reference">1</a></sup> TONE3000, &amp; Atkinson, S. (2026). <em>A2 MUSHRA Listening
+        Test Raw Data</em> [Data set].
+    Tone3000. <a href="https://www.tone3000.com/guides/nam-a2-the-complete-guide" target="_blank" rel="noreferrer">
+        https://www.tone3000.com/guides/nam-a2-the-complete-guide
+    </a>
+    . Repository:
+    <a href="https://github.com/tone-3000/a2-mushra-data" target="_blank" rel="noreferrer">
+        https://github.com/tone-3000/a2-mushra-data
+    </a>
+    . License: CC BY 4.0. <a href="#fnref1" aria-label="Back to figure note reference">↩</a>
+</p>
+
 
 
 
