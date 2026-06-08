@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/6ff585ff-69fa-4b54-8009-50ad071e328e
 
 &nbsp;
 
-### New in PiPedal v2.0:
+New in PiPedal v2.0:
 
 - Support for Neural Amp Modeler (NAM) A2 models.
 - Direct single-step downloads of NAM A2 models to the Pipedal server using web services provided by <a href="https://tone3000.com/">Tone3000.com</a>.
@@ -53,8 +53,6 @@ NAM changes everything! Simulations that not only sound like the real thing, but
     1,184 participants across 37 tones. Data provided by <a href="https://www.tone3000.com" target="_blank" rel="noreferrer">TONE3000</a> and <a href="https://www.neuralampmodeler.com/">Steve Atkinson</a> under a CC-BY 4.0 license. 
     <sup><a id="fnref1" href="#fn1">1</a></sup>
 </p>
-
-### About PiPedal
 
 PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or download and install commercially-developed NAM models from a rich ecosystem of model providers.
 
