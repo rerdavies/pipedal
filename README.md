@@ -47,11 +47,11 @@ NAM changes everything! The quality of NAM A1 and A2 models is better than than 
 
 xxx
 
-![DemoTrack.mp3](https://github.com/user-attachments/files/28694394/DemoTrack.mp3)
 
-xxx
 
-[DemoTrack.mp3](https://github.com/user-attachments/files/28694394/DemoTrack.mp3)
+https://github.com/user-attachments/assets/6ff585ff-69fa-4b54-8009-50ad071e328e
+
+
 
 xxx
 
