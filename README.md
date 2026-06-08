@@ -17,9 +17,6 @@ Documentation:&nbsp;[https://rerdavies.github.io/pipedal/Documentation.html](htt
 
 &nbsp;
 
-_To download PiPedal v2.0.105 Release, click [*here*](download.md). 
-To view PiPedal documentation, click [*here*](Documentation.md)._
-
 Use your Raspberry Pi, or Ubuntu amd/x86-64 computer as a guitar effects pedal. Configure and control PiPedal remotedly, with your phone or tablet, or via a web browser.
 
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
@@ -31,6 +28,9 @@ instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure
 
 <img src="docs/gallery/nam_models.png" width="45%"></img> <img src="docs/gallery/hotspot.png" width="45%"></img> <img src="docs/gallery/tuner.png" width="45%"></img><img src="docs/gallery/rig.jpg" width="45%"></img>
 
+https://github.com/user-attachments/assets/6ff585ff-69fa-4b54-8009-50ad071e328e
+
+&nbsp;
 
 New in PiPedal v2.0:
 
@@ -42,21 +42,7 @@ New in PiPedal v2.0:
 
 PiPedal includes state-of-the-art AI-based guitar amp emulation, using the TooB Neural Amp Modeler technology. And PiPedal 2.0 now includes support for the brand new NAM A2 technology, which provides event more accurate amp simulations than NAM A1, while using even less CPU. Experience the ground-breaking quality of NAM A2 models now, with PiPedal's low-latency audio engine running on your Raspberry Pi or Ubuntu computer.
 
-NAM changes everything! The quality of NAM A1 and A2 models is better than than amp emulations on top-of-the-line commercial guitar stomp boxes costing thousands of dollars. Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp.
-
-
-xxx
-
-<audio controls="margin-top: 16px;margin-left: 24px;" >
-    <!-- Replace this source with your actual audio file path -->
-    <source src="docs/img/DemoTrack.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
-
-xxx
-![Audio Demo](docs/img/DemoTrack.mp3)
-
-xxx
+NAM changes everything! Simulations that not only sound like the real thing, but also respond to your playing dynamics in the same way as the real amp. NAM amp simulations are demonstrably and measurably better than amp simulations from competing commercial vendors.
 
 ![Model Comparisons](docs/img/model_comparison.png)
 
@@ -68,11 +54,9 @@ xxx
     <sup><a id="fnref1" href="#fn1">1</a></sup>
 </p>
 
-
 PiPedal 2.0 integrates with Tone3000.com's web services, allowing you to directly install new NAM A2 models on the pipedal server without ever leaving the PiPedal user interface. Or download and install commercially-developed NAM models from a rich ecosystem of model providers.
 
 
-{% include demo.html %}
 
 PiPedal can be remotely controlled via a web interface over Ethernet, or Wi-Fi. If you don't have access to a Wi-Fi router, PiPedal can be configured to 
 start a Wi-Fi hotspot automatically, whenever your Raspberry Pi can't connect to your home network.
