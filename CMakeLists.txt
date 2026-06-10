@@ -74,8 +74,23 @@ install (
 install (
     DIRECTORY ${VITE_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )
-install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
-    DESTINATION /etc/pipedal/react/var/)
+if(NOT PIPEDAL_DISABLE_COPYRIGHT_BUILD)
+    install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
+        DESTINATION /etc/pipedal/react/var/)
+endif()
+
+# Install SQLiteCpp and libzip shared libraries (their own install targets are disabled)
+install (
+    FILES
+        ${PROJECT_BINARY_DIR}/modules/SQLiteCpp/libSQLiteCpp.so.0
+        ${PROJECT_BINARY_DIR}/modules/SQLiteCpp/sqlite3/libsqlite3.so
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+install (
+    FILES
+        ${PROJECT_BINARY_DIR}/modules/libzip/lib/libzip.so.5
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
 
 install (
     DIRECTORY ${PROJECT_SOURCE_DIR}/src/templates 
