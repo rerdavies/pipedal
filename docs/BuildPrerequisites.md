@@ -44,7 +44,7 @@ Note: in Arch, tests and copyright notices won't work, so they need to be disabl
 {
     "cmake.configureSettings": {                                                                                                                                                                                                         
         "PIPEDAL_EXCLUDE_TESTS": "ON",                                                                                                                                                                                                   
-        "DISABLE_COPYRIGHT_BUILD": "ON"                                                                                                                                                                                                  
+        "PIPEDAL_DISABLE_COPYRIGHT_BUILD": "ON"                                                                                                                                                                                                  
     },
     ...
 }
