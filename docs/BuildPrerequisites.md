@@ -38,12 +38,11 @@ Arch:
     There is one AUR package:
     sudo paru -S authbind
 
-Note: in Arch, tests and copyright notices won't work, so they need to be disabled with cmake arguments. Add this to your .vscode/settings.json file:
+Note: in Arch, copyright notices generation won't work, so it needs to be disabled with a cmake argument. Add this to your .vscode/settings.json file:
 
 ```json
 {
-    "cmake.configureSettings": {                                                                                                                                                                                                         
-        "PIPEDAL_EXCLUDE_TESTS": "ON",                                                                                                                                                                                                   
+    "cmake.configureSettings": {                                                                                                                                                                                                        
         "PIPEDAL_DISABLE_COPYRIGHT_BUILD": "ON"                                                                                                                                                                                                  
     },
     ...
