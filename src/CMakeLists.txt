@@ -22,6 +22,32 @@ set(CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
 
+find_package(Catch2 QUIET)
+
+# Catch2 v3 (Arch, newer distros) uses multi-headers under <catch2/>.
+# Catch2 v2 (Debian/Ubuntu) provides a single catch.hpp at system level.
+# When Catch2 v3 is found via CMake, generate compatibility wrappers so
+# old-style #include "catch.hpp" and #include <catch/catch.hpp> still work.
+if(Catch2_FOUND)
+    # Generate catch.hpp wrapper in the build directory.
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/catch.hpp"
+        "#pragma once\n"
+        "#include <catch2/catch_all.hpp>\n"
+    )
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/catch")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/catch/catch.hpp"
+        "#pragma once\n"
+        "#include <catch2/catch_all.hpp>\n"
+    )
+    # Add the build directory to the global include paths so that
+    # both #include "catch.hpp" (quote) and #include <catch/catch.hpp> (angle)
+    # can find the compatibility wrappers.
+    include_directories(${CMAKE_CURRENT_BINARY_DIR})
+    message(STATUS "Catch2 v3 found. Generated compatibility wrappers in ${CMAKE_CURRENT_BINARY_DIR}")
+else()
+    message(STATUS "Catch2 CMake package not found. Expecting system catch.hpp (Catch2 v2 style).")
+endif()
+
 pkg_check_modules(PipeWire REQUIRED libpipewire-0.3)
 
 include(FetchContent)
@@ -472,6 +498,10 @@ add_executable(pipedaltest
 target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES})
 
+if(Catch2_FOUND)
+    target_link_libraries(pipedaltest PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+endif()
+
 set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
@@ -501,6 +531,10 @@ add_executable(jsonTest
 )
 target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES})
+
+if(Catch2_FOUND)
+    target_link_libraries(jsonTest PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+endif()
 
 set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 

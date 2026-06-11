@@ -74,8 +74,31 @@ install (
 install (
     DIRECTORY ${VITE_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )
-install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
-    DESTINATION /etc/pipedal/react/var/)
+if(NOT PIPEDAL_DISABLE_COPYRIGHT_BUILD)
+    install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
+        DESTINATION /etc/pipedal/react/var/)
+endif()
+
+# Install shared libraries from submodules and FetchContent dependencies
+# whose own install targets are disabled (SQLITECPP_INSTALL=OFF, LIBZIP_DO_INSTALL=OFF)
+install (
+    FILES
+        ${PROJECT_BINARY_DIR}/modules/SQLiteCpp/libSQLiteCpp.so.0
+        ${PROJECT_BINARY_DIR}/modules/SQLiteCpp/sqlite3/libsqlite3.so
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+install (
+    FILES
+        ${PROJECT_BINARY_DIR}/modules/libzip/lib/libzip.so.5
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+install (
+    FILES
+        ${PROJECT_BINARY_DIR}/_deps/ftxui-build/libftxui-component.so.5.0.0
+        ${PROJECT_BINARY_DIR}/_deps/ftxui-build/libftxui-dom.so.5.0.0
+        ${PROJECT_BINARY_DIR}/_deps/ftxui-build/libftxui-screen.so.5.0.0
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
 
 install (
     DIRECTORY ${PROJECT_SOURCE_DIR}/src/templates 

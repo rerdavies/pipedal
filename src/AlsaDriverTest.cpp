@@ -28,6 +28,7 @@
 #include <mutex>
 #include <iostream>
 #include <algorithm>
+#include <unistd.h>
 
 #include "AlsaDriver.hpp"
 #include "ChannelRouterSettings.hpp"
