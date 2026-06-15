@@ -29,7 +29,7 @@ Ubuntu:
         libgoogle-perftools-dev \
         libpipewire-0.3-dev libbz2-dev libssl-dev librsvg2-dev
 
-Arch:
+Arch (pre-release, work in progress):
 
     sudo pacman -S --needed lilv boost systemd catch2 alsa-lib \
         util-linux avahi networkmanager icu libzip gperftools \
