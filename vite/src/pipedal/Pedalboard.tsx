@@ -144,6 +144,23 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
 
     }
 
+    isChild(instanceId: number): boolean {
+        if (this.instanceId === instanceId) return true;
+        if (this.isSplit())
+        {
+            let splitItem = this as unknown as PedalboardSplitItem;
+            for (let topItem of splitItem.topChain)
+            {
+                if (topItem.isChild(instanceId)) return true;
+            }
+            for (let bottomItem of splitItem.bottomChain)
+            {
+                if (bottomItem.isChild(instanceId)) return true;
+            }
+        }
+        return false;
+    }
+
     getControlValue(key: string): number {
         for (let i = 0; i < this.controlValues.length; ++i) {
             let v = this.controlValues[i];
