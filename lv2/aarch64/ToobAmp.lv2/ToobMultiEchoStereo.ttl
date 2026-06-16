@@ -1,0 +1,453 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix toobMultiEcho: <http://two-play.com/plugins/toob-multi-echo-stereo#> .
+
+toobMultiEcho:tap1
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Tap 1" ;
+    lv2:symbol "tap1" .
+
+toobMultiEcho:tap2
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Tap 2" ;
+    lv2:symbol "tap2" .
+
+toobMultiEcho:tap3
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Tap 3" ;
+    lv2:symbol "tap3" .
+
+toobMultiEcho:tap4
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Tap 4" ;
+    lv2:symbol "tap4" .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https:##github.com/sponsors/rerdavies> .
+
+<http://two-play.com/plugins/toob-multi-echo-stereo>
+        a lv2:Plugin ,
+                lv2:DelayPlugin ;
+        doap:name "TooB Multi-Tap Delay (Stereo)" ,
+                "Toob Multi-Tap Delay (Stereo)"@en-gb 
+                ;
+        uiext:ui <http://two-play.com/plugins/toob-multi-echo-stereo-ui> ;
+        doap:license <https:##rerdavies.github.io/pipedal/LicenseToobAmp> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+        lv2:minorVersion 0 ;
+        lv2:microVersion 81 ;
+        rdfs:comment """
+A 4-tap Echo/Delay effect.
+
+""" ;
+
+        mod:brand "TooB";
+        mod:label "Multi-Tap Delay";
+        lv2:optionalFeature lv2:hardRTCapable;
+        
+        lv2:port
+        [
+            a lv2:InputPort ,
+                lv2:ControlPort ;
+            lv2:index 0 ;
+            lv2:symbol "bypass" ;
+            lv2:name "Bypass" ;
+            lv2:default 1.0 ;
+            lv2:minimum 0.0 ;
+            lv2:maximum 1.0 ;
+            lv2:designation lv2:enabled;
+            lv2:portProperty lv2:toggled;
+        ],
+        #### tap1 ##############################################################
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap1 ;
+                lv2:index  1;
+                lv2:symbol "delay1" ;
+                lv2:name "Delay";
+                lv2:default 340 ;
+                lv2:minimum 5;
+                lv2:maximum 3000;
+                units:unit units:ms;
+                lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic>;
+                rdfs:comment "Delay in ms";
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap1 ;
+                lv2:index 2 ;
+                lv2:symbol "level1" ;
+                lv2:name "Level";
+
+                lv2:default 27.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of the first echo";
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value 0.0
+                ]
+            ],
+
+            [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap1 ;
+                lv2:index 3 ;
+                lv2:symbol "feedback1" ;
+                lv2:name "Feedback";
+
+
+                lv2:default 39.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of subequent echoes";
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap1 ;
+                lv2:index 4 ;
+                lv2:symbol "pan1" ;
+                lv2:name "Pan";
+
+                lv2:default 0.0 ;
+                lv2:minimum -1.0 ;
+                lv2:maximum 1.0 ;
+                rdfs:comment "Pan (tap 1)";
+        ],  
+
+
+        #### tap2 ##############################################################
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap2 ;
+                lv2:index  5;
+                lv2:symbol "delay2" ;
+                lv2:name "Delay";
+                lv2:default 111 ;
+                lv2:minimum 5;
+                lv2:maximum 3000;
+                units:unit units:ms;
+                lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic>;
+                rdfs:comment "Delay in ms";
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap2 ;
+                lv2:index 6 ;
+                lv2:symbol "level2" ;
+                lv2:name "Level";
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of the first echo";
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value 0.0
+                ]                  
+
+        ], [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap2 ;
+                lv2:index 7 ;
+                lv2:symbol "feedback2" ;
+                lv2:name "Feedback";
+
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of subequent echoes";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap2 ;
+                lv2:index 8 ;
+                lv2:symbol "pan2" ;
+                lv2:name "Pan";
+
+                lv2:default 0.0 ;
+                lv2:minimum -1.0 ;
+                lv2:maximum 1.0 ;
+                rdfs:comment "Pan (tap 1)";
+        ],  
+
+        #### tap3 ##############################################################
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap3 ;
+                lv2:index  9;
+                lv2:symbol "delay3" ;
+                lv2:name "Delay";
+                lv2:default 23 ;
+                lv2:minimum 5;
+                lv2:maximum 3000;
+                units:unit units:ms;
+                lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic>;
+                rdfs:comment "Delay in ms";
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap3 ;
+                lv2:index 10 ;
+                lv2:symbol "level3" ;
+                lv2:name "Level";
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of the first echo";
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value 0.0
+                ]                  
+
+        ], [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap3 ;
+                lv2:index 11 ;
+                lv2:symbol "feedback3" ;
+                lv2:name "Feedback";
+
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of subequent echoes";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap3 ;
+                lv2:index 12 ;
+                lv2:symbol "pan3" ;
+                lv2:name "Pan";
+
+                lv2:default 0.0 ;
+                lv2:minimum -1.0 ;
+                lv2:maximum 1.0 ;
+                rdfs:comment "Pan (tap 1)";
+        ],  
+
+        #### tap4 ##############################################################
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap4 ;
+                lv2:index 13;
+                lv2:symbol "delay4" ;
+                lv2:name "Delay";
+                lv2:default 40 ;
+                lv2:minimum 5;
+                lv2:maximum 3000;
+                units:unit units:ms;
+                lv2:portProperty <http://lv2plug.in/ns/ext/port-props#logarithmic>;
+                rdfs:comment "Delay in ms";
+
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap4 ;
+                lv2:index 14 ;
+                lv2:symbol "level4" ;
+                lv2:name "Level";
+
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of the first echo";
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value 0.0
+                ]                  
+
+        ], [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap4 ;
+                lv2:index 15 ;
+                lv2:symbol "feedback4" ;
+                lv2:name "Feedback";
+
+
+                lv2:default 50.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 100.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of subequent echoes";
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                pg:group toobMultiEcho:tap4 ;
+                lv2:index 16 ;
+                lv2:symbol "pan4" ;
+                lv2:name "Pan";
+
+                lv2:default 0.0 ;
+                lv2:minimum -1.0 ;
+                lv2:maximum 1.0 ;
+                rdfs:comment "Pan (tap 1)";
+        ],  
+        #########  Mix ################################
+
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 17 ;
+                lv2:symbol "direct" ;
+                lv2:name "Direct";
+
+                lv2:default 100.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 200.0 ;
+                units:unit units:pc;
+                rdfs:comment "Attenuation of the first echo";
+                lv2:scalePoint [
+                        rdfs:label "Off" ;
+                        rdf:value 0.0
+                ]                  
+
+        ],         
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 18;
+                lv2:symbol "master" ;
+                lv2:name "Master";
+                lv2:default 0.0 ;
+                lv2:minimum -40.0;
+                lv2:maximum 40.0;
+                units:unit units:db;
+                rdfs:comment "Master volume";
+
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 19 ;
+                lv2:symbol "tails" ;
+                lv2:name "Tails";
+
+                lv2:default 1 ;
+                lv2:minimum 0;
+                lv2:maximum 1 ;
+                lv2:portProperty lv2:toggled;
+
+                rdfs:comment "Enable echo tails when bypassed" ;
+        ],  
+
+        ############# Audio I/O #######################
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 20 ;
+                lv2:symbol "inl" ;
+                lv2:name "In L"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 21 ;
+                lv2:symbol "outl" ;
+                lv2:name "Out L"
+        ]
+        ,[
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 22 ;
+                lv2:symbol "inr" ;
+                lv2:name "In R"
+        ],
+        [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 23 ;
+                lv2:symbol "outr" ;
+                lv2:name "OutR"
+        ]
+        
+        .
+
+<http://two-play.com/plugins/toob-multi-echo-stereo-ui> 
+    a  uiext:X11UI ;
+    lv2:binary <ToobAmpUI.so>;
+
+    lv2:extensionData uiext::idle ;
+    lv2:extensionData uiext:resize ;
+    lv2:extensionData uiext:idleInterface;
+    lv2:requiredFeature uiext:idleInterface ;
+    .
+
+
+

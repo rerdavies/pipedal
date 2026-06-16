@@ -4,6 +4,7 @@
 @prefix tpset: <http://two-play.com/plugins/preset#> .
 
 
+
 <http://two-play.com/plugins/toob-tone-stack> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToneStack.ttl> .
@@ -113,6 +114,16 @@
 <http://two-play.com/plugins/toob-mix> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobMix.ttl> .
+
+<http://two-play.com/plugins/toob-multi-echo> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobMultiEcho.ttl> .
+
+<http://two-play.com/plugins/toob-multi-echo-stereo> a lv2:Plugin ;
+     lv2:binary <ToobAmp.so> ;
+     rdfs:seeAlso <ToobMultiEchoStereo.ttl> .
+
+
 
 <http://two-play.com/plugins/toob-tremolo> a lv2:Plugin ;
      lv2:binary <ToobAmp.so> ;
