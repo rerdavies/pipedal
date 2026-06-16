@@ -59,7 +59,13 @@ export class ControlValue implements Deserializable<ControlValue> {
 }
 
 export class PedalboardItem implements Deserializable<PedalboardItem> {
-    clone() {
+    clone(): PedalboardItem {
+        if (this.isSplit())
+        {
+            let result = new PedalboardSplitItem();
+            result.deserialize(this);
+            return result as PedalboardItem;;
+        }
         return new PedalboardItem().deserialize(this);
     }
     deserializePedalboardItem(input: any): PedalboardItem {
@@ -770,7 +776,20 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         }
         return false;
     }
-    
+
+    assignNewInstanceIds(items: PedalboardItem[])
+    {
+        for (let i = 0; i < items.length; ++i)
+        {
+            items[i].instanceId = ++this.nextInstanceId;
+            if (items[i].isSplit())
+            {
+                let splitItem = items[i] as PedalboardSplitItem;
+                this.assignNewInstanceIds(splitItem.topChain);
+                this.assignNewInstanceIds(splitItem.bottomChain);
+            }
+        }
+    }
     replaceItem(instanceId: number, newItem: PedalboardItem)
     {
         newItem.instanceId = ++this.nextInstanceId;
@@ -779,6 +798,13 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         if (!result)
         {
             throw new PiPedalArgumentError("instanceId not found.");
+        }
+        if (newItem.isSplit()) 
+        {
+            // Generate new instance ids for all children, to avoid conflicts.
+            let splitItem = newItem as PedalboardSplitItem;
+            this.assignNewInstanceIds(splitItem.topChain);
+            this.assignNewInstanceIds(splitItem.bottomChain);
         }
         return newItem.instanceId;
     }
