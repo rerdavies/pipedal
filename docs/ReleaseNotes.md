@@ -1,5 +1,9 @@
 # Release Notes
 
+## PiPedal 2.0.106-Experimental
+
+Preview release of TooB Multi-Tap Delay for internal development use.
+
 ## PiPedal 2.0.105-Release
 
 Bug fix:
