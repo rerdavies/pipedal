@@ -5,8 +5,8 @@
 New Features
 - New TooB Multi-Tap Delay plugin.
 - Drag and copy/paste Split nodes (and all their children) to new locations in the pedalboard. This allows you to easily rearrange the structure of your pedalboard.
-- Range mapping controls in MIDI bindings now use the units of the target control, instead of 0..1 ranges. Provided by Fulgenzio Di Nicola.
-- New system MIDI bindings for Next/Previous Snapshot. Provided by Fulgenzio Di Nicola.
+- Range mapping controls in MIDI bindings now use the units of the target control, instead of 0..1 ranges. Provided by Fulgenzio Ruiz Rubio.
+- New system MIDI bindings for Next/Previous Snapshot. Provided by Fulgenzio Ruiz Rubio.
 
 Minor Features:
 - Alpha release of PiPedal build procedure for ARCH Linux. 
