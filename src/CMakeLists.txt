@@ -207,7 +207,7 @@ add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp.lol
+    # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG " )
     if (USE_SANITIZE)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan " )
@@ -412,7 +412,7 @@ target_link_libraries(libpipedald
    PUBLIC
    PiPedalCommon
    PRIVATE
-   SQLiteCpp
+   SQLiteCpp_static
     OpenSSL::Crypto
    ${PipeWire_LIBRARIES}
    )
