@@ -11,7 +11,7 @@ New Features
 Minor Features:
 - Alpha release of PiPedal build procedure for ARCH Linux. 
 - Fix compilation warnings/errors when compiling with GCC 16.
-- Better naming of USB audio devices in the UI.
+- Better display names for ALSA USB audio devices in the UI.
 
 Bug fixes:
 
