@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16.0)
 
 # Prevent installation of SQLite built components. (we use the .a library files directly)
+option(SQLITECPP_INSTALL "Enables the install target." OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
 
 add_subdirectory("SQLiteCpp" EXCLUDE_FROM_ALL)
 
@@ -25,7 +27,7 @@ option(BUILD_REGRESS "Build regression tests" OFF)
 option(BUILD_OSSFUZZ "Build fuzzers for ossfuzz" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_DOC "Build documentation" OFF)
-# Ensure BUILD_SHARED_LIBS is ON for libzip (SQLiteCpp may have set it OFF)
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries (.so) instead of static ones (.a)" FORCE)
+
+option(LIBZIP_DO_INSTALL "Install libzip and the related files" ON)
 add_subdirectory("libzip")
 
