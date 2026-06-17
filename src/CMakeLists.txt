@@ -412,7 +412,7 @@ target_link_libraries(libpipedald
    PUBLIC
    PiPedalCommon
    PRIVATE
-   SQLiteCpp_static
+   SQLiteCpp
     OpenSSL::Crypto
    ${PipeWire_LIBRARIES}
    )

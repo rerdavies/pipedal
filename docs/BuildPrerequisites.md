@@ -29,7 +29,7 @@ Ubuntu:
         libgoogle-perftools-dev \
         libpipewire-0.3-dev libbz2-dev libssl-dev librsvg2-dev
 
-Arch (pre-release, work in progress):
+Arch Linux (alpha status):
 
     sudo pacman -S --needed lilv boost systemd catch2 alsa-lib \
         util-linux avahi networkmanager icu libzip gperftools \
@@ -38,7 +38,7 @@ Arch (pre-release, work in progress):
     There is one AUR package:
     sudo paru -S authbind
 
-Note: in Arch, copyright notices generation won't work, so it needs to be disabled with a cmake argument. Add this to your .vscode/settings.json file:
+Note: in the Arch Linux build, copyright notices generation won't work, so it needs to be disabled with a cmake argument. Add this to your .vscode/settings.json file:
 
 ```json
 {
