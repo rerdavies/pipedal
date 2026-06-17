@@ -28,6 +28,7 @@ option(BUILD_OSSFUZZ "Build fuzzers for ossfuzz" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_DOC "Build documentation" OFF)
 
-option(LIBZIP_DO_INSTALL "Install libzip and the related files" ON)
+option(LIBZIP_DO_INSTALL "Install libzip and the related files" OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
 add_subdirectory("libzip")
 
