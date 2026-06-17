@@ -177,6 +177,7 @@ namespace pipedal
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) = 0;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) = 0;
         virtual void OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request) = 0;
+        virtual void OnNotifyNextMidiSnapshot(const RealtimeNextMidiProgramRequest &request) = 0;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) = 0;
         virtual void OnNotifyMidiRealtimeEvent(RealtimeMidiEventType eventType) = 0;
         virtual void OnNotifyMidiRealtimeSnapshotRequest(int32_t snapshotIndex,int64_t snapshotRequestId) = 0;

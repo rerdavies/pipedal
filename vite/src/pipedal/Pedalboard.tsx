@@ -59,7 +59,13 @@ export class ControlValue implements Deserializable<ControlValue> {
 }
 
 export class PedalboardItem implements Deserializable<PedalboardItem> {
-    clone() {
+    clone(): PedalboardItem {
+        if (this.isSplit())
+        {
+            let result = new PedalboardSplitItem();
+            result.deserialize(this);
+            return result as PedalboardItem;;
+        }
         return new PedalboardItem().deserialize(this);
     }
     deserializePedalboardItem(input: any): PedalboardItem {
@@ -142,6 +148,23 @@ export class PedalboardItem implements Deserializable<PedalboardItem> {
         }
         throw new PiPedalArgumentError("Invalid key.");
 
+    }
+
+    isChild(instanceId: number): boolean {
+        if (this.instanceId === instanceId) return true;
+        if (this.isSplit())
+        {
+            let splitItem = this as unknown as PedalboardSplitItem;
+            for (let topItem of splitItem.topChain)
+            {
+                if (topItem.isChild(instanceId)) return true;
+            }
+            for (let bottomItem of splitItem.bottomChain)
+            {
+                if (bottomItem.isChild(instanceId)) return true;
+            }
+        }
+        return false;
     }
 
     getControlValue(key: string): number {
@@ -753,7 +776,20 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         }
         return false;
     }
-    
+
+    assignNewInstanceIds(items: PedalboardItem[])
+    {
+        for (let i = 0; i < items.length; ++i)
+        {
+            items[i].instanceId = ++this.nextInstanceId;
+            if (items[i].isSplit())
+            {
+                let splitItem = items[i] as PedalboardSplitItem;
+                this.assignNewInstanceIds(splitItem.topChain);
+                this.assignNewInstanceIds(splitItem.bottomChain);
+            }
+        }
+    }
     replaceItem(instanceId: number, newItem: PedalboardItem)
     {
         newItem.instanceId = ++this.nextInstanceId;
@@ -762,6 +798,13 @@ export class Pedalboard implements Deserializable<Pedalboard> {
         if (!result)
         {
             throw new PiPedalArgumentError("instanceId not found.");
+        }
+        if (newItem.isSplit()) 
+        {
+            // Generate new instance ids for all children, to avoid conflicts.
+            let splitItem = newItem as PedalboardSplitItem;
+            this.assignNewInstanceIds(splitItem.topChain);
+            this.assignNewInstanceIds(splitItem.bottomChain);
         }
         return newItem.instanceId;
     }

@@ -83,6 +83,7 @@ namespace pipedal
 
         NextMidiProgram,
         NextMidiBank,
+        NextMidiSnapshot,
 
         Lv2StateChanged,
         MaybeLv2StateChanged,
@@ -443,6 +444,11 @@ namespace pipedal
         {
             RealtimeNextMidiProgramRequest msg{requestId : requestId, direction : direction};
             write(RingBufferCommand::NextMidiBank, msg);
+        }
+        void OnNextMidiSnapshot(int64_t requestId, int32_t direction)
+        {
+            RealtimeNextMidiProgramRequest msg{requestId : requestId, direction : direction};
+            write(RingBufferCommand::NextMidiSnapshot, msg);
         }
 
         void SetControlValue(int effectIndex, int controlIndex, float value)

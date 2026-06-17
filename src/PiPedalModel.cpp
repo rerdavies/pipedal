@@ -1181,6 +1181,92 @@ void PiPedalModel::NextPreset(Direction direction)
     LoadPreset(-1, index.presets()[currentPresetIndex].instanceId());
 }
 
+void PiPedalModel::NextSnapshot(Direction direction)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+
+    auto &snapshots = this->pedalboard.snapshots();
+    if (snapshots.size() == 0)
+    {
+        return;
+    }
+    int64_t currentSnapshot = this->pedalboard.selectedSnapshot();
+    int64_t nextSnapshot = -1;
+
+    if (direction == Direction::Increase)
+    {
+        for (int64_t i = currentSnapshot + 1; i < (int64_t)snapshots.size(); ++i)
+        {
+            if (snapshots[i])
+            {
+                nextSnapshot = i;
+                break;
+            }
+        }
+        if (nextSnapshot == -1)
+        {
+            for (int64_t i = 0; i <= currentSnapshot && i < (int64_t)snapshots.size(); ++i)
+            {
+                if (snapshots[i])
+                {
+                    nextSnapshot = i;
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        for (int64_t i = currentSnapshot - 1; i >= 0; --i)
+        {
+            if (snapshots[i])
+            {
+                nextSnapshot = i;
+                break;
+            }
+        }
+        if (nextSnapshot == -1)
+        {
+            for (int64_t i = (int64_t)snapshots.size() - 1; i > currentSnapshot; --i)
+            {
+                if (snapshots[i])
+                {
+                    nextSnapshot = i;
+                    break;
+                }
+            }
+        }
+    }
+    if (nextSnapshot != -1 && nextSnapshot != currentSnapshot)
+    {
+        SetSnapshot(nextSnapshot);
+    }
+}
+
+void PiPedalModel::OnNotifyNextMidiSnapshot(const RealtimeNextMidiProgramRequest &request)
+{
+    std::lock_guard<std::recursive_mutex> guard{mutex};
+    try
+    {
+        if (request.direction >= 0)
+        {
+            NextSnapshot();
+        }
+        else
+        {
+            PreviousSnapshot();
+        }
+    }
+    catch (std::exception &e)
+    {
+        Lv2Log::error(e.what());
+    }
+    if (this->audioHost)
+    {
+        this->audioHost->AckMidiProgramRequest(request.requestId);
+    }
+}
+
 void PiPedalModel::OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request)
 {
     std::lock_guard<std::recursive_mutex> guard{mutex};

@@ -147,24 +147,36 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         top: -6,
         fill: theme.palette.text.secondary
     }),
-    iconFrame: css({
 
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+    pedalButton: css({
+
         position: "relative",
 
-        background: theme.palette.background.default,
         marginLeft: (CELL_WIDTH - FRAME_SIZE) / 2,
         marginRight: (CELL_WIDTH - FRAME_SIZE) / 2,
         marginTop: (CELL_HEIGHT - FRAME_SIZE) / 2,
         marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
+        padding: 0,
+        borderRadius: 8
+    }),
+
+    iconFrame: css({
+
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        background: theme.palette.background.paper,
+
+        width: FRAME_SIZE,
+        height: FRAME_SIZE,
         borderColor: "#777",
         borderWidth: 2,
         borderStyle: "solid",
-        padding: 1,
+        overflow: "hidden",
+        padding: 0,
         borderRadius: 8
     }),
     selectedIconFrame: css({
@@ -173,12 +185,7 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-
-        background: theme.palette.background.default,
-        marginLeft: (CELL_WIDTH - FRAME_SIZE) / 2,
-        marginRight: (CELL_WIDTH - FRAME_SIZE) / 2,
-        marginTop: (CELL_HEIGHT - FRAME_SIZE) / 2,
-        marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
+        background: theme.palette.background.paper,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
         borderColor: theme.palette.primary.main,
@@ -195,10 +202,6 @@ const pedalboardStyles = (theme: Theme) => createStyles({
         justifyContent: "center",
 
         background: "transparent",
-        marginLeft: (CELL_WIDTH - FRAME_SIZE) / 2,
-        marginRight: (CELL_WIDTH - FRAME_SIZE) / 2,
-        marginTop: (CELL_HEIGHT - FRAME_SIZE) / 2,
-        marginBottom: (CELL_HEIGHT - FRAME_SIZE) / 2,
         width: FRAME_SIZE,
         height: FRAME_SIZE,
         border: "0px #666 solid",
@@ -458,6 +461,20 @@ const PedalboardView =
                     // touchyMove. :-/
                 }
 
+                isSplitterChild(item: PedalboardItem, splitterInstanceId: number) {
+                    if (item.instanceId === splitterInstanceId) {
+                        return true;
+                    }
+                    let pedalboard: Pedalboard | undefined = this.state.pedalboard;
+                    if (!pedalboard) return false;
+
+                    let splitter = pedalboard.maybeGetItem(splitterInstanceId);
+                    if (splitter === null) {
+                        return false;
+                    }
+                    return splitter.isChild(item.instanceId);
+                }
+
                 onDragEnd(instanceId: number, clientX: number, clientY: number) {
                     if (!this.props.enableStructureEditing) {
                         return;
@@ -483,10 +500,18 @@ const PedalboardView =
                         if (item.isSplitter() && item.pedalItem) {
                             if (item.bounds.contains(clientX, clientY)) {
                                 if (clientX < item.bounds.x + CELL_WIDTH / 2) {
+                                    if (this.isSplitterChild(item.pedalItem, instanceId)) 
+                                    {
+                                        return;
+                                    }
                                     this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
                                     this.setSelection(instanceId);
                                     return;
                                 } else if (clientX > item.bounds.right - CELL_WIDTH / 2) {
+                                    if (this.isSplitterChild(item.pedalItem, instanceId)) 
+                                    {
+                                        return;
+                                    }
                                     this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
                                     this.setSelection(instanceId);
                                     return;
@@ -501,6 +526,11 @@ const PedalboardView =
                                 if (clientX < item.topChildren[0].bounds.x) {
                                     let topPedalItem = item.topChildren[0].pedalItem;
                                     if (topPedalItem) {
+                                        if (this.isSplitterChild(topPedalItem, instanceId)) 
+                                        {
+                                            return;
+                                        }
+
                                         this.model.movePedalboardItemBefore(instanceId, topPedalItem.instanceId);
                                         this.setSelection(instanceId);
                                         return;
@@ -509,6 +539,9 @@ const PedalboardView =
                                 let lastTop = item.topChildren[item.topChildren.length - 1];
                                 if (clientX >= lastTop.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
                                     if (lastTop.pedalItem) {
+                                        if (this.isSplitterChild(lastTop.pedalItem, instanceId)) {
+                                            return;
+                                        }
                                         this.model.movePedalboardItemAfter(instanceId, lastTop.pedalItem.instanceId);
                                         this.setSelection(instanceId);
                                         return;
@@ -522,6 +555,9 @@ const PedalboardView =
                                 if (clientX < item.bottomChildren[0].bounds.x) {
                                     let bottomPedalItem = item.bottomChildren[0].pedalItem;
                                     if (bottomPedalItem) {
+                                        if (this.isSplitterChild(bottomPedalItem, instanceId)) {
+                                            return;
+                                        }
                                         this.model.movePedalboardItemBefore(instanceId, bottomPedalItem.instanceId);
                                         this.setSelection(instanceId);
                                         return;
@@ -530,6 +566,9 @@ const PedalboardView =
                                 let lastBottom = item.bottomChildren[item.bottomChildren.length - 1];
                                 if (clientX >= lastBottom.bounds.right && clientX < item.bounds.right - CELL_WIDTH / 2) {
                                     if (lastBottom.pedalItem) {
+                                        if (this.isSplitterChild(lastBottom.pedalItem, instanceId)) {
+                                            return;
+                                        }
                                         this.model.movePedalboardItemAfter(instanceId, lastBottom.pedalItem.instanceId);
                                         this.setSelection(instanceId);
                                         return;
@@ -552,10 +591,22 @@ const PedalboardView =
                                 if (item.pedalItem) {
                                     let margin = (CELL_WIDTH - FRAME_SIZE) / 2;
                                     if (clientX < item.bounds.x + margin) {
+                                        if (this.isSplitterChild(item.pedalItem,instanceId))
+                                        {
+                                            return;
+                                        }
                                         this.model.movePedalboardItemBefore(instanceId, item.pedalItem.instanceId);
                                     } else if (clientX > item.bounds.right - margin) {
+                                        if (this.isSplitterChild(item.pedalItem,instanceId))
+                                        {
+                                            return;
+                                        }
                                         this.model.movePedalboardItemAfter(instanceId, item.pedalItem.instanceId);
                                     } else {
+                                        if (this.isSplitterChild(item.pedalItem,instanceId))
+                                        {
+                                            return;
+                                        }
                                         this.model.movePedalboardItem(instanceId, item.pedalItem.instanceId);
                                     }
                                     this.setSelection(instanceId);
@@ -1036,39 +1087,35 @@ const PedalboardView =
                     }
 
                     return (
-                        <div className={frameStyle} onContextMenu={(e) => { e.preventDefault(); }}
-                        >
-                            {/* {!enabled && (
-                                <div className={classes.midiConnectorDecoration} >
-                                    <CloseIcon style={{ width: 16, height: 16, opacity: 0.6, fill: this.props.theme.palette.text.secondary }} />
-                                </div>
-
-                            )} */}
-
-                            <ButtonBase style={{ width: "100%", height: "100%" }}
+                        <div style={{ width: "100%", height: "100%" }}>
+                            <ButtonBase className={classes.pedalButton} 
                                 onClick={(e) => { this.onItemClick(e, instanceId); }}
                                 onDoubleClick={(e: SyntheticEvent) => { this.onItemDoubleClick(e, instanceId); }}
                                 onContextMenu={(e: SyntheticEvent) => { this.onItemLongClick(e, instanceId); }}
                             >
-                                <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true} 
-                                    clipChildren={true}
+                                <div className={frameStyle} style={{ position: "absolute" }} onContextMenu={(e) => { e.preventDefault(); }}
                                 >
-                                    <Draggable draggable={draggable && (this.props.enableStructureEditing)} getScrollContainer={() => this.getScrollContainer()}
-                                        onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
-                                        style={{ opacity: enabled ? 0.99 : 0.3 }}
-
+                                    <SelectHoverBackground selected={instanceId === this.props.selectedId} showHover={true}
+                                        clipChildren={false}
                                     >
-                                        <div id="childIcon" style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }} >
-                                            <PluginIcon pluginType={iconType}
-                                                size={24}
-                                                color={getIconColor(iconColor)}
-                                                pluginMissing={pluginNotFound}
-                                            />
-                                        </div>
+                                    </SelectHoverBackground>
+                                </div>
+                                <Draggable draggable={draggable && (this.props.enableStructureEditing)} getScrollContainer={() => this.getScrollContainer()}
+                                    onDragEnd={(x, y) => { this.onDragEnd(instanceId, x, y) }}
+                                    style={{ opacity: enabled ? 0.99 : 0.3 }}
 
-                                    </Draggable>
-                                </SelectHoverBackground>
+                                >
+                                    <div id="childIcon" style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }} >
+                                        <PluginIcon pluginType={iconType}
+                                            size={24}
+                                            color={getIconColor(iconColor)}
+                                            pluginMissing={pluginNotFound}
+                                        />
+                                    </div>
+
+                                </Draggable>
                             </ButtonBase>
+
                         </div>
                     );
 
@@ -1146,7 +1193,7 @@ const PedalboardView =
 
                                     result.push(<div key={this.renderKey++} className={classes.splitItem} style={{ left: item.bounds.x, top: item.bounds.y, width: item.bounds.width }} >
                                         <div className={classes.splitStart} >
-                                            {this.pedalButton(item.pedalItem?.instanceId ?? -1, this.getSplitterIcon(item), "", false, true, true, false, false)}
+                                            {this.pedalButton(item.pedalItem?.instanceId ?? -1, this.getSplitterIcon(item), "", true, true, true, false, false)}
                                         </div>
                                     </div>);
 
@@ -1157,9 +1204,10 @@ const PedalboardView =
                                             position: "absolute", left: item.bounds.x, width: CELL_WIDTH, top: item.bounds.bottom - 12, paddingLeft: 2, paddingRight: 2
                                         }}>
                                             <Typography variant="caption" display="block" noWrap={true}
-                                                style={{ width: CELL_WIDTH - 4, textAlign: "center", flex: "0 1 auto",
-                                                    opacity: item.pedalItem?.isEnabled??true ? 1.0 : 0.4
-                                                 }}
+                                                style={{
+                                                    width: CELL_WIDTH - 4, textAlign: "center", flex: "0 1 auto",
+                                                    opacity: item.pedalItem?.isEnabled ?? true ? 1.0 : 0.4
+                                                }}
                                             >{item.name}</Typography>
                                         </div>
                                     )

@@ -862,7 +862,7 @@ class FilmstripControl implements ModGuiControl {
                 console.error("pipedal: Invalid mod-widget-rotation value: " + rotationAttr);
                 return;
             }
-            let range = this.valueToRange(this.value);
+            let range = this.props.pluginControl.valueToRange(this.value);
             this.frameElement.style.transform = `rotate(${rotation * range - rotation / 2}deg)`;
             return;
 
@@ -926,13 +926,13 @@ class FilmstripControl implements ModGuiControl {
         let pluginControl = this.props.pluginControl;
 
         let value = this.isPointerDown ? this.pointerDownValue : this.value;
-        value = this.clampValue(value);
+        value = this.props.pluginControl.clampValue(value);
 
         let isHorizontalStrip =
             this.filmstripInfo.frameWidth / this.filmstripInfo.frameHeight
             < this.filmstripInfo.width / this.filmstripInfo.height;
         if (isHorizontalStrip) {
-            let range = this.valueToRange(value);
+            let range = this.props.pluginControl.valueToRange(value);
 
             if (range < 0) {
                 range = 0;
@@ -1045,101 +1045,6 @@ class FilmstripControl implements ModGuiControl {
         this.pointerDownValue = this.value;
     }
 
-
-    valueToRange(value: number): number {
-        let uiControl = this.props.pluginControl;
-        if (uiControl) {
-            let range: number;
-            if (uiControl.is_logarithmic) {
-                let minValue = uiControl.min_value;
-                if (minValue === 0) // LSP plugins do this.
-                {
-                    minValue = 0.0001;
-                }
-                range = Math.log(value / minValue) / Math.log(uiControl.max_value / minValue);
-                if (!isFinite(range)) {
-                    if (range < 0) {
-                        range = 0;
-                    } else {
-                        range = 1.0;
-                    }
-                } else if (isNaN(range)) {
-                    range = 0;
-                }
-            } else {
-                range = (value - uiControl.min_value) / (uiControl.max_value - uiControl.min_value);
-                if (!isFinite(range)) {
-                    if (range < 0) {
-                        range = 0;
-                    } else {
-                        range = 1.0;
-                    }
-                } else if (isNaN(range)) {
-                    range = 0;
-                }
-            }
-
-            if (range > 1) range = 1;
-            if (range < 0) range = 0;
-            return range;
-        }
-        return 0;
-    }
-    rangeToValue(range: number): number {
-        if (range < 0) range = 0;
-        if (range > 1) range = 1;
-        let uiControl = this.props.pluginControl;
-        if (uiControl) {
-            let value: number;
-            if (uiControl.min_value === uiControl.max_value) {
-                value = uiControl.min_value;
-            } else {
-                if (uiControl.is_logarithmic) {
-                    let minValue = uiControl.min_value;
-                    if (minValue === 0) // LSP controls.    
-                    {
-                        minValue = 0.0001;
-                    }
-                    value = minValue * Math.pow(uiControl.max_value / minValue, range);
-                    if (!isFinite(value)) {
-                        value = uiControl.max_value;
-                    } else if (isNaN(value)) {
-                        value = uiControl.min_value;
-                    }
-                } else {
-                    value = range * (uiControl.max_value - uiControl.min_value) + uiControl.min_value;
-                }
-            }
-            return value;
-        }
-        return 0;
-    }
-
-    clampValue(value: number): number {
-        let control = this.props.pluginControl;
-        if (control.enumeration_property) {
-            value = control.clampSelectValue(value);
-        } else if (control.toggled_property) {
-            if (value < (control.min_value + control.max_value) / 2) {
-                value = control.min_value;
-            } else {
-                value = control.max_value;
-            }
-        } else if (control.integer_property) {
-            value = Math.round(value);
-        } else if (control.range_steps != 0) {
-            let step = (control.max_value - control.min_value) / control.range_steps;
-            value = Math.round((value - control.min_value) / step) * step + control.min_value;
-        }
-        if (value < control.min_value) {
-            value = control.min_value;
-        }
-        if (value > control.max_value) {
-            value = control.max_value;
-        }
-        return value;
-    }
-
     handlePointerMove(event: PointerEvent) {
         if (!this.frameElement) {
             return; // Not mounted yet
@@ -1167,14 +1072,14 @@ class FilmstripControl implements ModGuiControl {
 
         let dRange = -dy / rate;
 
-        let range = this.valueToRange(this.pointerDownValue);
+        let range = this.props.pluginControl.valueToRange(this.pointerDownValue);
         range += dRange;
         if (range < 0) range = 0;
         if (range > 1) range = 1;
-        let newValue = this.rangeToValue(range);
+        let newValue = this.props.pluginControl.rangeToValue(range);
         this.pointerDownValue = newValue;
         this.setControlValue(newValue);
-        this.props.onValueChanged(this.props.instanceId, this.props.pluginControl.symbol, this.clampValue(newValue));
+        this.props.onValueChanged(this.props.instanceId, this.props.pluginControl.symbol, this.props.pluginControl.clampValue(newValue));
     }
     handlePointerUp(event: PointerEvent) {
         let index = this.pointerIds.indexOf(event.pointerId);
@@ -1229,11 +1134,11 @@ class FilmstripControl implements ModGuiControl {
         }
         let dRange = event.deltaY / rate;
 
-        let range = this.valueToRange(this.value);
+        let range = this.props.pluginControl.valueToRange(this.value);
         range += dRange;
         if (range < 0) range = 0;
         if (range > 1) range = 1;
-        let newValue = this.rangeToValue(range);
+        let newValue = this.props.pluginControl.rangeToValue(range);
         this.setControlValue(newValue);
         this.props.onValueChanged(this.props.instanceId, this.props.pluginControl.symbol, newValue);
     }

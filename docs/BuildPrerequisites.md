@@ -17,7 +17,8 @@ If your distribution doesn't provide a suitable version of nodejs,
 please refer to the `node.js` website for instructions on [how to install the latest version of `node.js`](https://nodejs.org/en/download) directly.
 
 Run the following commands to install dependent libraries required by the PiPedal build.
- 
+
+Ubuntu:
     sudo apt update 
     sudo apt upgrade
     
@@ -27,6 +28,26 @@ Run the following commands to install dependent libraries required by the PiPeda
         libsdbus-c++-dev libzip-dev google-perftools \
         libgoogle-perftools-dev \
         libpipewire-0.3-dev libbz2-dev libssl-dev librsvg2-dev
+
+Arch Linux (alpha status):
+
+    sudo pacman -S --needed lilv boost systemd catch2 alsa-lib \
+        util-linux avahi networkmanager icu libzip gperftools \
+        pipewire bzip2 openssl librsvg sdbus-cpp
+
+    There is one AUR package:
+    sudo paru -S authbind
+
+Note: in the Arch Linux build, copyright notices generation won't work, so it needs to be disabled with a cmake argument. Add this to your .vscode/settings.json file:
+
+```json
+{
+    "cmake.configureSettings": {                                                                                                                                                                                                        
+        "PIPEDAL_DISABLE_COPYRIGHT_BUILD": "ON"                                                                                                                                                                                                  
+    },
+    ...
+}
+```
     
 
 ### Installing Sources

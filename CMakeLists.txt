@@ -1,17 +1,35 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(pipedal 
-    VERSION 2.0.105
+    VERSION 2.0.106
     DESCRIPTION "PiPedal Guitar Effect Pedal For Raspberry Pi"
     HOMEPAGE_URL "https://rerdavies.github.io/pipedal"
 )
 
-execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
+set (DISPLAY_VERSION "PiPedal v2.0.106-Release")
 
-set (DISPLAY_VERSION "PiPedal v2.0.105-Release")
-set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
-set (CMAKE_INSTALL_PREFIX "/usr/")
+option(PIPEDAL_DISABLE_COPYRIGHT_BUILD "Skip generation of copyright notices (use on non-Debian distros)" OFF)
+option(PIPEDAL_EXCLUDE_TESTS "Exclude test targets from default build" OFF)
 
 set(PIPEDAL_T3K_PUBLISHABLE_KEY "t3k_pub_bHrH8btdwXXTtxz5ryEU8sNLF-2TGRT9")
+
+
+# Determine Debian-compatible architecture name (portable across distros)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set(DEBIAN_ARCHITECTURE "amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    set(DEBIAN_ARCHITECTURE "arm64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7l")
+    set(DEBIAN_ARCHITECTURE "armhf")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i386|i686")
+    set(DEBIAN_ARCHITECTURE "i386")
+else()
+    execute_process(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE UNAME_M)
+    message(FATAL_ERROR "Cannot determine Debian architecture from CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR} (uname -m: ${UNAME_M})")
+endif()
+message(STATUS "DEBIAN_ARCHITECTURE=${DEBIAN_ARCHITECTURE}")
+
+set (PACKAGE_ARCHITECTURE ${DEBIAN_ARCHITECTURE})
+set (CMAKE_INSTALL_PREFIX "/usr/")
 
 
 set (LIBZIP_DO_INSTALL OFF CACHE BOOL "Disable libzip install" FORCE)
@@ -24,8 +42,6 @@ set(CPACK_SOURCE_IGNORE_FILES
     "*.a;sqlite3.h;$(CPACK_SOURCE_IGNORE_FILES)"
 )
 
-
-set (PIPEDAL_EXCLUDE_TESTS false)
 include(CTest)
 enable_testing()
 
@@ -58,8 +74,10 @@ install (
 install (
     DIRECTORY ${VITE_BUILD_DIRECTORY} DESTINATION /etc/pipedal/react
 )
-install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
-    DESTINATION /etc/pipedal/react/var/)
+if(NOT PIPEDAL_DISABLE_COPYRIGHT_BUILD)
+    install (FILES ${PROJECT_SOURCE_DIR}/build/src/notices.txt
+        DESTINATION /etc/pipedal/react/var/)
+endif()
 
 install (
     DIRECTORY ${PROJECT_SOURCE_DIR}/src/templates 

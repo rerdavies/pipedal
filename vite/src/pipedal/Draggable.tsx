@@ -251,6 +251,7 @@ const Draggable =
                     if (this.pointerType !== "touch") {
                         this.dragTarget.style.transform = "scale(" + SELECT_SCALE + ")";
                         this.dragTarget.style.zIndex = "3";
+                        this.dragTarget.style.position = "absolute";
                     }
                 }
             }
@@ -259,6 +260,7 @@ const Draggable =
                 element.style.transform = "";
                 element.style.zIndex = this.savedIndex;
                 element.style.opacity = this.savedOpacity;
+                element.style.position = "relative";
             }
 
             onPointerCancel(e: PointerEvent<HTMLDivElement>) {

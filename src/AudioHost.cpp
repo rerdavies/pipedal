@@ -516,6 +516,8 @@ private:
     SystemMidiBinding snapshot5MidiBinding;
     SystemMidiBinding snapshot6MidiBinding;
 
+    SystemMidiBinding nextSnapshotMidiBinding;
+    SystemMidiBinding prevSnapshotMidiBinding;
     SystemMidiBinding startHotspotMidiBinding;
     SystemMidiBinding stopHotspotMidiBinding;
     SystemMidiBinding rebootMidiBinding;
@@ -1014,6 +1016,18 @@ private:
             this->deferredMidiMessageCount = 0; // we can discard previous control changes.
             midiProgramChangePending = true;
             this->realtimeWriter.OnNextMidiProgram(++(this->midiProgramChangeId), -1);
+        }
+        else if (nextSnapshotMidiBinding.IsTriggered(event))
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+            this->realtimeWriter.OnNextMidiSnapshot(++(this->midiProgramChangeId), 1);
+        }
+        else if (prevSnapshotMidiBinding.IsTriggered(event))
+        {
+            this->deferredMidiMessageCount = 0; // we can discard previous control changes.
+            midiProgramChangePending = true;
+            this->realtimeWriter.OnNextMidiSnapshot(++(this->midiProgramChangeId), -1);
         }
 
         else if (shutdownMidiBinding.IsTriggered(event))
@@ -1737,6 +1751,12 @@ public:
                                 hostReader.read(&request);
                                 pNotifyCallbacks->OnNotifyNextMidiBank(request);
                             }
+                            else if (command == RingBufferCommand::NextMidiSnapshot)
+                            {
+                                RealtimeNextMidiProgramRequest request;
+                                hostReader.read(&request);
+                                pNotifyCallbacks->OnNotifyNextMidiSnapshot(request);
+                            }
 
                             else if (command == RingBufferCommand::RealtimeMidiEvent)
                             {
@@ -2422,6 +2442,14 @@ void AudioHostImpl::SetSystemMidiBindings(const std::vector<MidiBinding> &bindin
         else if (i->symbol() == "snapshot6")
         {
             this->snapshot6MidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "nextSnapshot")
+        {
+            this->nextSnapshotMidiBinding.SetBinding(*i);
+        }
+        else if (i->symbol() == "prevSnapshot")
+        {
+            this->prevSnapshotMidiBinding.SetBinding(*i);
         }
         else
         {

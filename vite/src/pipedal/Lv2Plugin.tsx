@@ -1,4 +1,5 @@
-// Copyright (c) Robin E.R. Davies
+// Copyright (c) 2022 Robin Davies
+// Copyright (c) Fulgencio Ruiz Rubio.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -835,15 +836,44 @@ export class UiControl implements Deserializable<UiControl> {
 
     valueToRange(value: number): number {
         if (this.toggled_property) return value === 0 ? 0 : 1;
-
         if (this.integer_property || this.enumeration_property) {
             value = Math.round(value);
         }
-        let range = (value - this.min_value) / (this.max_value - this.min_value);
+        let range: number;
+        if (this.is_logarithmic) {
+            let minValue = this.min_value;
+            if (minValue === 0) // LSP plugins do this.
+            {
+                minValue = 0.0001;
+            }
+            range = Math.log(value / minValue) / Math.log(this.max_value / minValue);
+            if (!isFinite(range)) {
+                if (range < 0) {
+                    range = 0;
+                } else {
+                    range = 1.0;
+                }
+            } else if (isNaN(range)) {
+                range = 0;
+            }
+            if (this.range_steps > 1) {
+                range = Math.round(range * (this.range_steps - 1)) / (this.range_steps - 1);
+            }
+        } else {
+            range = (value - this.min_value) / (this.max_value - this.min_value);
+            if (!isFinite(range)) {
+                if (range < 0) {
+                    range = 0;
+                } else {
+                    range = 1.0;
+                }
+            } else if (isNaN(range)) {
+                range = 0;
+            }
+        }
+
         if (range > 1) range = 1;
         if (range < 0) range = 0;
-
-
         return range;
     }
 
@@ -852,15 +882,65 @@ export class UiControl implements Deserializable<UiControl> {
         if (range > 1) range = 1;
 
         if (this.toggled_property) return range === 0 ? 0 : 1;
+        if (this.range_steps > 1) {
+            range = Math.round(range * (this.range_steps - 1)) / (this.range_steps - 1);
+        }
+        
+        let value: number;
 
-        let value = range * (this.max_value - this.min_value) + this.min_value;
-        if (this.integer_property || this.enumeration_property) {
-            value = Math.round(value);
+        if (this.min_value === this.max_value) {
+            value = this.min_value;
+        } else {
+            if (this.is_logarithmic) {
+                let minValue = this.min_value;
+                if (minValue === 0) // LSP controls.    
+                {
+                    minValue = 0.0001;
+                }
+                value = minValue * Math.pow(this.max_value / minValue, range);
+                if (!isFinite(value)) {
+                    value = this.max_value;
+                } else if (isNaN(value)) {
+                    value = this.min_value;
+                }
+            } else {
+                value = range * (this.max_value - this.min_value) + this.min_value;
+            }
+            if (this.integer_property) {
+                value = Math.round(value);
+            }
         }
         return value;
     }
+
     clampValue(value: number): number {
         return this.rangeToValue(this.valueToRange(value));
+    }
+
+    getDisplayUnits(): string {
+        if (this.custom_units !== "") {
+            return this.custom_units.replace("%f", "");
+        }
+        switch (this.units) {
+            case Units.bar: return "bar";
+            case Units.beat: return "beats";
+            case Units.bpm: return "bpm";
+            case Units.cent: return "cents";
+            case Units.cm: return "cm";
+            case Units.db: return "dB";
+            case Units.hz: return "Hz";
+            case Units.khz: return "kHz";
+            case Units.km: return "km";
+            case Units.m: return "m";
+            case Units.mhz: return "MHz";
+            case Units.midiNote: return "MIDI note";
+            case Units.min: return "min";
+            case Units.ms: return "ms";
+            case Units.pc: return "%";
+            case Units.s: return "s";
+            case Units.semitone12TET: return "st";
+            default: return "";
+        }   
     }
 
     formatDisplayValue(value: number): string {
@@ -893,56 +973,9 @@ export class UiControl implements Deserializable<UiControl> {
             return semitone12TETValue(value);
         }
 
-        let text = this.formatShortValue(value);
-
-        switch (this.units) {
-            case Units.bpm:
-                text += "bpm";
-                break;
-            case Units.cent:
-                text += "cents";
-                break;
-            case Units.cm:
-                text += "cm";
-                break;
-            case Units.db:
-                text += "dB";
-                break;
-            case Units.hz:
-                text += "Hz";
-                break;
-            case Units.khz:
-                text += "kHz";
-                break;
-            case Units.km:
-                text += "km";
-                break;
-            case Units.m:
-                text += "m";
-                break;
-            case Units.mhz:
-                text += "MHz";
-                break;
-            case Units.min:
-                text += "min";
-                break;
-            case Units.ms:
-                text += "ms";
-                break;
-            case Units.pc:
-                text += "%";
-                break;
-            case Units.unknown:
-                if (this.custom_units !== "") {
-                    text = this.custom_units.replace("%f", text);
-                }
-                break;
-            default:
-                break;
-
-        }
-        return text;
+        return this.formatShortValue(value) + this.getDisplayUnits();
     }
+    
     formatShortValue(value: number): string {
         if (this.enumeration_property) {
             for (let i = 0; i < this.scale_points.length; ++i) {

@@ -22,6 +22,38 @@ set(CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
 
+find_package(Catch2 QUIET)
+
+# Catch2 Arch and Debian13 provide catch2 v3, with multi-headers under catch2
+# Catch2 Debian12 provides catch2 v2, with a single header.
+# When Catch2 v3 is found via CMake, generate compatibility wrappers so
+# old-style #include "catch.hpp" and #include <catch/catch.hpp> still work.
+if(Catch2_FOUND)
+    if(Catch2_VERSION VERSION_GREATER_EQUAL "3.0.0")    # Generate catch.hpp wrapper in the build directory.
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/catch.hpp"
+            "#pragma once\n"
+            "#include <catch2/catch_all.hpp>\n"
+        )
+        file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/catch")
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/catch/catch.hpp"
+            "#pragma once\n"
+            "#include <catch2/catch_all.hpp>\n"
+        )
+        # Add the build directory to the global include paths so that
+        # both #include "catch.hpp" (quote) and #include <catch/catch.hpp> (angle)
+        # can find the compatibility wrappers.
+        include_directories(${CMAKE_CURRENT_BINARY_DIR})
+        message(STATUS "Catch2 v3 found. Generated compatibility wrappers in ${CMAKE_CURRENT_BINARY_DIR}")
+    elseif(Catch2_VERSION VERSION_GREATER_EQUAL "2.0.0")    # Generate catch.hpp wrapper in the build directory.
+        # Just use the system version directly.
+        message(STATUS "Catch2 v2 found. Using system catch2/catch.hpp directly.")
+    else()
+        message(ERROR "Catch2: Unsupported Catch2 version: ${Catch2_VERSION}. Expecting Catch2 v2 or v3.")
+    endif()
+else()
+    message(ERROR "Catch2 CMake package not found. Expecting system catch.hpp (Catch2 v2 style).")
+endif()
+
 pkg_check_modules(PipeWire REQUIRED libpipewire-0.3)
 
 include(FetchContent)
@@ -155,15 +187,27 @@ else()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
 
-execute_process( COMMAND dpkg --print-architecture COMMAND tr -d '\n' OUTPUT_VARIABLE DEBIAN_ARCHITECTURE )
-message(STATUS DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
+# Determine Debian-compatible architecture name (portable across distros)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set(DEBIAN_ARCHITECTURE "amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    set(DEBIAN_ARCHITECTURE "arm64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7l")
+    set(DEBIAN_ARCHITECTURE "armhf")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i386|i686")
+    set(DEBIAN_ARCHITECTURE "i386")
+else()
+    execute_process(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE UNAME_M)
+    message(FATAL_ERROR "Cannot determine Debian architecture from CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR} (uname -m: ${UNAME_M})")
+endif()
+message(STATUS "DEBIAN_ARCHITECTURE=${DEBIAN_ARCHITECTURE}")
 
 add_compile_definitions(DEBIAN_ARCHITECTURE="${DEBIAN_ARCHITECTURE}")
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
 
-    # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp.lol
+    # Must not -D_GLIBCXX_DEBUG, since it conflict with SQLiteCpp
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -DDEBUG " )
     if (USE_SANITIZE)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -static-libasan " )
@@ -460,6 +504,10 @@ add_executable(pipedaltest
 target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES})
 
+if(Catch2_FOUND)
+    target_link_libraries(pipedaltest PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+endif()
+
 set_target_properties(pipedaltest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
 if (NOT GITHUB_ACTIONS) # Google perftools are not available on Github action servers.
@@ -489,6 +537,10 @@ add_executable(jsonTest
 )
 target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES})
+
+if(Catch2_FOUND)
+    target_link_libraries(jsonTest PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+endif()
 
 set_target_properties(jsonTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
 
@@ -856,8 +908,8 @@ elseif(EXISTS "/usr/share/doc/libboost1.71-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.71-dev")
 elseif(EXISTS "/usr/share/doc/libboost1.67-dev")
    set (BOOST_COPYRIGHT_DIR "libboost1.67-dev")
-else()
-    message(FATAL_ERROR "Boost libary version has changed. Please update me.")
+# else()
+#     message(FATAL_ERROR "Boost libary version has changed. Please update me.")
 endif()
 
 
@@ -871,10 +923,12 @@ WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Updating copyright notices."
 )
 
-add_custom_target (
-    CopyrightBuild ALL
-    DEPENDS ${REACT_NOTICES_FILE}
-)
+if(NOT PIPEDAL_DISABLE_COPYRIGHT_BUILD)
+    add_custom_target (
+        CopyrightBuild ALL
+        DEPENDS ${REACT_NOTICES_FILE}
+    )
+endif()
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
     cmake_policy(SET CMP0177 NEW)

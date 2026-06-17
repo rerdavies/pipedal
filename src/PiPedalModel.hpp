@@ -273,6 +273,7 @@ namespace pipedal
         virtual void OnNotifyMidiProgramChange(RealtimeMidiProgramRequest &midiProgramRequest) override;
         virtual void OnNotifyNextMidiProgram(const RealtimeNextMidiProgramRequest &request) override;
         virtual void OnNotifyNextMidiBank(const RealtimeNextMidiProgramRequest &request) override;
+        virtual void OnNotifyNextMidiSnapshot(const RealtimeNextMidiProgramRequest &request) override;
         virtual void OnNotifyLv2RealtimeError(int64_t instanceId, const std::string &error) override;
 
         PostHandle networkChangingDelayHandle = 0;
@@ -311,6 +312,8 @@ namespace pipedal
         void PreviousBank() { NextBank(Direction::Decrease); }
         void NextPreset(Direction direction = Direction::Increase);
         void PreviousPreset() { NextPreset(Direction::Decrease); }
+        void NextSnapshot(Direction direction = Direction::Increase);
+        void PreviousSnapshot() { NextSnapshot(Direction::Decrease); }
 
         int64_t DownloadModelsFromTone3000(
             const std::string &responseuri,

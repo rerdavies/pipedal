@@ -2,6 +2,7 @@
  * MIT License
  *
  * Copyright (c) Robin E.R. Davies
+ * Copyright (c) Roberto Figliè
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -1681,6 +1682,7 @@ namespace pipedal
             AlsaMidiMessage message;
 
             midiEventCount = 0;
+            midiEventMemoryIndex = 0;
             auto alsaSequener = this->alsaSequencer; // take an addref
             if (!alsaSequener)
             {
@@ -1772,6 +1774,7 @@ namespace pipedal
                         break;
                     }
                     this->midiEventCount = 0;
+                    this->midiEventMemoryIndex = 0;
 
                     // snd_pcm_wait(captureHandle, 1);
                     ssize_t framesToRead = bufferSize;

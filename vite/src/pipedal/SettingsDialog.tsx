@@ -40,7 +40,7 @@ import SelectChannelsDialog from './SelectChannelsDialog';
 import SelectMidiChannelsDialog from './SelectMidiChannelsDialog';
 import SelectHoverBackground from './SelectHoverBackground';
 import JackServerSettings from './JackServerSettings';
-import JackServerSettingsDialog from './JackServerSettingsDialog';
+import AudioDeviceDialog from './AudioDeviceDialog';
 import JackHostStatus from './JackHostStatus';
 import WifiConfigSettings from './WifiConfigSettings';
 import WifiDirectConfigSettings from './WifiDirectConfigSettings';
@@ -711,7 +711,7 @@ const SettingsDialog = withStyles(
                                 )}
                                 {this.state.showJackServerSettingsDialog && (
 
-                                    <JackServerSettingsDialog
+                                    <AudioDeviceDialog
                                         open={this.state.showJackServerSettingsDialog}
                                         jackServerSettings={this.state.jackServerSettings}
                                         onClose={() => this.setState({ showJackServerSettingsDialog: false })}

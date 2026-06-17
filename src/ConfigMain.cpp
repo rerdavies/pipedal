@@ -1154,6 +1154,7 @@ void Install(const fs::path &programPrefix, const std::string endpointAddress)
         // Add to audio groups.
         sysExec(USERMOD_BIN " -a -G  " AUDIO_SERVICE_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
         // add to netdev group
+        sysExec(GROUPADD_BIN " -f " NETDEV_GROUP_NAME);
         sysExec(USERMOD_BIN " -a -G  " NETDEV_GROUP_NAME " " SERVICE_ACCOUNT_NAME);
 
         try

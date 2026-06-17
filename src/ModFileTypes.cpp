@@ -21,6 +21,7 @@
 #include "util.hpp"
 #include <stdexcept>
 #include <iostream>
+#include <mutex>
 #include "ss.hpp"
 #include "MimeTypes.hpp"
 

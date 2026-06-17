@@ -13,18 +13,18 @@ page_icon: img/Install4.jpg
 
 Download the most recent Debian (.deb) package for your platform:
 
-- [Raspberry Pi OS bookworm (aarch64) v2.0.105](https://github.com/rerdavies/pipedal/releases/download/v2.0.105/pipedal_2.0.105_arm64.deb)
-- [Ubuntu 24.04 through 25.04 (aarch64) v2.0.105](https://github.com/rerdavies/pipedal/releases/download/v2.0.105/pipedal_2.0.105_arm64.deb)
-- [Ubuntu 24.04 through 25.04 (amd64) v2.0.105](https://github.com/rerdavies/pipedal/releases/download/v2.0.105/pipedal_2.0.105_amd64.deb)
+- [Raspberry Pi OS bookworm (aarch64) v2.0.106](https://github.com/rerdavies/pipedal/releases/download/v2.0.106/pipedal_2.0.106_arm64.deb)
+- [Ubuntu 24.04 through 25.04 (aarch64) v2.0.106](https://github.com/rerdavies/pipedal/releases/download/v2.0.106/pipedal_2.0.106_arm64.deb)
+- [Ubuntu 24.04 through 25.04 (amd64) v2.0.106](https://github.com/rerdavies/pipedal/releases/download/v2.0.106/pipedal_2.0.106_amd64.deb)
 
 
-Version 2.0.105 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64), Ubuntu 24.10 (aarch64), and Ubuntu 25.04 (aarch64). Download the appropriate package for your platform, and install using the following procedure:
+Version 2.0.106 has been tested on Raspberry Pi OS bookworm, Ubuntu 24.04 (amd64), Ubuntu 24.10 (aarch64), and Ubuntu 25.04 (aarch64). Download the appropriate package for your platform, and install using the following procedure:
 
 ```
   sudo apt update
   sudo apt upgrade
   cd ~/Downloads  
-  sudo apt-get install ./pipedal_2.0.105_arm64.deb 
+  sudo apt-get install ./pipedal_2.0.106_arm64.deb 
 ```
 You MUST use `apt-get`. `apt` will not install downloaded packages; and `dpkg -i` will not install dependencies. 
 
@@ -62,7 +62,7 @@ Use the following command to copy the downloaded package to the server from Linu
 Adjust `username`, `server_address` and the actual name of the Debian package you downloaded as needed:
 
 ```
-scp Downloads/pipedal_2.0.105_arm64.deb username@server_address:/home/username/
+scp Downloads/pipedal_2.0.106_arm64.deb username@server_address:/home/username/
 ```
 This will copy the downloaded package on your desktop computer to your home directory on the PiPedal server computer. 
 
@@ -70,7 +70,7 @@ Once you have copied the package to the server, you can SSH into the server and 
 
 ```
 ssh username@server_address
-sudo apt-get install ./pipedal_2.0.105_arm64.deb
+sudo apt-get install ./pipedal_2.0.106_arm64.deb
 ```
 The PiPedal package installer will print out the port number that the PiPedal web server is listening on. It defaults to port 80, but if you have another web server already running on port 80, it will select the next available port. Ubuntu default installs have Apache Server running on port 80, so the PiPedal web server will default to port 81 on Ubuntu.
 
