@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.16.0)
 option(SQLITECPP_INSTALL "Enables the install target." OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
 
-add_subdirectory("SQLiteCpp" EXCLUDE_FROM_ALL)
+add_subdirectory("SQLiteCpp")
 
 
 set(SDBUSCPP_BUILD_CODEGEN off)
