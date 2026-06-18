@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 2.0.106-Release
+## PiPedal 2.0.107-Release
 
 New Features
 - New TooB Multi-Tap Delay plugin.
@@ -9,14 +9,16 @@ New Features
 - New system MIDI bindings for Next/Previous Snapshot. Provided by Fulgenzio Ruiz Rubio.
 
 Minor Features:
-- Alpha release of PiPedal build procedure for ARCH Linux. 
-- Fix compilation warnings/errors when compiling with GCC 16.
+- Alpha release of PiPedal build procedure for ARCH Linux. Provided by Fulgenzio Ruiz Rubio.
+- Fix compilation warnings/errors when compiling with GCC 16. Provided by Fulgenzio Ruiz Rubio.
 - Better display names for ALSA USB audio devices in the UI.
 
 Bug fixes:
 
 - Incorrect rendering when dragging plugins.
 - MIDI hangups when using MIDI footpedals (or other high-rate CC messages). Provided by onirob.
+- TooB Multi-Tap Delay: Mono plugin crash; Bypass not working.
+
 
 ## PiPedal 2.0.105-Release
 
