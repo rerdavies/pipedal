@@ -3,7 +3,13 @@
 
 set -e
 
+# Make sure vite dependencies are up to date.
+cd vite 
+npm install
+cd ..
+
 # clean build
+
 
 if [ "$1" != "--continue" ]; then
     rm -rf build
