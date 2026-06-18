@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 2.0.106-Release
+## PiPedal 2.0.107-Release
 
 New Features
 - New TooB Multi-Tap Delay plugin.
@@ -17,6 +17,8 @@ Bug fixes:
 
 - Incorrect rendering when dragging plugins.
 - MIDI hangups when using MIDI footpedals (or other high-rate CC messages). Provided by onirob.
+- TooB Multi-Tap Delay: Mono plugin crash; Bypass not working.
+
 
 ## PiPedal 2.0.105-Release
 
