@@ -135,17 +135,17 @@ function buildAuthorizeUrl(
  * with an authorization code and the selected `tone_id`.
  *
  * @param gears - Optional underscore-separated gear filter (e.g. 'amp_pedal')
- * @param platform - Optional platform filter (e.g. 'nam', 'aida-x')
+ * @param format - Optional format filter (e.g. 'nam', 'aida-x')
  */
 export async function startSelectFlow(
     publishableKey: string,
     redirectUri: string,
-    options?: { gears?: string; platform?: string; menubar?: boolean, loginHint?: string }
+    options?: { gears?: string; format?: string; menubar?: boolean, loginHint?: string }
 ): Promise<void> {
     const pkce = await buildPkceParams();
     const extra: Record<string, string> = { prompt: 'select_tone' };
     if (options?.gears) extra.gears = options.gears;
-    if (options?.platform) extra.platform = options.platform;
+    if (options?.format) extra.format = options.format;
     if (options?.menubar) extra.menubar = 'true';
     if (options?.loginHint) extra.login_hint = options.loginHint;
     window.location.href = buildAuthorizeUrl(publishableKey, redirectUri, extra, pkce);
@@ -163,7 +163,7 @@ export async function startSelectFlowPopup(
     publishableKey: string,
     redirectUri: string,
     options?: {
-        gears?: string; platform?: string; menubar?: boolean, loginHint?: string, architecture?: number
+        gears?: string; format?: string; menubar?: boolean, loginHint?: string, architecture?: number
         width?: number, height?: number, userName?: string;
     }
 ): Promise<Window | null> {
@@ -172,7 +172,7 @@ export async function startSelectFlowPopup(
     sessionStorage.setItem('t3k_popup_mode', '1');
     const extra: Record<string, string> = { prompt: 'select_tone' };
     if (options?.gears) extra.gears = options.gears;
-    if (options?.platform) extra.platform = options.platform;
+    if (options?.format) extra.format = options.format;
     if (options?.menubar) extra.menubar = 'true';
     if (options?.loginHint) extra.login_hint = options.loginHint;
     if (options?.architecture) extra.architecture = options.architecture.toString();

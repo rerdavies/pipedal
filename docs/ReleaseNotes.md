@@ -1,6 +1,15 @@
 # Release Notes
 
 ## PiPedal 2.0.107-Release
+Emergency fix for breaking changes in Tone3000 API. Fixes failed downloads from Tone3000.com.
+
+Major Features:
+- Fix for breaking change in Tone3000 Web APIs that caused browsing of NAM and IR files to fail. 
+- NEW TooB Warmer plugin: A gentle slow-breakup overdrive effect, particularly useful for warming up
+clean and acoustic guitar tones. See the plugin's Info dialog for detail guidance on how to use this effect. 
+- Improvements to TooB Spectrum Analyzer plugin: new Range control, better windowing of DFT results reduces spectral leakage, better rendering of spectrum peaks in the PiPedal display.
+
+## PiPedal 2.0.107-Release
 
 New Features
 - New TooB Multi-Tap Delay plugin.

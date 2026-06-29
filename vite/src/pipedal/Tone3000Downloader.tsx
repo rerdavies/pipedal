@@ -2,7 +2,7 @@ import { PiPedalModel, getErrorMessage, Tone3000PkceParams } from "./PiPedalMode
 import Tone3000DownloadType from "./Tone3000DownloadType";
 import { T3K_DEBUG, PkceParams, setServerPkceParams, handleOAuthCallback } from "./t3k/tone3000-client.ts";
 
-import { Model, PaginatedResponse, Platform, Tone } from "./t3k/types.ts";
+import { DeprecatedPlatform, FileFormat as Format, Model, PaginatedResponse, Tone } from "./t3k/types.ts";
 import { PUBLISHABLE_KEY } from './t3k/config.ts';
 
 
@@ -325,21 +325,37 @@ export class Tone3000DownloadHandler {
                 return;
             }
             let uploadPath = this.downloadPath;
-            let extension: string;
-
-            switch (tone.platform) {
-                case Platform.Nam:
-                    extension = ".nam";
-                    break;
-                case Platform.Ir:
-                    extension = ".wav";
-                    break;
-                case Platform.Proteus:
-                    extension = ".json";
-                    break;
-                default:
-                    throw new Error("Unsupported platform: " + tone.platform);
-                    break;
+            let extension: string | null = null;;
+            if (tone.platform) 
+            {
+                switch (tone.platform) {
+                    case DeprecatedPlatform.Nam:
+                        extension = ".nam";
+                        break;
+                    case DeprecatedPlatform.Ir:
+                        extension = ".wav";
+                        break;
+                    case DeprecatedPlatform.Proteus:
+                        extension = ".json";
+                        break;
+                }
+            } 
+            if (extension === null) 
+            {
+                switch (tone.format) {
+                    case "nam":
+                        extension = ".nam";
+                        break;
+                    case "ir":
+                        extension = ".wav";
+                        break;
+                    case "proteus":
+                        extension = ".json";
+                        break; 
+                }
+            }
+            if (extension == null) {
+                throw new Error("Tone3000 download failed: Unknown tone format. Please contact PiPedal support.");
             }
             let toneUploadPath = uploadPath + "/" + safeFilenameEncode(tone.title) + "/";
             this.progress.total = models.length;
@@ -612,7 +628,8 @@ export class Tone3000DownloadHandler {
                 this.redirectUrl(),
                 {
                     architecture: (downloadType === Tone3000DownloadType.Nam && this.model.tone3000_A2_models) ? 2: undefined,
-                    platform: downloadType === Tone3000DownloadType.CabIr ? Platform.Ir : Platform.Nam,
+                    format: downloadType === Tone3000DownloadType.CabIr ? 
+                    Format.Ir : Format.Nam,
                     menubar: true,
                     width: popupWidth,
                     height: popupHeight,

@@ -63,6 +63,7 @@ interface ToobSpectrumResponseState {
     holdPath: string;
     minF: number;
     maxF: number;
+    scale: number;
 }
 
 const ToobSpectrumResponseView =
@@ -81,11 +82,13 @@ const ToobSpectrumResponseView =
 
                 let minF = 60;
                 let maxF = 18000;
+                let scale = 50;
 
                 let plugin = this.model.pedalboard.get()?.maybeGetItem(this.props.instanceId);
                 if (plugin) {
                     minF = plugin.getControlValue("minF");
                     maxF = plugin.getControlValue("maxF");
+                    scale = plugin.getControlValue("scale");
                 }
 
 
@@ -93,7 +96,8 @@ const ToobSpectrumResponseView =
                     path: "",
                     holdPath: "",
                     minF: minF,
-                    maxF: maxF
+                    maxF: maxF,
+                    scale: scale
                 };
 
                 this.onPedalboardChanged = this.onPedalboardChanged.bind(this);
@@ -109,7 +113,8 @@ const ToobSpectrumResponseView =
                     if (plugin) {
                         let minF = plugin.getControlValue("minF");
                         let maxF = plugin.getControlValue("maxF");
-                        this.setState({ minF: minF, maxF: maxF });
+                        let scale = plugin.getControlValue("scale");
+                        this.setState({ minF: minF, maxF: maxF, scale: scale });
                     }
 
                 }
@@ -126,7 +131,8 @@ const ToobSpectrumResponseView =
                 if (plugin) {
                     let minF = plugin.getControlValue("minF");
                     let maxF = plugin.getControlValue("maxF");
-                    this.setState({ minF: minF, maxF: maxF });
+                    let scale = plugin.getControlValue("scale");
+                    this.setState({ minF: minF, maxF: maxF, scale: scale });
                 }
             }
 
@@ -217,8 +223,8 @@ const ToobSpectrumResponseView =
                 let width = PLOT_WIDTH;
                 let height = PLOT_HEIGHT;
 
-                for (let db = -20; db >= -100; db -= 20) {
-                    let y = height * db / -100;
+                for (let db = -10; db >= -this.state.scale; db -= 10) {
+                    let y = height * db / -this.state.scale;
                     ss.moveTo(0,y);
                     ss.lineTo(width,y);
                 }
@@ -279,17 +285,17 @@ const ToobSpectrumResponseView =
                 const classes = withStyles.getClasses(this.props);
                 return (
                     <div className={classes.frame} style={{ position: "relative" }} >
-                        {/* <div style={{ position: "absolute", left: 0, top: 0 }}>
+                        <div style={{ position: "absolute", left: 0, top: 0 }}>
                             <svg fill="#660" width={PLOT_WIDTH } height={PLOT_HEIGHT} preserveAspectRatio='none' 
-                                    viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="none" strokeWidth="2.5" opacity="1.0"
+                                    viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="none" opacity="1.0"
                             >
                                 <path d={this.state.holdPath} />
                             </svg>
-                        </div> */}
+                        </div> 
 
                         <div style={{ position: "absolute", left: 0, top: 0 }}>
                             <svg fill="#0C4" width={PLOT_WIDTH } height={PLOT_HEIGHT } preserveAspectRatio='none' 
-                                viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="none" strokeWidth="2.5" opacity="1.0"
+                                viewBox={"0 0 " + this.numPoints + " " + 1000} stroke="#0C4" strokeWidth="0.5" opacity="1.0"
                             >
                                 <path d={this.state.path} />
                             </svg>

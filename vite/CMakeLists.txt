@@ -202,6 +202,7 @@ add_custom_command(
     src/pipedal/ModGuiHost.tsx
     src/pipedal/SearchFilter.tsx
     src/pipedal/ToobPowerStage2View.tsx
+    src/pipedal/ToobWarmerView.tsx
     src/pipedal/ControlViewFactory.tsx
     src/pipedal/App.tsx
     src/pipedal/Rectangle.tsx

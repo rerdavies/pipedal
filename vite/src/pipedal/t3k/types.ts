@@ -10,7 +10,14 @@ export enum Gear {
   Ir = 'ir',
 }
 
-export enum Platform {
+export enum DeprecatedPlatform {
+  Nam = 'nam',
+  Ir = 'ir',
+  AidaX = 'aida-x',
+  AaSnapshot = 'aa-snapshot',
+  Proteus = 'proteus',
+}
+export enum FileFormat {
   Nam = 'nam',
   Ir = 'ir',
   AidaX = 'aida-x',
@@ -101,7 +108,8 @@ export interface Tone {
   images: string[] | null;
   is_public: boolean | null;
   links: string[] | null;
-  platform: Platform;
+  format?: FileFormat | null | undefined; // new field, replaces deprecated platform.;
+  platform?: DeprecatedPlatform | null; // deprecated field, replaced by format.
   license: License;
   sizes: Size[];
   makes: Make[];
