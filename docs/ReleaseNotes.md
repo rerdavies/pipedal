@@ -1,6 +1,6 @@
 # Release Notes
 
-## PiPedal 2.0.107-Release
+## PiPedal 2.0.108-Release
 Emergency fix for breaking changes in Tone3000 API. Fixes failed downloads from Tone3000.com.
 
 Major Features:
