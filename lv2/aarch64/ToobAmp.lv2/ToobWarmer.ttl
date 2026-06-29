@@ -1,0 +1,320 @@
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:    <http://lv2plug.in/ns/ext/urid#> .
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
+@prefix epp:     <http://lv2plug.in/ns/ext/port-props#> .
+@prefix uiext:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix idpy:  <http://harrisonconsoles.com/lv2/inlinedisplay#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix mod:   <http://moddevices.com/ns/mod#> .
+@prefix param:   <http://lv2plug.in/ns/ext/parameters#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
+@prefix pg:      <http://lv2plug.in/ns/ext/port-groups#> .
+
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://two-play.com/plugins/toob-warmer#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix modgui: <http://moddevices.com/ns/modgui#> .
+@prefix twarmer: <http://two-play.com/plugins/toob-warmer#> .
+
+@prefix pipedal_patch: <http://github.com/rerdavies/pipedal/patch#> .
+
+twarmer:stage1
+    a param:ControlGroup ,
+        pg:InputGroup ;
+    lv2:name "Wave Shaper" ;
+    lv2:symbol "stage1" .
+
+<http://two-play.com/plugins/toob-warmer#uiState>
+        a lv2:Parameter ;
+        rdfs:label "uiState" ;
+        rdfs:range atom:Vector .
+
+
+<http://two-play.com/rerdavies#me>
+	a foaf:Person ;
+	foaf:name "Robin Davies" ;
+	foaf:mbox <mailto:rerdavies@gmail.com> ;
+	foaf:homepage <https://github.com/sponsors/rerdavies> .
+
+<http://two-play.com/plugins/toob-warmer>
+        a lv2:Plugin ,
+                lv2:SimulatorPlugin ;
+
+        doap:name "TooB Warmer";
+
+        doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
+        doap:maintainer <http://two-play.com/rerdavies#me> ;
+         lv2:minorVersion 0 ;
+        lv2:microVersion 83 ;
+
+        mod:brand "TooB";
+        mod:label "Warmer";
+        lv2:requiredFeature urid:map ;
+        lv2:optionalFeature lv2:hardRTCapable;
+        pipedal_patch:readable 
+                <http://two-play.com/plugins/toob-warmer#uiState>;
+
+rdfs:comment """
+TooB Warmer provides a gentle overdrive with a very slow breakup. The overall effect it provides serves to
+impart a sound that is pleasantly warm and tube-like, often with no apparent breakup at all. It also
+provides a little bit of compression, and limiting. The sound is similar to the warmth added by tube-based
+studio console preamps. It is exceptionally useful for
+warming up clean tones, or acoustic guitar.
+
+The core of the effect is an oversampled atan wave shaper, which produces only odd order harmonic overtones. Op amps 
+typically provide atan-shaped distortion on the positive part of the input signal, and something that approximates
+diode-clipping on the negative portion of the input signal. TooB Warmer omits the diode-clipping, which 
+provides the warmth of a gently overdriven op amp, without the early breakup that diode clipping would cause.
+
+The overdrive section expects a signal with an input level that is nominally in the range of 12dBFS to 0dBFS. 
+It's ok if the levels are slightly over 0db, but they should not be massively over. Use the 
+Trim control to adjust input signal levels.
+
+The Gain control affects how hard the waveshaper is driven. Most of the useful tones are found when the 
+Gain control is between about 0.25 and 0.5; anything above 5 provides audible breakup, and setting the control 
+to 1.0 produces virtually square output.
+
+Gain settings between 0.25 and 0.5 produce increasing amounts of THD (Total Harmonic Distortion):
+```
+     | Gain | THD   |
+     | ---- | ----- |
+     | 0.25 | 0.06% |
+     | 0.30 | 0.20% |
+     | 0.35 | 0.63% |
+     | 0.40 | 1.61% |
+     | 0.45 | 4.15% |
+     | 0.50 | 11.0% |
+```
+
+For comparison, a particularly warm studio mixer pre-amp might have between 0.1% and 2% THD. 
+
+The Shape control selects either atan waveshaping, or a wave shape that approximates the output response of a triode. Results when 
+using the triode waveshape are relatively unexplored. Feel free to play. 
+
+The tone controls subtly affect the sound of the overdrive stage. Cutting low frequency response, particularly, 
+can delay the onset of "farty" overdrive sounds if the overdrive section is being driven hard.
+As a rough guideline, Fender amps effectively cut frequencies below 80hz, whereas Marshall amps typically
+cut frequencies below 140hz. For smooth dark tones, aggressively cut high frequencies.
+
+The original TooB Warmer effect was implemented in Native Instruments Reaktor, and it has subsequently been widely used in a 
+variety of 3rd-party Reaktor instruments and effects. Ironically, I originally created the effect to settle a debate over 
+whether you can effectively use oversampling to prevent aliasing problems with wave shapers. Contrary to my
+expectations, it turns out that you can! It is included in the TooB collection, because I personally use this effect
+in my own personal jazz presets.
+
+""";
+        lv2:port
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 0 ;
+                pg:group twarmer:stage1 ;
+                lv2:symbol "trim1" ;
+                lv2:name "Trim";
+                lv2:default 0.0 ;
+                lv2:minimum -20.0 ;
+                lv2:maximum 20.0 ;    
+                units:unit units:db ;
+                rdfs:comment "Trim input level" ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index  1 ;
+                pg:group twarmer:stage1 ;
+                lv2:symbol "locut1" ;
+                lv2:name "Lo Cut";
+                lv2:default 30.0 ;
+                lv2:minimum 100.0 ;
+                lv2:maximum 300.0 ;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 30.0
+                ];
+                rdfs:comment "Low frequency cutoff. Set to minimum to disable." ;
+
+        ],  [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 2 ;
+                pg:group twarmer:stage1 ;
+                lv2:symbol "hicut1" ;
+                lv2:name "Hi Cut";
+                lv2:default 000.0 ;
+                lv2:minimum 1000.0 ;
+                lv2:maximum 19000.0;    
+                units:unit units:hz;
+                lv2:designation param:cutoffFrequency ;
+                lv2:scalePoint [
+                        rdfs:label "OFF" ;
+                        rdf:value 3700.0
+                ];
+                rdfs:comment "High cutoff frequency. Set to maximum to disable." ;
+
+        ],          
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group twarmer:stage1 ;
+
+                lv2:index 3 ;
+                lv2:symbol "shape1" ;
+                lv2:name "Shape";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;
+                lv2:rangeStep 2;
+                
+                lv2:portProperty lv2:enumeration ;
+                rdfs:comment "Wave shape." ;
+                lv2:scalePoint [
+                        rdfs:label "atan" ;
+                        rdf:value 0.0
+                ],
+                 [
+                        rdfs:label "triode" ;
+                        rdf:value 1.0
+                ];
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 4 ;
+                pg:group twarmer:stage1 ;
+                lv2:symbol "gain1" ;
+                lv2:name "Gain";
+                lv2:default 0.0 ;
+                lv2:minimum 0.30 ;
+                lv2:maximum 1.0 ;    
+                rdfs:comment "Waveshape gain." 
+        ], 
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+                pg:group twarmer:stage1 ;
+
+                lv2:index 5 ;
+                lv2:symbol "bias1" ;
+                lv2:name "Bias";
+                lv2:default 0.0 ;
+                lv2:minimum -2.0 ;
+                lv2:maximum 2.0;
+                rdfs:comment "Waveshape bias."                 
+        ],
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 6 ;
+                lv2:symbol "sag" ;
+                lv2:name "Sag Vol";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                lv2:portProperty epp:notOnGUI;
+
+                rdfs:comment "Transformer sag (volume)." ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 7 ;
+                lv2:symbol "sagd" ;
+                lv2:name "Sag Dist";
+                lv2:default 0.0 ;
+                lv2:minimum 0.0 ;
+                lv2:maximum 1.0;    
+                lv2:portProperty epp:notOnGUI;
+                rdfs:comment "Transformer sag (distortion)." ;
+        ], 
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 8 ;
+                lv2:symbol "master" ;
+                lv2:name "Master";
+                lv2:default -0.0 ;
+                lv2:minimum -60.0 ;
+                lv2:maximum 30.0;    
+                units:unit units:db;
+                lv2:scalePoint [
+                        rdfs:label "-60db" ;
+                        rdf:value -60.0
+                ] ,  [
+                        rdfs:label "0db" ;
+                        rdf:value 0.0
+                ], [
+                        rdfs:label "30db" ;
+                        rdf:value -30.0
+                ];
+                rdfs:comment "Master volume." ;
+
+        ], 
+        [
+                a lv2:AudioPort ,
+                        lv2:InputPort ;
+                lv2:index 9 ;
+                lv2:symbol "in" ;
+                lv2:name "In"
+        ] , [
+                a lv2:AudioPort ,
+                        lv2:OutputPort ;
+                lv2:index 10 ;
+                lv2:symbol "out" ;
+                lv2:name "Out"
+        ],[
+                a atom:AtomPort ,
+                  lv2:InputPort;
+                atom:bufferType atom:Sequence ;
+                # atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 11 ;
+                lv2:symbol "control" ;
+                lv2:name "Control" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ] , [
+                a atom:AtomPort ,
+                  lv2:OutputPort ;
+                atom:bufferType atom:Sequence ;
+                # atom:supports patch:Message;
+                lv2:designation lv2:control ;
+                lv2:index 12 ;
+                lv2:symbol "notify" ;
+                lv2:name "Notify" ;
+                rdfs:comment "Plugin to GUI communication" ;
+        ],  
+        [
+                a lv2:InputPort ,
+                lv2:ControlPort ;
+
+                lv2:index 13 ;
+                lv2:symbol "sagf" ;
+                lv2:portProperty epp:notOnGUI;
+
+                lv2:name "SagF";
+                lv2:default 13.0 ;
+                lv2:minimum 5.0 ;
+                lv2:maximum 25.0;    
+                rdfs:comment "Sag filter Fc." ;
+        ]
+        .
+
+

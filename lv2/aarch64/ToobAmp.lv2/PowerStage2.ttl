@@ -68,7 +68,7 @@ pstage:stage3
         doap:license <https://rerdavies.github.io/pipedal/LicenseToobAmp> ;
         doap:maintainer <http://two-play.com/rerdavies#me> ;
          lv2:minorVersion 0 ;
-        lv2:microVersion 82 ;
+        lv2:microVersion 83 ;
 
         mod:brand "TooB";
         mod:label "Power Stage";
@@ -78,6 +78,17 @@ pstage:stage3
                 <http://two-play.com/plugins/toob-power-stage-2#uiState>;
 
 rdfs:comment """
+
+Deprecated. This plugin is an experimental plugin that dates to the very earliest days of the
+development of PiPedal. If you are looking for good amp emulations, you are strongly encouraged
+to use TooB Neural Amp Modeler instead. It endures mainly to provide backward compatibility
+with previous versions of PiPedal, and, I suppose as a peculiar historical record of the evolution
+of the PiPedal project. PiPedal, in its earliest ancestral version, was written to migrate this 
+effect from Native Instruments Reaktor to a a native plugin that could be more easily used in performance.
+See also the TooB Warmer plugin, which provides the best feature of
+this plugin&mdash;an extraordinarly and useful ability to warm clean and accoustic guitar signals&mdash;but 
+in a more directed form that's easier to use. 
+
 The TooB Power Stage provides flexible and nuanced emulations of guitar amp power stages. 
 The goal of TooB Power Stage is emulate the best features of real tube amps without slavishly
 reproducing the undesirable features as well.
