@@ -670,7 +670,7 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
     {
         // ipv6
         if (address[0] != '[' || address[address.length() - 1] != ']')
-            throw std::invalid_argument("Bad address.");
+            throw std::invalid_argument(SS("Bad address: " << address));
         address = address.substr(1, address.length() - 2);
 
         auto nPos = address.find('%');
