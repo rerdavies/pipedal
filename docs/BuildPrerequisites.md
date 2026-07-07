@@ -7,7 +7,7 @@ Run the following commands to install build tools required by the PiPedal build.
     sudo apt upgrade
     sudo apt install -y cmake ninja-build build-essential g++ git
 
-The PiPedal build process also requires version 12 or later of `node.js`. Type `node --version` to see if you have a version 
+The PiPedal build process also requires version 22 or later of `node.js`. Type `node --version` to see if you have a version 
 of `node.js` installed already. Otherwise run the following commands as root to install a current version of version of `node.js`: 
 
     sudo apt install nodejs npm curl
@@ -72,6 +72,13 @@ Run the following command to install and configure React dependencies.
 
     cd ~/src/pipedal
     ./react-config   # Configure React NPM dependencies.
+
+If you are using node.js v24 or later, you may have to run the following command:
+
+   cd ~/src/pipedal/vite
+   npm approve-scripts esbuild
+
+PiPedal will be migrated from `esbuild` to `transformWithOxc` sometime soon. You can ignore the warning about use of `esbuild`.
 
 And one final step. Edit the file `/etc/sysctl.conf`, and add or increase the value for the maximum number of watchable user 
 files:
