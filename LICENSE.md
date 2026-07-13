@@ -68,7 +68,8 @@ source-code, data or dependencies that PiPedal uses which are not
 compatible with a GPL license.
 
 ---
-</div>
+
+
 <div class='fossLicenses'>
 <div class='fossIntro'>
 <p>PiPedal uses open-source software covered by the following copyright notices and licenses.</p>
@@ -204,6 +205,7 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='0BSD'>
+<p class=spdxName>0BSD License</p>
 <p>Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted. </p>
 <p>THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. </p>
 </div>
@@ -220,6 +222,7 @@ compatible with a GPL license.
  © Sebastian Kosch
 </p></div>
 <div class='fossLicense' tag='Apache-2'>
+<p class=spdxName>Apache-2 License</p>
 <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at </p>
 <p>http://www.apache.org/licenses/LICENSE-2.0 </p>
 <p>Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. </p>
@@ -360,19 +363,8 @@ compatible with a GPL license.
  © contributors
 </p></div>
 <div class='fossLicense' tag='Apache-2.0'>
+<p class=spdxName>Apache-2.0 License</p>
 <p>On Debian systems, the complete text of the Apache License can be found in "/usr/share/common-licenses/Apache-2.0". </p>
-</div>
-<div class='fossCopyrights'>
-<p>
- © 2018, Mapbox
-</p></div>
-<div class='fossLicense' tag='BSD-2-Clause-FreeBSD'>
-</div>
-<div class='fossCopyrights'>
-<p>
- © 2011, Gary Court.
-</p></div>
-<div class='fossLicense' tag='BSD-2-Clause-Views'>
 </div>
 <div class='fossCopyrights'>
 <p>
@@ -475,6 +467,7 @@ compatible with a GPL license.
  © 2018 Syn Developers<br/>
  © 2018 The predicates-rs Project Developers<br/>
  © 2018 Ulf Adams<br/>
+ © 2018, Mapbox<br/>
  © 2018-2021 Developers of the Rand project<br/>
  © 2019 Embark Studios<br/>
  © 2019 Hao Hou<br/>
@@ -506,7 +499,12 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='BSD-2-clause'>
-<p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </p>
+<p class=spdxName>BSD-2-clause License</p>
+<p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
+<ol><li>Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer. </li>
+<li>Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </li></ol>
 <p>THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 </div>
 <div class='fossCopyrights'>
@@ -656,8 +654,11 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='BSD-3-clause'>
+<p class=spdxName>BSD-3-clause License</p>
 <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
-<p>* Redistributions of [source code/works] must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * Neither the name of [the copyright holder] nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </p>
+<ul><li>Redistributions of [source code/works] must retain the above copyright notice, this list of conditions and the following disclaimer. </li>
+<li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </li>
+<li>Neither the name of [the copyright holder] nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </li></ul>
 <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 </div>
 <div class='fossCopyrights'>
@@ -666,7 +667,12 @@ compatible with a GPL license.
  © 2001-2012 Hartmut Kaiser
 </p></div>
 <div class='fossLicense' tag='BSD2'>
-<p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </p>
+<p class=spdxName>BSD2 License</p>
+<p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
+<ol><li>Redistributions of source code must retain the above
+copyright notice, this list of conditions and the following disclaimer. </li>
+<li>Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </li></ol>
 <p>THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 </div>
 <div class='fossCopyrights'>
@@ -675,10 +681,11 @@ compatible with a GPL license.
  © 2015 Muhammad Junaid Muzammil
 </p></div>
 <div class='fossLicense' tag='BSD3_DEShaw'>
+<p class=spdxName>BSD3_DEShaw License</p>
 <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
-<p>* Redistributions of source code must retain the above copyright notice, this list of conditions, and the following disclaimer. </p>
-<p>* Redistributions in binary form must reproduce the above copyright notice, this list of conditions, and the following disclaimer in the documentation and/or other materials provided with the distribution. </p>
-<p>* Neither the name of D. E. Shaw Research nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </p>
+<ul><li>Redistributions of source code must retain the above copyright notice, this list of conditions, and the following disclaimer. </li></ul>
+<ul><li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions, and the following disclaimer in the documentation and/or other materials provided with the distribution. </li></ul>
+<ul><li>Neither the name of D. E. Shaw Research nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </li></ul>
 <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 </div>
 <div class='fossCopyrights'>
@@ -686,8 +693,11 @@ compatible with a GPL license.
  © 2013 Google, Inc
 </p></div>
 <div class='fossLicense' tag='BSD3_Google'>
+<p class=spdxName>BSD3_Google License</p>
 <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
-<p>* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * Neither the name of Google Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </p>
+<ul><li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. </li>
+<li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </li>
+<li>Neither the name of Google Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </li></ul>
 <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 </div>
 <div class='fossCopyrights'>
@@ -2733,6 +2743,7 @@ compatible with a GPL license.
  © various
 </p></div>
 <div class='fossLicense' tag='BSL-1.0'>
+<p class=spdxName>BSL-1.0 License</p>
 <p>Boost Software License - Version 1.0 - August 17th, 2003 </p>
 <p>Permission is hereby granted, free of charge, to any person or organization obtaining a copy of the software and accompanying documentation covered by this license (the "Software") to use, reproduce, display, distribute, execute, and transmit the Software, and to prepare derivative works of the Software, and to permit third-parties to whom the Software is furnished to do so, all subject to the following: </p>
 <p>The copyright notices in the Software and this entire statement, including the above license grant, this restriction and the following disclaimer, must be included in all copies of the Software, in whole or in part, and all derivative works of the Software, unless such copies or derivative works are solely in the form of machine-executable object code generated by a source language processor. </p>
@@ -2751,6 +2762,7 @@ compatible with a GPL license.
  © Sebastian Kosch
 </p></div>
 <div class='fossLicense' tag='Bitstream-Vera'>
+<p class=spdxName>Bitstream-Vera License</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of the fonts accompanying this license ("Fonts") and associated documentation files (the "Font Software"), to reproduce and distribute the Font Software, including without limitation the rights to use, copy, merge, publish, distribute, and/or sell copies of the Font Software, and to permit persons to whom the Font Software is furnished to do so, subject to the following conditions: </p>
 <p>The above copyright and trademark notices and this permission notice shall be included in all copies of one or more of the Font Software typefaces. </p>
 <p>The Font Software may be modified, altered, or added to, and in particular the designs of glyphs or characters in the Fonts may be modified and additional glyphs or characters may be added to the Fonts, only if the fonts are renamed to names not containing either the words "Bitstream" or the word "Vera". </p>
@@ -2888,22 +2900,10 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='Boost-1.0'>
+<p class=spdxName>Boost-1.0 License</p>
 <p>Permission is hereby granted, free of charge, to any person or organization obtaining a copy of the software and accompanying documentation covered by this license (the "Software") to use, reproduce, display, distribute, execute, and transmit the Software, and to prepare derivative works of the Software, and to permit third-parties to whom the Software is furnished to do so, all subject to the following: </p>
 <p>The copyright notices in the Software and this entire statement, including the above license grant, this restriction and the following disclaimer, must be included in all copies of the Software, in whole or in part, and all derivative works of the Software, unless such copies or derivative works are solely in the form of machine-executable object code generated by a source language processor. </p>
 <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. </p>
-</div>
-<div class='fossCopyrights'>
-<p>
- © including, without limitation
-</p></div>
-<div class='fossLicense' tag='CC-BY-4.0'>
-</div>
-<div class='fossCopyrights'>
-<p>
- © 2021 David Robillard
-</p></div>
-<div class='fossLicense' tag='CC-BY-SA-3.0'>
-<p>Creative Commons Attribution-ShareAlike 3.0 Unported ․ CREATIVE COMMONS CORPORATION IS NOT A LAW FIRM AND DOES NOT PROVIDE LEGAL SERVICES. DISTRIBUTION OF THIS LICENSE DOES NOT CREATE AN ATTORNEY-CLIENT RELATIONSHIP. CREATIVE COMMONS PROVIDES THIS INFORMATION ON AN "AS-IS" BASIS. CREATIVE COMMONS MAKES NO WARRANTIES REGARDING THE INFORMATION PROVIDED, AND DISCLAIMS LIABILITY FOR DAMAGES RESULTING FROM ITS USE. ․ License ․ THE WORK (AS DEFINED BELOW) IS PROVIDED UNDER THE TERMS OF THIS CREATIVE COMMONS PUBLIC LICENSE ("CCPL" OR "LICENSE"). THE WORK IS PROTECTED BY COPYRIGHT AND/OR OTHER APPLICABLE LAW. ANY USE OF THE WORK OTHER THAN AS AUTHORIZED UNDER THIS LICENSE OR COPYRIGHT LAW IS PROHIBITED. ․ BY EXERCISING ANY RIGHTS TO THE WORK PROVIDED HERE, YOU ACCEPT AND AGREE TO BE BOUND BY THE TERMS OF THIS LICENSE. TO THE EXTENT THIS LICENSE MAY BE CONSIDERED TO BE A CONTRACT, THE LICENSOR GRANTS YOU THE RIGHTS CONTAINED HERE IN CONSIDERATION OF YOUR ACCEPTANCE OF SUCH TERMS AND CONDITIONS. ․ 1. Definitions ․ a. "Adaptation" means a work based upon the Work, or upon the Work and other pre-existing works, such as a translation, adaptation, derivative work, arrangement of music or other alterations of a literary or artistic work, or phonogram or performance and includes cinematographic adaptations or any other form in which the Work may be recast, transformed, or adapted including in any form recognizably derived from the original, except that a work that constitutes a Collection will not be considered an Adaptation for the purpose of this License. For the avoidance of doubt, where the Work is a musical work, performance or phonogram, the synchronization of the Work in timed-relation with a moving image ("synching") will be considered an Adaptation for the purpose of this License. ․ b. "Collection" means a collection of literary or artistic works, such as encyclopedias and anthologies, or performances, phonograms or broadcasts, or other works or subject matter other than works listed in Section 1(f) below, which, by reason of the selection and arrangement of their contents, constitute intellectual creations, in which the Work is included in its entirety in unmodified form along with one or more other contributions, each constituting separate and independent works in themselves, which together are assembled into a collective whole. A work that constitutes a Collection will not be considered an Adaptation (as defined below) for the purposes of this License. ․ c. "Creative Commons Compatible License" means a license that is listed at http://creativecommons.org/compatiblelicenses that has been approved by Creative Commons as being essentially equivalent to this License, including, at a minimum, because that license: (i) contains terms that have the same purpose, meaning and effect as the License Elements of this License; and, (ii) explicitly permits the relicensing of adaptations of works made available under that license under this License or a Creative Commons jurisdiction license with the same License Elements as this License. ․ d. "Distribute" means to make available to the public the original and copies of the Work or Adaptation, as appropriate, through sale or other transfer of ownership. ․ e. "License Elements" means the following high-level license attributes as selected by Licensor and indicated in the title of this License: Attribution, ShareAlike. ․ f. "Licensor" means the individual, individuals, entity or entities that offer(s) the Work under the terms of this License. ․ g. "Original Author" means, in the case of a literary or artistic work, the individual, individuals, entity or entities who created the Work or if no individual or entity can be identified, the publisher; and in addition (i) in the case of a performance the actors, singers, musicians, dancers, and other persons who act, sing, deliver, declaim, play in, interpret or otherwise perform literary or artistic works or expressions of folklore; (ii) in the case of a phonogram the producer being the person or legal entity who first fixes the sounds of a performance or other sounds; and, (iii) in the case of broadcasts, the organization that transmits the broadcast. ․ h. "Work" means the literary and/or artistic work offered under the terms of this License including without limitation any production in the literary, scientific and artistic domain, whatever may be the mode or form of its expression including digital form, such as a book, pamphlet and other writing; a lecture, address, sermon or other work of the same nature; a dramatic or dramatico-musical work; a choreographic work or entertainment in dumb show; a musical composition with or without words; a cinematographic work to which are assimilated works expressed by a process analogous to cinematography; a work of drawing, painting, architecture, sculpture, engraving or lithography; a photographic work to which are assimilated works expressed by a process analogous to photography; a work of applied art; an illustration, map, plan, sketch or three-dimensional work relative to geography, topography, architecture or science; a performance; a broadcast; a phonogram; a compilation of data to the extent it is protected as a copyrightable work; or a work performed by a variety or circus performer to the extent it is not otherwise considered a literary or artistic work. ․ i. "You" means an individual or entity exercising rights under this License who has not previously violated the terms of this License with respect to the Work, or who has received express permission from the Licensor to exercise rights under this License despite a previous violation. ․ j. "Publicly Perform" means to perform public recitations of the Work and to communicate to the public those public recitations, by any means or process, including by wire or wireless means or public digital performances; to make available to the public Works in such a way that members of the public may access these Works from a place and at a place individually chosen by them; to perform the Work to the public by any means or process and the communication to the public of the performances of the Work, including by public digital performance; to broadcast and rebroadcast the Work by any means including signs, sounds or images. ․ k. "Reproduce" means to make copies of the Work by any means including without limitation by sound or visual recordings and the right of fixation and reproducing fixations of the Work, including storage of a protected performance or phonogram in digital form or other electronic medium. ․ 2. Fair Dealing Rights. Nothing in this License is intended to reduce, limit, or restrict any uses free from copyright or rights arising from limitations or exceptions that are provided for in connection with the copyright protection under copyright law or other applicable laws. ․ 3. License Grant. Subject to the terms and conditions of this License, Licensor hereby grants You a worldwide, royalty-free, non-exclusive, perpetual (for the duration of the applicable copyright) license to exercise the rights in the Work as stated below: ․ a. to Reproduce the Work, to incorporate the Work into one or more Collections, and to Reproduce the Work as incorporated in the Collections; ․ b. to create and Reproduce Adaptations provided that any such Adaptation, including any translation in any medium, takes reasonable steps to clearly label, demarcate or otherwise identify that changes were made to the original Work. For example, a translation could be marked "The original work was translated from English to Spanish," or a modification could indicate "The original work has been modified."; ․ c. to Distribute and Publicly Perform the Work including as incorporated in Collections; and, ․ d. to Distribute and Publicly Perform Adaptations. ․ e. For the avoidance of doubt: ․ i. Non-waivable Compulsory License Schemes. In those jurisdictions in which the right to collect royalties through any statutory or compulsory licensing scheme cannot be waived, the Licensor reserves the exclusive right to collect such royalties for any exercise by You of the rights granted under this License; ․ ii. Waivable Compulsory License Schemes. In those jurisdictions in which the right to collect royalties through any statutory or compulsory licensing scheme can be waived, the Licensor waives the exclusive right to collect such royalties for any exercise by You of the rights granted under this License; and, ․ iii. Voluntary License Schemes. The Licensor waives the right to collect royalties, whether individually or, in the event that the Licensor is a member of a collecting society that administers voluntary licensing schemes, via that society, from any exercise by You of the rights granted under this License. ․ The above rights may be exercised in all media and formats whether now known or hereafter devised. The above rights include the right to make such modifications as are technically necessary to exercise the rights in other media and formats. Subject to Section 8(f), all rights not expressly granted by Licensor are hereby reserved. ․ 4. Restrictions. The license granted in Section 3 above is expressly made subject to and limited by the following restrictions: ․ a. You may Distribute or Publicly Perform the Work only under the terms of this License. You must include a copy of, or the Uniform Resource Identifier (URI) for, this License with every copy of the Work You Distribute or Publicly Perform. You may not offer or impose any terms on the Work that restrict the terms of this License or the ability of the recipient of the Work to exercise the rights granted to that recipient under the terms of the License. You may not sublicense the Work. You must keep intact all notices that refer to this License and to the disclaimer of warranties with every copy of the Work You Distribute or Publicly Perform. When You Distribute or Publicly Perform the Work, You may not impose any effective technological measures on the Work that restrict the ability of a recipient of the Work from You to exercise the rights granted to that recipient under the terms of the License. This Section 4(a) applies to the Work as incorporated in a Collection, but this does not require the Collection apart from the Work itself to be made subject to the terms of this License. If You create a Collection, upon notice from any Licensor You must, to the extent practicable, remove from the Collection any credit as required by Section 4(c), as requested. If You create an Adaptation, upon notice from any Licensor You must, to the extent practicable, remove from the Adaptation any credit as required by Section 4(c), as requested. ․ b. You may Distribute or Publicly Perform an Adaptation only under the terms of: (i) this License; (ii) a later version of this License with the same License Elements as this License; (iii) a Creative Commons jurisdiction license (either this or a later license version) that contains the same License Elements as this License (e.g., Attribution-ShareAlike 3.0 US)); (iv) a Creative Commons Compatible License. If you license the Adaptation under one of the licenses mentioned in (iv), you must comply with the terms of that license. If you license the Adaptation under the terms of any of the licenses mentioned in (i), (ii) or (iii) (the "Applicable License"), you must comply with the terms of the Applicable License generally and the following provisions: (I) You must include a copy of, or the URI for, the Applicable License with every copy of each Adaptation You Distribute or Publicly Perform; (II) You may not offer or impose any terms on the Adaptation that restrict the terms of the Applicable License or the ability of the recipient of the Adaptation to exercise the rights granted to that recipient under the terms of the Applicable License; (III) You must keep intact all notices that refer to the Applicable License and to the disclaimer of warranties with every copy of the Work as included in the Adaptation You Distribute or Publicly Perform; (IV) when You Distribute or Publicly Perform the Adaptation, You may not impose any effective technological measures on the Adaptation that restrict the ability of a recipient of the Adaptation from You to exercise the rights granted to that recipient under the terms of the Applicable License. This Section 4(b) applies to the Adaptation as incorporated in a Collection, but this does not require the Collection apart from the Adaptation itself to be made subject to the terms of the Applicable License. ․ c. If You Distribute, or Publicly Perform the Work or any Adaptations or Collections, You must, unless a request has been made pursuant to Section 4(a), keep intact all copyright notices for the Work and provide, reasonable to the medium or means You are utilizing: (i) the name of the Original Author (or pseudonym, if applicable) if supplied, and/or if the Original Author and/or Licensor designate another party or parties (e.g., a sponsor institute, publishing entity, journal) for attribution ("Attribution Parties") in Licensor's copyright notice, terms of service or by other reasonable means, the name of such party or parties; (ii) the title of the Work if supplied; (iii) to the extent reasonably practicable, the URI, if any, that Licensor specifies to be associated with the Work, unless such URI does not refer to the copyright notice or licensing information for the Work; and (iv) , consistent with Ssection 3(b), in the case of an Adaptation, a credit identifying the use of the Work in the Adaptation (e.g., "French translation of the Work by Original Author," or "Screenplay based on original Work by Original Author"). The credit required by this Section 4(c) may be implemented in any reasonable manner; provided, however, that in the case of a Adaptation or Collection, at a minimum such credit will appear, if a credit for all contributing authors of the Adaptation or Collection appears, then as part of these credits and in a manner at least as prominent as the credits for the other contributing authors. For the avoidance of doubt, You may only use the credit required by this Section for the purpose of attribution in the manner set out above and, by exercising Your rights under this License, You may not implicitly or explicitly assert or imply any connection with, sponsorship or endorsement by the Original Author, Licensor and/or Attribution Parties, as appropriate, of You or Your use of the Work, without the separate, express prior written permission of the Original Author, Licensor and/or Attribution Parties. ․ d. Except as otherwise agreed in writing by the Licensor or as may be otherwise permitted by applicable law, if You Reproduce, Distribute or Publicly Perform the Work either by itself or as part of any Adaptations or Collections, You must not distort, mutilate, modify or take other derogatory action in relation to the Work which would be prejudicial to the Original Author's honor or reputation. Licensor agrees that in those jurisdictions (e.g. Japan), in which any exercise of the right granted in Section 3(b) of this License (the right to make Adaptations) would be deemed to be a distortion, mutilation, modification or other derogatory action prejudicial to the Original Author's honor and reputation, the Licensor will waive or not assert, as appropriate, this Section, to the fullest extent permitted by the applicable national law, to enable You to reasonably exercise Your right under Section 3(b) of this License (right to make Adaptations) but not otherwise. ․ 5. Representations, Warranties and Disclaimer ․ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING, LICENSOR OFFERS THE WORK AS-IS AND MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND CONCERNING THE WORK, EXPRESS, IMPLIED, STATUTORY OR OTHERWISE, INCLUDING, WITHOUT LIMITATION, WARRANTIES OF TITLE, MERCHANTIBILITY, FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, OR THE ABSENCE OF LATENT OR OTHER DEFECTS, ACCURACY, OR THE PRESENCE OF ABSENCE OF ERRORS, WHETHER OR NOT DISCOVERABLE. SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OF IMPLIED WARRANTIES, SO SUCH EXCLUSION MAY NOT APPLY TO YOU. ․ 6. Limitation on Liability. EXCEPT TO THE EXTENT REQUIRED BY APPLICABLE LAW, IN NO EVENT WILL LICENSOR BE LIABLE TO YOU ON ANY LEGAL THEORY FOR ANY SPECIAL, INCIDENTAL, CONSEQUENTIAL, PUNITIVE OR EXEMPLARY DAMAGES ARISING OUT OF THIS LICENSE OR THE USE OF THE WORK, EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. ․ 7. Termination ․ a. This License and the rights granted hereunder will terminate automatically upon any breach by You of the terms of this License. Individuals or entities who have received Adaptations or Collections from You under this License, however, will not have their licenses terminated provided such individuals or entities remain in full compliance with those licenses. Sections 1, 2, 5, 6, 7, and 8 will survive any termination of this License. ․ b. Subject to the above terms and conditions, the license granted here is perpetual (for the duration of the applicable copyright in the Work). Notwithstanding the above, Licensor reserves the right to release the Work under different license terms or to stop distributing the Work at any time; provided, however that any such election will not serve to withdraw this License (or any other license that has been, or is required to be, granted under the terms of this License), and this License will continue in full force and effect unless terminated as stated above. ․ 8. Miscellaneous ․ a. Each time You Distribute or Publicly Perform the Work or a Collection, the Licensor offers to the recipient a license to the Work on the same terms and conditions as the license granted to You under this License. ․ b. Each time You Distribute or Publicly Perform an Adaptation, Licensor offers to the recipient a license to the original Work on the same terms and conditions as the license granted to You under this License. ․ c. If any provision of this License is invalid or unenforceable under applicable law, it shall not affect the validity or enforceability of the remainder of the terms of this License, and without further action by the parties to this agreement, such provision shall be reformed to the minimum extent necessary to make such provision valid and enforceable. ․ d. No term or provision of this License shall be deemed waived and no breach consented to unless such waiver or consent shall be in writing and signed by the party to be charged with such waiver or consent. ․ e. This License constitutes the entire agreement between the parties with respect to the Work licensed here. There are no understandings, agreements or representations with respect to the Work not specified here. Licensor shall not be bound by any additional provisions that may appear in any communication from You. This License may not be modified without the mutual written agreement of the Licensor and You. ․ f. The rights granted under, and the subject matter referenced, in this License were drafted utilizing the terminology of the Berne Convention for the Protection of Literary and Artistic Works (as amended on September 28, 1979), the Rome Convention of 1961, the WIPO Copyright Treaty of 1996, the WIPO Performances and Phonograms Treaty of 1996 and the Universal Copyright Convention (as revised on July 24, 1971). These rights and subject matter take effect in the relevant jurisdiction in which the License terms are sought to be enforced according to the corresponding provisions of the implementation of those treaty provisions in the applicable national law. If the standard suite of rights granted under applicable copyright law includes additional rights not granted under this License, such additional rights are deemed to be included in the License; this License is not intended to restrict the license of any rights under applicable law. ․ ․ Creative Commons Notice ․ Creative Commons is not a party to this License, and makes no warranty whatsoever in connection with the Work. Creative Commons will not be liable to You or any party on any legal theory for any damages whatsoever, including without limitation any general, special, incidental or consequential damages arising in connection to this license. Notwithstanding the foregoing two (2) sentences, if Creative Commons has expressly identified itself as the Licensor hereunder, it shall have all rights and obligations of Licensor. ․ Except for the limited purpose of indicating to the public that the Work is licensed under the CCPL, Creative Commons does not authorize the use by either party of the trademark "Creative Commons" or any related trademark or logo of Creative Commons without the prior written consent of Creative Commons. Any permitted use will be in compliance with Creative Commons' then-current trademark usage guidelines, as may be published on its website or otherwise made available upon request from time to time. For the avoidance of doubt, this trademark restriction does not form part of the License. ․ Creative Commons may be contacted at http://creativecommons.org/. </p>
 </div>
 <div class='fossCopyrights'>
 <p>
@@ -2911,6 +2911,7 @@ compatible with a GPL license.
  © Todd Fahrner
 </p></div>
 <div class='fossLicense' tag='CC-zero-waive-1.0-us'>
+<p class=spdxName>CC-zero-waive-1.0-us License</p>
 <p>https://www.creativecommons.org/licenses/zero-waive/1.0/us/legalcode </p>
 <p>Affirmation and Waiver </p>
 <p>The person who has associated a work with this document (the "Work") affirms that he or she (the "Affirmer") is the/an author or owner of the Work. The Work may be any work of authorship, including a database. </p>
@@ -2920,25 +2921,20 @@ compatible with a GPL license.
 </div>
 <div class='fossCopyrights'>
 <p>
- © 2001-2010, i.e., "
-</p></div>
-<div class='fossLicense' tag='CNRI-Python-GPL-Compatible'>
-</div>
-<div class='fossCopyrights'>
-<p>
  © 2000-2001 University of Notre Dame<br/>
  © 2002-2003 Trustees of Indiana University
 </p></div>
 <div class='fossLicense' tag='Caramel'>
+<p class=spdxName>Caramel License</p>
 <p>Indiana University has the exclusive rights to license this product under the following license. </p>
 <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
-<p>* All redistributions of source code must retain the above copyright notice, the list of authors in the original source code, this list of conditions and the disclaimer listed in this license; </p>
-<p>* All redistributions in binary form must reproduce the above copyright notice, this list of conditions and the disclaimer listed in this license in the documentation and/or other materials provided with the distribution; </p>
-<p>* Any documentation included with all redistributions must include the following acknowledgement: </p>
+<ul><li>All redistributions of source code must retain the above copyright notice, the list of authors in the original source code, this list of conditions and the disclaimer listed in this license; </li></ul>
+<ul><li>All redistributions in binary form must reproduce the above copyright notice, this list of conditions and the disclaimer listed in this license in the documentation and/or other materials provided with the distribution; </li></ul>
+<ul><li>Any documentation included with all redistributions must include the following acknowledgement: </li></ul>
 <p>"This product includes software developed at the University of Notre Dame and the Pervasive Technology Labs at Indiana University. For technical information contact Andrew Lumsdaine at the Pervasive Technology Labs at Indiana University.  For administrative and license questions contact the Advanced Research and Technology Institute at 351 West 10th Street.  Indianapolis, Indiana 46202, phone 317-278-4100, fax 317-274-5902." </p>
 <p>Alternatively, this acknowledgement may appear in the software itself, and wherever such third-party acknowledgments normally appear. </p>
-<p>* The name Indiana University, the University of Notre Dame or "Caramel" shall not be used to endorse or promote products derived from this software without prior written permission from Indiana University.  For written permission, please contact Indiana University Advanced Research &amp; Technology Institute. </p>
-<p>* Products derived from this software may not be called "Caramel", nor may Indiana University, the University of Notre Dame or "Caramel" appear in their name, without prior written permission of Indiana University Advanced Research &amp; Technology Institute. </p>
+<ul><li>The name Indiana University, the University of Notre Dame or "Caramel" shall not be used to endorse or promote products derived from this software without prior written permission from Indiana University.  For written permission, please contact Indiana University Advanced Research &amp; Technology Institute. </li></ul>
+<ul><li>Products derived from this software may not be called "Caramel", nor may Indiana University, the University of Notre Dame or "Caramel" appear in their name, without prior written permission of Indiana University Advanced Research &amp; Technology Institute. </li></ul>
 <p>Indiana University provides no reassurances that the source code provided does not infringe the patent or any other intellectual property rights of any other entity.  Indiana University disclaims any liability to any recipient for claims brought by any other entity based on infringement of intellectual property rights or otherwise. </p>
 <p>LICENSEE UNDERSTANDS THAT SOFTWARE IS PROVIDED "AS IS" FOR WHICH NO WARRANTIES AS TO CAPABILITIES OR ACCURACY ARE MADE. INDIANA UNIVERSITY GIVES NO WARRANTIES AND MAKES NO REPRESENTATION THAT SOFTWARE IS FREE OF INFRINGEMENT OF THIRD PARTY PATENT, COPYRIGHT, OR OTHER PROPRIETARY RIGHTS. INDIANA UNIVERSITY MAKES NO WARRANTIES THAT SOFTWARE IS FREE FROM "BUGS", "VIRUSES", "TROJAN HORSES", "TRAP DOORS", "WORMS", OR OTHER HARMFUL CODE. LICENSEE ASSUMES THE ENTIRE RISK AS TO THE PERFORMANCE OF SOFTWARE AND/OR ASSOCIATED MATERIALS, AND TO THE PERFORMANCE AND VALIDITY OF INFORMATION GENERATED USING SOFTWARE. </p>
 </div>
@@ -2947,8 +2943,11 @@ compatible with a GPL license.
  © 2018 The Chromium Authors
 </p></div>
 <div class='fossLicense' tag='Chromium-BSD-style'>
+<p class=spdxName>Chromium-BSD-style License</p>
 <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: </p>
-<p>* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * Neither the name of Google Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </p>
+<ul><li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. </li>
+<li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. </li>
+<li>Neither the name of Google Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. </li></ul>
 <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 </div>
 <div class='fossCopyrights'>
@@ -2956,6 +2955,7 @@ compatible with a GPL license.
  © 2002-2006 CrystalClear Software, Inc
 </p></div>
 <div class='fossLicense' tag='CrystalClear'>
+<p class=spdxName>CrystalClear License</p>
 <p>Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation. CrystalClear Software makes no representations about the suitability of this software for any purpose.  It is provided "as is" without express or implied warranty. </p>
 </div>
 <div class='fossCopyrights'>
@@ -2963,6 +2963,7 @@ compatible with a GPL license.
  © 2006-2007 Behdad Esfahbod
 </p></div>
 <div class='fossLicense' tag='Example'>
+<p class=spdxName>Example License</p>
 <p>Permission to use, copy, modify, distribute, and sell this example for any purpose is hereby granted without fee. It is provided "as is" without express or implied warranty. </p>
 </div>
 <div class='fossCopyrights'>
@@ -2977,7 +2978,6 @@ compatible with a GPL license.
  © 2007-2012, David Robillard &lt;http://drobilla.net&gt;<br/>
  © 2008, 2009, Bjoern Hoehrmann &lt;bjoern@hoehrmann.de&gt;<br/>
  © 2009, Thomas Robinson &lt;280north.com&gt;<br/>
- © 2009-2011, Mozilla Foundation and contributors<br/>
  © 2009-2013 Mozilla Foundation<br/>
  © 2009-2016 compiler-builtins Developers<br/>
  © 2010-2011 Dmitry Vyukov<br/>
@@ -3000,7 +3000,7 @@ compatible with a GPL license.
  © 2013, Kael Zhang &lt;i@kael.me&gt;, contributors<br/>
  © 2013, Thorsten Lorenz.<br/>
  © 2013-2014 The Algebra Developers<br/>
- © 2013-2017, 2019<br/>
+ © 2013-2017, 2019, 2024, 2026<br/>
  © 2013-2018 The Gtk-rs Project Developers<br/>
  © 2013-2018 The Servo Project Developers<br/>
  © 2013-2019 Sébastien Crozet<br/>
@@ -3165,6 +3165,7 @@ compatible with a GPL license.
  © 2022, Robin E. R. Davies<br/>
  © 2022-2026, Robin Davies<br/>
  © 2023, Abdullah Atta<br/>
+ © 2023, Boshen<br/>
  © 2024, Madeline Gurriarán<br/>
  © Aaron Trent<br/>
  © Alexander Huszagh<br/>
@@ -3193,7 +3194,7 @@ compatible with a GPL license.
  © Michael Layzell<br/>
  © OpenJS Foundation and other contributors &lt;https://openjsf.org/&gt;<br/>
  © OpenJS Foundation and other contributors, &lt;www.openjsf.org&gt;<br/>
- © Robin E.R Davies<br/>
+ © Roberto Figliè<br/>
  © Robin E.R. Davies<br/>
  © Roy Riojas &amp; Jared Wray<br/>
  © Roy Riojas and Jared Wray<br/>
@@ -3206,6 +3207,7 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='Expat'>
+<p class=spdxName>Expat License</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: </p>
 <p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. </p>
 <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. </p>
@@ -3215,13 +3217,8 @@ compatible with a GPL license.
  © 2008 Tim Toolan
 </p></div>
 <div class='fossLicense' tag='FSFAP'>
+<p class=spdxName>FSFAP License</p>
 <p>Copying and distribution of this file, with or without modification, are permitted in any medium without royalty provided the copyright notice and this notice are preserved. This file is offered as-is, without any warranty. </p>
-</div>
-<div class='fossCopyrights'>
-<p>
- © 2001-2010, i.e., "
-</p></div>
-<div class='fossLicense' tag='GPL'>
 </div>
 <div class='fossCopyrights'>
 <p>
@@ -3236,6 +3233,7 @@ compatible with a GPL license.
  © 2003-2022 Joaqu�n M Lopez Munoz
 </p></div>
 <div class='fossLicense' tag='HP'>
+<p class=spdxName>HP License</p>
 <p>Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation. Hewlett-Packard Company makes no representations about the suitability of this software for any purpose.  It is provided "as is" without express or implied warranty. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3244,6 +3242,7 @@ compatible with a GPL license.
  © 2002 Red Hat
 </p></div>
 <div class='fossLicense' tag='ICU'>
+<p class=spdxName>ICU License</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software") to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, provided that the above copyright notice(s) and this permission notice appear in all copies of the Software and that both the above copyright notice(s) and this permission notice appear in supporting documentation. </p>
 <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. </p>
 <p>Except as contained in this notice, the name of a copyright holder shall not be used in advertising or otherwise to promote the sale, use or other dealings in this Software without prior written authorization of the copyright holder. </p>
@@ -3271,6 +3270,7 @@ compatible with a GPL license.
  © Felix Böhm
 </p></div>
 <div class='fossLicense' tag='ISC'>
+<p class=spdxName>ISC License</p>
 <p>Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies. </p>
 <p>THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. </p>
 </div>
@@ -3301,6 +3301,7 @@ compatible with a GPL license.
  © 2022 René Ferdinand Rivera Morell
 </p></div>
 <div class='fossLicense' tag='Jam'>
+<p class=spdxName>Jam License</p>
 <p>License is hereby granted to use this software and distribute it freely, as long as this copyright notice is retained and modifications are clearly marked.  ALL WARRANTIES ARE HEREBY DISCLAIMED. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3310,6 +3311,7 @@ compatible with a GPL license.
  © 2004-2012 Ion Gazta�aga
 </p></div>
 <div class='fossLicense' tag='Kempf'>
+<p class=spdxName>Kempf License</p>
 <p>Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation.  William E. Kempf makes no representations about the suitability of this software for any purpose.  It is provided "as is" without express or implied warranty. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3369,6 +3371,7 @@ compatible with a GPL license.
  © Sun Microsystems, Inc., and other parties
 </p></div>
 <div class='fossLicense' tag='LGPL-2+'>
+<p class=spdxName>LGPL-2+ License</p>
 <p>This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. </p>
 <p>This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details. </p>
 <p>On Debian systems, the complete text of the GNU Lesser General Public License version 2 can be found in "/usr/share/common-licenses/LGPL-2". </p>
@@ -3378,6 +3381,7 @@ compatible with a GPL license.
  © 1991, 1999, Free Software Foundation, Inc.
 </p></div>
 <div class='fossLicense' tag='LGPL-2.1'>
+<p class=spdxName>LGPL-2.1 License</p>
 </div>
 <div class='fossCopyrights'>
 <p>
@@ -3419,6 +3423,7 @@ compatible with a GPL license.
  © Sivaraj Doddannan
 </p></div>
 <div class='fossLicense' tag='LGPL-2.1+'>
+<p class=spdxName>LGPL-2.1+ License</p>
 <p>This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 of the License, or (at your option) any later version. </p>
 <p>This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details. </p>
 <p>On Debian systems, the complete text of the GNU Lesser General Public License version 2.1 can be found in "/usr/share/common-licenses/LGPL-2.1". </p>
@@ -3445,6 +3450,7 @@ compatible with a GPL license.
  © 2017-2022 Oracle and/or its affiliates
 </p></div>
 <div class='fossLicense' tag='MIT'>
+<p class=spdxName>MIT License</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: </p>
 <p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. </p>
 <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. </p>
@@ -3455,6 +3461,7 @@ compatible with a GPL license.
  © 1995-2017 Mark Adler<br/>
  © 2005-2011 David Schultz<br/>
  © 2006-2009 Graydon Hoare<br/>
+ © 2009-2011, Mozilla Foundation and contributors<br/>
  © 2009-2013 Mozilla Foundation<br/>
  © 2009-2016 compiler-builtins Developers<br/>
  © 2010-2011 Dmitry Vyukov<br/>
@@ -3575,9 +3582,11 @@ compatible with a GPL license.
  © Steven Fackler<br/>
  © Sun Microsystems, Inc.<br/>
  © Wadelma<br/>
- © Without Boats
+ © Without Boats<br/>
+ © under Patent Claims infringedCovered Software in the absence of
 </p></div>
 <div class='fossLicense' tag='MPL-2.0'>
+<p class=spdxName>MPL-2.0 License</p>
 <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3585,6 +3594,7 @@ compatible with a GPL license.
  © 2004 Jeremy G. Siek
 </p></div>
 <div class='fossLicense' tag='NIST'>
+<p class=spdxName>NIST License</p>
 <p>Permission to use, copy, modify, and distribute this software and its documentation for any purpose and without fee is hereby granted provided that the above copyright notice appear in all copies and that both the copyright notice and this permission notice appear in supporting documentation. </p>
 <p>Neither the Author nor the Institution (National Institute of Standards and Technology) make any representations about the suitability of this software for any purpose. This software is provided "as is" without expressed or implied warranty. </p>
 </div>
@@ -3603,9 +3613,13 @@ compatible with a GPL license.
  © Sebastian Kosch
 </p></div>
 <div class='fossLicense' tag='OFL-1.1'>
+<p class=spdxName>OFL-1.1 License</p>
 <p>This Font Software is licensed under the SIL Open Font License, Version 1.1. </p>
 <p>This license is copied below, and is also available with a FAQ at: http://scripts.sil.org/OFL </p>
-<p>----------------------------------------------------------- SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007 ----------------------------------------------------------- PREAMBLE </p>
+<hr/>
+<p>SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007 </p>
+<hr/>
+<p>PREAMBLE </p>
 <p>The goals of the Open Font License (OFL) are to stimulate worldwide development of collaborative font projects, to support the font creation efforts of academic and linguistic communities, and to provide a free and open framework in which fonts may be shared and improved in partnership with others. </p>
 <p>The OFL allows the licensed fonts to be used, studied, modified and redistributed freely as long as they are not sold by themselves. The fonts, including any derivative works, can be bundled, embedded, redistributed and/or sold with any software provided that any reserved names are not used by derivative works. The fonts and derivatives, however, cannot be released under any other type of license. The requirement for fonts to remain under this license does not apply to any document created using the fonts or their derivatives. </p>
 <p>DEFINITIONS </p>
@@ -3633,6 +3647,7 @@ compatible with a GPL license.
  © 2009-2013 Ion Gazta�aga
 </p></div>
 <div class='fossLicense' tag='OldBoost1'>
+<p class=spdxName>OldBoost1 License</p>
 <p>Permission to use, copy, modify, redistribute and sell this software, provided that this copyright notice appears on all copies of the software. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3655,6 +3670,7 @@ compatible with a GPL license.
  © 2019 James E. King III
 </p></div>
 <div class='fossLicense' tag='OldBoost2'>
+<p class=spdxName>OldBoost2 License</p>
 <p>Permission to copy, use, modify, sell and distribute this software is granted provided this copyright notice appears in all copies.  This software is provided "as is" without express or implied warranty, and with no claim as to its suitability for any purpose. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3662,13 +3678,8 @@ compatible with a GPL license.
  © 2001-2003 Douglas Gregor
 </p></div>
 <div class='fossLicense' tag='OldBoost3'>
+<p class=spdxName>OldBoost3 License</p>
 <p>Permission to copy, use, sell and distribute this software is granted provided this copyright notice appears in all copies. Permission to modify the code and to distribute modified code is granted provided this copyright notice appears in all copies, and a notice that the code was modified is included with the copyright notice. </p>
-</div>
-<div class='fossCopyrights'>
-<p>
- © 2001-2010, i.e., "
-</p></div>
-<div class='fossLicense' tag='PSF-2.0'>
 </div>
 <div class='fossCopyrights'>
 <p>
@@ -3678,6 +3689,7 @@ compatible with a GPL license.
  © 2006 Rene Rivera
 </p></div>
 <div class='fossLicense' tag='Python'>
+<p class=spdxName>Python License</p>
 <p>This module is free software, and you may redistribute it and/or modify it under the same terms as Python itself, so long as this copyright message and disclaimer are retained in their original form. </p>
 <p>IN NO EVENT SHALL THE AUTHOR BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF THIS CODE, EVEN IF THE AUTHOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
 <p>THE AUTHOR SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE CODE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THERE IS NO OBLIGATION WHATSOEVER TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS. </p>
@@ -3698,6 +3710,7 @@ compatible with a GPL license.
  © 2005-2012 Ion Gazta�aga
 </p></div>
 <div class='fossLicense' tag='SGI'>
+<p class=spdxName>SGI License</p>
 <p>Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation. Silicon Graphics makes no representations about the suitability of this software for any purpose. It is provided "as is" without express or implied warranty. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3705,8 +3718,10 @@ compatible with a GPL license.
  © 1986 University of Toronto
 </p></div>
 <div class='fossLicense' tag='Spencer'>
+<p class=spdxName>Spencer License</p>
 <p>Permission is granted to anyone to use this software for any purpose on any computer system, and to redistribute it freely, subject to the following restrictions: </p>
-<p>1. The author is not responsible for the consequences of use of this software, no matter how awful, even if they arise from defects in it. </p>
+<ol><li>The author is not responsible for the consequences of use of
+this software, no matter how awful, even if they arise from defects in it. </li></ol>
 <p>2. The origin of this software must not be misrepresented, either by explicit claim or by omission. </p>
 <p>3. Altered versions must be plainly marked as such, and must not be misrepresented as being the original software. </p>
 </div>
@@ -3839,6 +3854,7 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='Sun-permissive'>
+<p class=spdxName>Sun-permissive License</p>
 <p>Permission to use, copy, modify, and distribute this software is freely granted, provided that this notice is preserved. </p>
 </div>
 <div class='fossCopyrights'>
@@ -3848,6 +3864,7 @@ compatible with a GPL license.
  © Sun Microsystems, Inc., and other parties
 </p></div>
 <div class='fossLicense' tag='TCL'>
+<p class=spdxName>TCL License</p>
 <p>This software is copyrighted by the Regents of the University of California, Sun Microsystems, Inc., and other parties. The following terms apply to all files associated with the software unless explicitly disclaimed in individual files. </p>
 <p>The authors hereby grant permission to use, copy, modify, distribute, and license this software and its documentation for any purpose, provided that existing copyright notices are retained in all copies and that this notice is included verbatim in any distributions. No written agreement, license, or royalty fee is required for any of the authorized uses. Modifications to this software may be copyrighted by their authors and need not follow the licensing terms described here, provided that the new terms are clearly indicated on the first page of each file where they apply. </p>
 <p>IN NO EVENT SHALL THE AUTHORS OR DISTRIBUTORS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF THIS SOFTWARE, ITS DOCUMENTATION, OR ANY DERIVATIVES THEREOF, EVEN IF THE AUTHORS HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. </p>
@@ -3859,6 +3876,7 @@ compatible with a GPL license.
  © 2016-2021 Unicode, Inc.
 </p></div>
 <div class='fossLicense' tag='Unicode'>
+<p class=spdxName>Unicode License</p>
 <p>Unicode Data Files include all data files under the directories http://www.unicode.org/Public/, http://www.unicode.org/reports/, http://www.unicode.org/cldr/data/, http://source.icu-project.org/repos/icu/, and http://www.unicode.org/utility/trac/browser/. </p>
 <p>Unicode Data Files do not include PDF online code charts under the directory http://www.unicode.org/Public/. </p>
 <p>Software includes any source code published in the Unicode Standard or under the directories http://www.unicode.org/Public/, http://www.unicode.org/reports/, http://www.unicode.org/cldr/data/, http://source.icu-project.org/repos/icu/, and http://www.unicode.org/utility/trac/browser/. </p>
@@ -3996,6 +4014,7 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='Unlicense'>
+<p class=spdxName>Unlicense License</p>
 <p>This is free and unencumbered software released into the public domain. </p>
 <p>Anyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means. </p>
 <p>In jurisdictions that recognize copyright laws, the author or authors of this software dedicate any and all copyright interest in the software to the public domain. We make this dedication for the benefit of the public at large and to the detriment of our heirs and successors. We intend this dedication to be an overt act of relinquishment in perpetuity of all present and future rights to this software under copyright law. </p>
@@ -4019,9 +4038,15 @@ compatible with a GPL license.
  © 2017-2018 Ion Gazta�aga
 </p></div>
 <div class='fossLicense' tag='Zlib'>
+<p class=spdxName>Zlib License</p>
 <p>This software is provided 'as-is', without any express or implied warranty.  In no event will the authors be held liable for any damages arising from the use of this software. </p>
 <p>Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions: </p>
-<p>1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required. 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software. 3. This notice may not be removed or altered from any source distribution. </p>
+<ol><li>The origin of this software must not be misrepresented; you
+must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required. </li>
+<li>Altered source versions must be plainly marked as such, and
+must not be misrepresented as being the original software. </li>
+<li>This notice may not be removed or altered from any source
+distribution. </li></ol>
 </div>
 <div class='fossCopyrights'>
 <p>
@@ -4152,9 +4177,11 @@ compatible with a GPL license.
  © Without Boats
 </p></div>
 <div class='fossLicense' tag='zlib'>
+<p class=spdxName>zlib License</p>
 <p>This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software. </p>
 <p>Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions: </p>
-<p>1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required. </p>
+<ol><li>The origin of this software must not be misrepresented; you must not
+claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required. </li></ol>
 <p>2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software. </p>
 <p>3. This notice may not be removed or altered from any source distribution. </p>
 </div>
