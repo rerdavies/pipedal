@@ -1,9 +1,4 @@
-Toob Convolution Reverb's impulse files were provided by 
-the [OpenAir project](https://www.openair.hosted.york.ac.uk/?page_id=571) at the University of
-York, under the following licenses. The Open Air Project provides many other interesting IR
-files which can be downloaded from [here](https://www.openair.hosted.york.ac.uk/?page_id=36).
-
----
+Factory Convolution Reverb files are provided under the following licenses. 
 
 ### Arthur Sykes Rymer Auditorium.wav
 
@@ -15,6 +10,20 @@ This work is provided under a Creative Commons Attribution 4.0 International Lic
 Source: <https://www.openair.hosted.york.ac.uk/?page_id=425> 
 
 ---
+
+### EMT 140 Medium 2.wav
+
+EMT 140 large analog plate reverb.
+
+By: Greg Hopkins, Hopkins Media Services
+
+This work is provided under a Creative Commons Attribution 4.0 International License.
+<https://creativecommons.org/licenses/by/4.0/>
+
+Source: <https://hopkinsmedia.services/ir>
+
+---
+
 
 ### Jack Lyons Hall, University of York.wav
 

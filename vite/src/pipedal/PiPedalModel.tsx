@@ -1370,7 +1370,23 @@ export class PiPedalModel //implements PiPedalModel
         try {
             const myRequest = new Request(this.varRequest('config.json'));
             let response: Response = await fetch(myRequest);
-            let data = await response.json();
+            if (response.status !== 200) {
+                if (response.status === 500) {
+
+                    window.location.href = this.varRequest('config.json');
+                    return false;
+                } else {
+                    this.setError("Can't connect to server. (" + response.status.toString() + " " + response.statusText + ")");
+                    return false;
+                }
+            }
+            let data: any 
+            try {
+                data = await response.json();
+            } catch (error) {
+                this.setError("Failed to connect to server. " + getErrorMessage(error));
+                return false;
+            }
 
             this.tone3000_A2_models = data.tone3000_A2_models ?? true;
             this.enableAutoUpdate = !!data.enable_auto_update;

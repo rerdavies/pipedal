@@ -87,6 +87,7 @@ private:
     void UpgradeV1FactoryPresets();
     void MoveExistingFactoryPresetsBank();
     void UpgradeV3FactoryPresets();
+    void AddNewFactoryPresets();
     void InstallFactoryPresets();
     void CopyFactoryPresetsToDefaultBank();
     void ProvisionDefaultBanks();

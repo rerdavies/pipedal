@@ -803,7 +803,16 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                     {
                         
                     } else {
-                        unsupportedPatchProperty = true;
+                        std::string strPluginUri = pluginUri.AsUri();
+                        if (strPluginUri == "urn:brummer:neuralrack") {
+                            // Brummer's Neuralrack plugin has a patch property of type int (EQ before or after)
+                            // Just ignore it.
+                            unsupportedPatchProperty = false;
+                        } else {
+                            // But generally, ignore anything that has unsupported patch properties. e.g. Juce LV2 plugins which 
+                            // are completely unsupportable.
+                            unsupportedPatchProperty = true;
+                        }
                     }
                 }
             }

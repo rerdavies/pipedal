@@ -27,7 +27,7 @@ The following files are provided under a T3K license. Under an arrangement with
 Tone3000.com, permission has been granted
 to Robin Davies to distribute these files ONLY with Pipedal.
 
-- "default_presets/V3 Factory Presets.piBank" (contains compressed versions of the protected files).
+- default_presets/V* Factory Presets.piBank (contains compressed versions of the protected files).
 - The installed file "/etc/pipedal/config/default_presets/presets/V3 Factory Presets.piBank"
 - Files installed in "/var/pipedal/audio_uploads/NeuralAmpModels/Factory Models/"
 - Files installed in "/var/pipedal/audio_uploads/IRs/Factory IRs/"
@@ -46,6 +46,9 @@ Users may download and use the data file in software and publish the resulting o
 - amalgamaudio - [https://tone3000.com/amalgamaudio](https://tone3000.com/amalgamaudio)
 - kenazmusic - [https://tone3000.com/kenazmusic](https://tone3000.com/kenazmusic)
 - outmodedelectronics - [https://tone3000.com/outmodedelectronics](https://tone3000.com/outmodedelectronics)
+- 2dor - [https://tone3000.com/2dor](https://tone3000.com/2dor)
+- scottcorgan - [https://tone3000.com/Scottcorgan](https://tone3000.com/Scottcorgan)
+
 
 
 ---

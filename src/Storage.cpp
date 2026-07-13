@@ -273,13 +273,13 @@ void Storage::SetVarPresetVersion(int32_t version)
 void Storage::MoveExistingFactoryPresetsBank()
 {
     BankIndexEntry* entry = bankIndex.getEntryByName("Factory Presets");
-    if (entry) 
+    if (entry)
     {
         std::string newName = "Old Factory Presets";
         int32_t nextVersionNumber = 2;
         while (true)
         {
-            if (bankIndex.getEntryByName(newName) == nullptr) 
+            if (bankIndex.getEntryByName(newName) == nullptr)
             {
                 break;
             }
@@ -287,46 +287,76 @@ void Storage::MoveExistingFactoryPresetsBank()
         }
 
         RenameBank(entry->instanceId(), newName);
-        
+
     }
 }
 
 
 namespace pipedal::implementation {
-    extern  int64_t ImportBankFile(PiPedalModel &model, const std::filesystem::path& filePath,uint64_t uploadAfter = -1);
+    extern  int64_t ImportBankFile(PiPedalModel& model, const std::filesystem::path& filePath, uint64_t uploadAfter = -1);
     extern void UpgradeBank(
-        PiPedalModel&model,
-        const std::filesystem::path &existingBankFile,
-        const std::filesystem::path &piBank,
-        const std::vector<std::string>&presetsToUpgrade
+        PiPedalModel& model,
+        const std::filesystem::path& existingBankFile,
+        const std::filesystem::path& piBank,
+        const std::vector<std::string>& presetsToUpgrade,
+        const std::vector<std::string>& mediaFilesToOverwrite
     );
 
 }
 
 void Storage::UpgradeV3FactoryPresets()
 {
-    std::vector<std::string> presetsToUpgrade = {
+    std::vector<std::string> presetsToOverwrite = {
         "Marshall JCM800 + TS9",
         "Huge Lead 2"
+    };
+    std::vector<std::string> mediaFilesToOverwrite = {
+        "NeuralAmpModels/Factory Models/README.md",
+        "CabIR/Factory IRs/README.md",
+
+    };
+
+
+    fs::path factoryPresetPath = GetBankFileName("Factory Presets");
+
+    UpgradeBank(
+        *this->model,
+        factoryPresetPath,
+        this->configRoot / "default_presets" / "presets" / "Factory Presets.piBank",
+        presetsToOverwrite,
+        mediaFilesToOverwrite
+    );
+
+}
+void Storage::AddNewFactoryPresets()
+{
+    std::vector<std::string> presetsToOverwrite = {
+    };
+    std::vector<std::string> mediaFilesToOverwrite = {
+        "NeuralAmpModels/Factory Models/README.md",
+        "CabIR/Factory IRs/README.md",
+
     };
 
     fs::path factoryPresetPath = GetBankFileName("Factory Presets");
 
     UpgradeBank(
         *this->model,
-        factoryPresetPath, 
+        factoryPresetPath,
         this->configRoot / "default_presets" / "presets" / "Factory Presets.piBank",
-        presetsToUpgrade
+        presetsToOverwrite,
+        mediaFilesToOverwrite
     );
+}
 
-}   
 
-void Storage::InstallFactoryPresets() 
+void Storage::InstallFactoryPresets()
 {
-    fs::path defaultBankFilePath =  this->configRoot / "default_presets" / "presets" / "Factory Presets.piBank";
+    fs::path defaultBankFilePath = this->configRoot / "default_presets" / "presets" / "Factory Presets.piBank";
     try {
-        ImportBankFile(*this->model,defaultBankFilePath, -1);
-    } catch (const std::exception &e)
+        ImportBankFile(*this->model, defaultBankFilePath, -1);
+    }
+    catch (const std::exception& e)
     {
         throw std::runtime_error(SS("Failed to install Factory Presets. " << e.what()));
     }
@@ -335,7 +365,7 @@ void Storage::InstallFactoryPresets()
 
 void Storage::CopyFactoryPresetsToDefaultBank()
 {
-    
+
     Lv2Log::info("Creating Default Bank");
     auto defaultBankEntry = bankIndex.getEntryByName("Default Bank");
     if (defaultBankEntry != nullptr)
@@ -347,7 +377,7 @@ void Storage::CopyFactoryPresetsToDefaultBank()
     if (!fs::exists(factoryPresetPath)) {
         throw std::runtime_error("Internal error: CopyFactoryPresetsToDefaultBank: Factory Presets file does not exist.");
     }
-    auto instanceId = bankIndex.addBank(-2,"Default Bank");
+    auto instanceId = bankIndex.addBank(-2, "Default Bank");
 
 
     fs::copy(factoryPresetPath, defaultBankPath);
@@ -365,7 +395,7 @@ void Storage::ProvisionDefaultBanks()
     this->bankIndex = BankIndex();
 
 
-    bool freshInstall = false; 
+    bool freshInstall = false;
     bool installFactoryPresets = false;
 
     int32_t etcVersion = GetInstallerPresetVersion();
@@ -376,7 +406,8 @@ void Storage::ProvisionDefaultBanks()
         freshInstall = true;
         installFactoryPresets = true;
 
-    } else {
+    }
+    else {
         freshInstall = false;
         std::ifstream s;
         s.open(indexFilename);
@@ -389,34 +420,43 @@ void Storage::ProvisionDefaultBanks()
 
     auto varPresetsDirectory = this->GetPresetsDirectory();
     auto etcPresetsDirector = this->configRoot / "default_presets" / "presets";
-    
+
     constexpr uint32_t V2_VERSION_NUMBER = 2; // first to have a Factory Presets
     constexpr uint32_t V3_VERSION_NUMBER = 3; // New A2 Presets, completely replacing the previons version.
     constexpr uint32_t V4_VERSION_NUMBER = 4; // Fix incorrect Cab IR settings.
+    constexpr uint32_t V5_VERSION_NUMBER = 5; // Additional Factory Presets ()
+    constexpr uint32_t CURRENT_VERSION_NUMBER = V5_VERSION_NUMBER; // Additional Factory Presets ()
 
-    if (varPresetVersion < V4_VERSION_NUMBER) {
-        Lv2Log::info("Installing Factory Presets");
-
-        // Move the old factory presets bank out of the way. 
-        if (varPresetVersion < V3_VERSION_NUMBER) {
-            MoveExistingFactoryPresetsBank();
-        }
-        if (varPresetVersion == V3_VERSION_NUMBER) 
-        {
-            UpgradeV3FactoryPresets();
-        } else {
-            InstallFactoryPresets();
-        }
-        SetVarPresetVersion(V4_VERSION_NUMBER);
-        SaveBankIndex(); // checkpoint.
-    }
-    // Next time we will have to MERGE factor presets.
     if (freshInstall)
     {
+        Lv2Log::info("Installing Factory Presets");
+        InstallFactoryPresets();
         CopyFactoryPresetsToDefaultBank();
-        SetVarPresetVersion(V3_VERSION_NUMBER);
-    }
+        SetVarPresetVersion(CURRENT_VERSION_NUMBER);
 
+    }
+    else {
+        if (varPresetVersion < CURRENT_VERSION_NUMBER) {
+            Lv2Log::info("Upgrading Factory Presets");
+
+            // Move the old factory presets bank out of the way. 
+            if (varPresetVersion < V3_VERSION_NUMBER) {
+                MoveExistingFactoryPresetsBank();
+                InstallFactoryPresets();
+            }
+            else {
+                if (varPresetVersion == V3_VERSION_NUMBER)
+                {
+                    UpgradeV3FactoryPresets();
+                }
+                else if (varPresetVersion < V5_VERSION_NUMBER)
+                {
+                    AddNewFactoryPresets();
+                }
+            }
+            SetVarPresetVersion(CURRENT_VERSION_NUMBER);
+        }
+    }
 }
 
 void Storage::UpgradeV1FactoryPresets()
@@ -537,7 +577,7 @@ void Storage::UpgradeV1FactoryPresets()
         presetsVersion.Save(defaultPresetsVersionFile);
     }
 }
-void Storage::Initialize(PiPedalModel *model)
+void Storage::Initialize(PiPedalModel* model)
 {
     this->model = model;
     try

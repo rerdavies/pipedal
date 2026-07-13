@@ -187,6 +187,7 @@ public:
 
     virtual void head_response(
         const std::string&fromAddress,
+        const std::string&toAddress,
         const uri&request_uri,
         HttpRequest &req,
         HttpResponse &res,
@@ -204,6 +205,7 @@ public:
 
     virtual void get_response(
         const std::string&fromAddress,
+        const std::string&toAddress,
         const uri&request_uri,
         HttpRequest &req,
         HttpResponse &res,

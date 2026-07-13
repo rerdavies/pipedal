@@ -16,6 +16,6 @@ modules/websocketpp/websocketpp/base64/*:
 
 vite/node_modules/source-map-js/*:
   copyright: 2009-2011, Mozilla Foundation and contributors
-  license: Expat
+  license: MPL-2.0
 
 

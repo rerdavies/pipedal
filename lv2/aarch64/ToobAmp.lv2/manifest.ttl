@@ -119,9 +119,9 @@
      lv2:binary <ToobAmp.so> ;
      rdfs:seeAlso <ToobMix.ttl> .
 
-# <http://two-play.com/plugins/toob-compressor> a lv2:Plugin ;
-#     lv2:binary <ToobAmp.so> ;
-#     rdfs:seeAlso <ToobCompressor.ttl> .
+#<http://two-play.com/plugins/toob-compressor> a lv2:Plugin ;
+#    lv2:binary <ToobAmp.so> ;
+#    rdfs:seeAlso <ToobCompressor.ttl> .
 
 
 <http://two-play.com/plugins/toob-multi-echo> a lv2:Plugin ;

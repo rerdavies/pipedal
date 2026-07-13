@@ -57,7 +57,7 @@ using namespace pipedal;
 using namespace std;
 
 static const bool ENABLE_KEEP_ALIVE = true;
-static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
+static const std::filesystem::path WEB_TEMP_DIR{ "/var/pipedal/web_temp" };
 
 using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 
@@ -77,18 +77,19 @@ public:
     typedef std::shared_ptr<type> ptr;
 
     request_with_file_upload()
-        : m_buf(std::make_shared<std::string>()), m_ready(false) {}
+        : m_buf(std::make_shared<std::string>()), m_ready(false) {    
+}
 
-    size_t consume(char const *buf, size_t len, std::error_code &ec);
+    size_t consume(char const* buf, size_t len, std::error_code& ec);
 
     /// Returns whether or not the request is ready for reading.
     bool ready() const
     {
         return m_ready;
     }
-    std::istream &get_body_input_stream();
+    std::istream& get_body_input_stream();
 
-    const std::filesystem::path &get_body_input_file();
+    const std::filesystem::path& get_body_input_file();
     void detach_body_input_file();
     size_t content_length() const { return m_content_length; }
 
@@ -107,10 +108,10 @@ public:
      * @param [in] method The value to set the method to.
      * @return A status code describing the outcome of the operation.
      */
-    std::error_code set_method(std::string const &method);
+    std::error_code set_method(std::string const& method);
 
     /// Return the request method
-    std::string const &get_method() const
+    std::string const& get_method() const
     {
         return m_method;
     }
@@ -124,10 +125,10 @@ public:
      * @param uri The URI to set
      * @return A status code describing the outcome of the operation.
      */
-    std::error_code set_uri(std::string const &uri);
+    std::error_code set_uri(std::string const& uri);
 
     /// Return the requested URI
-    std::string const &get_uri() const
+    std::string const& get_uri() const
     {
         return m_uri;
     }
@@ -140,11 +141,11 @@ public:
      * @return A status code describing the outcome of the operation.
      */
 
-    bool prepare_body(std::error_code &ec);
+    bool prepare_body(std::error_code& ec);
 
     std::error_code process(std::string::iterator begin, std::string::iterator end);
-    size_t process_body(char const *buf, size_t len,
-                        std::error_code &ec);
+    size_t process_body(char const* buf, size_t len,
+        std::error_code& ec);
     std::shared_ptr<std::string> m_buf;
     std::string m_method;
     std::string m_uri;
@@ -158,20 +159,20 @@ public:
     std::stringstream m_stringInputStream;
     bool m_outputOpen = false;
 };
-const std::filesystem::path &request_with_file_upload::get_body_input_file()
+const std::filesystem::path& request_with_file_upload::get_body_input_file()
 {
     if (!this->m_temporaryFile)
         throw std::runtime_error("Request does not have a body.");
     return this->m_temporaryFile->Path();
 }
-void request_with_file_upload::detach_body_input_file() 
+void request_with_file_upload::detach_body_input_file()
 {
     if (this->m_temporaryFile)
     {
         this->m_temporaryFile->Detach();
     }
 }
-std::istream &request_with_file_upload::get_body_input_stream()
+std::istream& request_with_file_upload::get_body_input_stream()
 {
     if (!m_outputOpen)
     {
@@ -202,7 +203,7 @@ std::istream &request_with_file_upload::get_body_input_stream()
         }
     }
 }
-bool request_with_file_upload::prepare_body(std::error_code &ec)
+bool request_with_file_upload::prepare_body(std::error_code& ec)
 {
     using namespace websocketpp::http;
     bool result = super::prepare_body(ec);
@@ -222,7 +223,7 @@ bool request_with_file_upload::prepare_body(std::error_code &ec)
                 throw std::runtime_error(SS("Unable to open file " << this->m_temporaryFile->Path()));
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error(SS("Unabe to create upload file. " << e.what()));
             ec = error::make_error_code(error::istream_bad);
@@ -231,8 +232,8 @@ bool request_with_file_upload::prepare_body(std::error_code &ec)
     return true;
 }
 
-inline size_t request_with_file_upload::process_body(char const *buf, size_t len,
-                                                     std::error_code &ec)
+inline size_t request_with_file_upload::process_body(char const* buf, size_t len,
+    std::error_code& ec)
 {
     using namespace websocketpp::http;
     using namespace websocketpp::http::parser;
@@ -248,7 +249,7 @@ inline size_t request_with_file_upload::process_body(char const *buf, size_t len
         {
             m_outputStream.write(buf, processed);
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             Lv2Log::error(SS("Can't write to web temporary file " << m_temporaryFile->Path() << ". " << e.what()));
             ec = error::make_error_code(error::istream_bad);
@@ -271,7 +272,7 @@ inline size_t request_with_file_upload::process_body(char const *buf, size_t len
     }
 }
 
-inline size_t request_with_file_upload::consume(char const *buf, size_t len, std::error_code &ec)
+inline size_t request_with_file_upload::consume(char const* buf, size_t len, std::error_code& ec)
 {
     using namespace websocketpp::http;
 
@@ -468,7 +469,7 @@ inline std::string request_with_file_upload::raw_head() const
     return ret.str();
 }
 
-inline std::error_code request_with_file_upload::set_method(std::string const &method)
+inline std::error_code request_with_file_upload::set_method(std::string const& method)
 {
     using namespace websocketpp::http;
 
@@ -481,7 +482,7 @@ inline std::error_code request_with_file_upload::set_method(std::string const &m
     return std::error_code();
 }
 
-inline std::error_code request_with_file_upload::set_uri(std::string const &uri)
+inline std::error_code request_with_file_upload::set_uri(std::string const& uri)
 {
     // TODO: validation?
     m_uri = uri;
@@ -490,7 +491,7 @@ inline std::error_code request_with_file_upload::set_uri(std::string const &uri)
 }
 
 inline std::error_code request_with_file_upload::process(std::string::iterator begin, std::string::iterator
-                                                                                          end)
+    end)
 {
     using namespace websocketpp::http;
     std::error_code ec;
@@ -554,13 +555,13 @@ public:
     typedef websocketpp::transport::asio::endpoint<transport_config>
         transport_type;
 
-        typedef transport_type::transport_con_type x;
+    typedef transport_type::transport_con_type x;
 };
 
 size_t CustomPpConfig::max_http_body_size = MAX_READ_SIZE;
 
 std::string
-pipedal::last_modified(const std::filesystem::path &path)
+pipedal::last_modified(const std::filesystem::path& path)
 {
     auto cPath = path.c_str();
 
@@ -594,7 +595,7 @@ static std::string getIpv4Address(const std::string interface)
         return "";
 
     close(fd);
-    char *name = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
+    char* name = inet_ntoa(((struct sockaddr_in*)&ifr.ifr_addr)->sin_addr);
     if (name == nullptr)
         return "";
     return name;
@@ -620,11 +621,11 @@ static std::map<std::string, std::string> extensionsToMimeType = {
     {".svg", "image/svg+xml"},
     {".svgz", "image/svg+xml"},
     {".woff", "font/woff2"},
-    {".woff2", "font/woff2"}};
+    {".woff2", "font/woff2"} };
 
 // Return a reasonable mime type based on the extension of a file.
 std::string
-mime_type(const std::filesystem::path &path)
+mime_type(const std::filesystem::path& path)
 {
     auto const ext = path.extension();
     try
@@ -634,26 +635,26 @@ mime_type(const std::filesystem::path &path)
             return extensionsToMimeType.at(ext);
         }
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
     }
     return "application/octet-stream";
 }
 
-std::string GetFromAddress(const tcp::socket &socket)
+std::string GetFromAddress(const tcp::socket& socket)
 {
     std::stringstream s;
     s << socket.remote_endpoint().address().to_string() << ':' << socket.remote_endpoint().port();
     return s.str();
 }
 
-static bool encoding_allowed(const std::string&acceptEncodingHeader,const std::string&encoding)
+static bool encoding_allowed(const std::string& acceptEncodingHeader, const std::string& encoding)
 {
     auto npos = acceptEncodingHeader.find(encoding);
     if (npos == std::string::npos)
         return false;
     std::vector<std::string> encodings = split(acceptEncodingHeader, ',');
-    for (auto &e : encodings)
+    for (auto& e : encodings)
     {
         if (e.starts_with(encoding)) {
             if (e.length() == encoding.length())
@@ -666,15 +667,15 @@ static bool encoding_allowed(const std::string&acceptEncodingHeader,const std::s
 }
 
 static bool can_use_gzip_encoding(
-    const std::string &acceptEncodingHeader, 
-    const std::filesystem::path &filename, 
-    std::filesystem::path *gzName)
+    const std::string& acceptEncodingHeader,
+    const std::filesystem::path& filename,
+    std::filesystem::path* gzName)
 {
     if (!encoding_allowed(acceptEncodingHeader, "gzip"))
         return false;
     *gzName = filename.string() + ".gz";
     if (std::filesystem::exists(*gzName)) {
-        return true;    
+        return true;
     }
     return false;
 }
@@ -697,7 +698,7 @@ namespace pipedal
         std::unique_ptr<std::thread> pBgThread;
         std::recursive_mutex io_mutex;
 
-        boost::asio::io_context *pIoContext = nullptr;
+        boost::asio::io_context* pIoContext = nullptr;
 
         typedef websocketpp::connection_hdl connection_hdl;
         typedef websocketpp::server<CustomPpConfig> server;
@@ -705,16 +706,16 @@ namespace pipedal
         class HttpRequestImpl : public HttpRequest
         {
         private:
-            server::connection_type::request_type &m_request;
+            server::connection_type::request_type& m_request;
 
         public:
-            HttpRequestImpl(const server::connection_type::request_type &request)
-                : m_request(const_cast<server::connection_type::request_type &>(request)) // so we can get access to get_body_input_stream
+            HttpRequestImpl(const server::connection_type::request_type& request)
+                : m_request(const_cast<server::connection_type::request_type&>(request)) // so we can get access to get_body_input_stream
             {
             }
 
-            virtual std::istream &get_body_input_stream() override { return m_request.get_body_input_stream(); }
-            virtual const std::filesystem::path &get_body_temporary_file() override
+            virtual std::istream& get_body_input_stream() override { return m_request.get_body_input_stream(); }
+            virtual const std::filesystem::path& get_body_temporary_file() override
             {
                 return m_request.get_body_input_file();
             }
@@ -725,8 +726,8 @@ namespace pipedal
 
             virtual size_t content_length() const { return m_request.content_length(); }
 
-            virtual const std::string &method() const { return m_request.get_method(); }
-            virtual const std::string &get(const std::string &key) const { return m_request.get_header(key); }
+            virtual const std::string& method() const { return m_request.get_method(); }
+            virtual const std::string& get(const std::string& key) const { return m_request.get_header(key); }
             virtual bool keepAlive() const
             {
                 return ENABLE_KEEP_ALIVE && (m_request.get_version() != "1.0" || m_request.get_header("Connection") == "keep-alive");
@@ -734,38 +735,38 @@ namespace pipedal
         };
         class HttpResponseImpl : public HttpResponse
         {
-            server::connection_type &request;
+            server::connection_type& request;
 
         public:
-            HttpResponseImpl(server::connection_type &request)
+            HttpResponseImpl(server::connection_type& request)
                 : request(request)
             {
             }
-            virtual void set(const std::string &key, const std::string &value) { request.replace_header(key, value); }
+            virtual void set(const std::string& key, const std::string& value) { request.replace_header(key, value); }
             virtual void setContentLength(size_t size)
             {
                 std::stringstream ss;
                 ss << size;
                 request.replace_header(HttpField::content_length, ss.str());
             }
-            virtual void setBody(const std::string &body) override{ request.set_body(body); }
-            virtual void setBodyFile(std::shared_ptr<TemporaryFile>&bodyFile) override { 
+            virtual void setBody(const std::string& body) override { request.set_body(body); }
+            virtual void setBodyFile(std::shared_ptr<TemporaryFile>& bodyFile) override {
                 // cast away const to do what ther request would do if it had that method.
 
-                request.set_body_file(bodyFile->Path(),bodyFile->DeleteFile());
+                request.set_body_file(bodyFile->Path(), bodyFile->DeleteFile());
                 bodyFile->Detach();
             }
 
-            
+
             virtual void clearBody() override {
                 // clear the body, but leave the file size intact (e.g for a HEAD request).
                 request.set_body("");
 
                 // STUB: Don't know how to clear the body file!!
             }
-            virtual void setBodyFile(std::filesystem::path&path, bool deleteWhenDone) override { 
+            virtual void setBodyFile(std::filesystem::path& path, bool deleteWhenDone) override {
                 // cast away const to do what ther request would do if it had that method.
-                request.set_body_file(path,deleteWhenDone);
+                request.set_body_file(path, deleteWhenDone);
             }
 
             virtual void keepAlive(bool value) override
@@ -782,7 +783,7 @@ namespace pipedal
 
         class WebSocketSession : public std::enable_shared_from_this<WebSocketSession>, public SocketHandler::IWriteCallback
         {
-            WebServerImpl *pServer;
+            WebServerImpl* pServer;
             server::connection_ptr webSocket;
             std::string fromAddress;
             std::shared_ptr<SocketHandler> socketHandler;
@@ -795,7 +796,7 @@ namespace pipedal
                 webSocket = nullptr;
             }
 
-            virtual void writeCallback(const std::string &text)
+            virtual void writeCallback(const std::string& text)
             {
                 if (webSocket)
                 {
@@ -820,9 +821,9 @@ namespace pipedal
                 Lv2Log::info(SS("WebSocketSession closed. " << fromAddress));
             }
             using ptr = std::shared_ptr<WebSocketSession>;
-            WebSocketSession(WebServerImpl *pServer, server::connection_ptr &webSocket)
+            WebSocketSession(WebServerImpl* pServer, server::connection_ptr& webSocket)
                 : pServer(pServer),
-                  webSocket(webSocket)
+                webSocket(webSocket)
             {
             }
             void Open()
@@ -862,7 +863,7 @@ namespace pipedal
             }
             void on_message(connection_hdl hdl, server::message_ptr msg)
             {
-                const std::string &data = msg->get_payload();
+                const std::string& data = msg->get_payload();
                 if (socketHandler)
                 {
                     std::string_view stringView(data.c_str());
@@ -874,9 +875,9 @@ namespace pipedal
         std::recursive_mutex m_sessionsMutex;
         std::set<WebSocketSession::ptr, std::owner_less<WebSocketSession::ptr>> m_sessions;
 
-        void on_session_closed(WebSocketSession::ptr &session, connection_hdl hConnection)
+        void on_session_closed(WebSocketSession::ptr& session, connection_hdl hConnection)
         {
-            std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
+            std::lock_guard<std::recursive_mutex> lock{ m_sessionsMutex };
             m_sessions.erase(session);
             m_connections.erase(hConnection);
             if (session != nullptr)
@@ -885,7 +886,7 @@ namespace pipedal
             }
         }
 
-        void NotFound(server::connection_type &connection, const std::string &filename)
+        void NotFound(server::connection_type& connection, const std::string& filename)
         {
             try
             {
@@ -893,10 +894,10 @@ namespace pipedal
                 std::stringstream ss;
 
                 ss << "<!doctype html><html><head>"
-                   << "<title>Error 404 (Resource not found)</title><body>"
-                   << "<h1>Error 404</h1>"
-                   << "<p>The requested URL " << HtmlHelper::HtmlEncode(filename) << " was not found on this server.</p>"
-                   << "</body></head></html>";
+                    << "<title>Error 404 (Resource not found)</title><body>"
+                    << "<h1>Error 404</h1>"
+                    << "<p>The requested URL " << HtmlHelper::HtmlEncode(filename) << " was not found on this server.</p>"
+                    << "</body></head></html>";
 
                 std::string body = ss.str();
                 connection.set_body(body);
@@ -905,13 +906,13 @@ namespace pipedal
                 connection.replace_header(HttpField::content_length, ssLen.str());
                 connection.set_status(websocketpp::http::status_code::not_found);
             }
-            catch (const std::exception &)
+            catch (const std::exception&)
             {
                 // ignored. Things weren't going well anyway.
             }
             return;
         };
-        void ServerError(server::connection_type &connection, const std::string &error)
+        void ServerError(server::connection_type& connection, const std::string& error)
         {
             try
             {
@@ -919,10 +920,10 @@ namespace pipedal
                 std::stringstream ss;
 
                 ss << "<!doctype html><html><head>"
-                   << "<title>Error 500 (Server error)</title><body>"
-                   << "<h1>Error 500</h1>"
-                   << "<p>" << HtmlHelper::HtmlEncode(error) << "</p>"
-                   << "</body></head></html>";
+                    << "<title>Error 500 (Server error)</title><body>"
+                    << "<h1>Error 500</h1>"
+                    << "<p>" << HtmlHelper::HtmlEncode(error) << "</p>"
+                    << "</body></head></html>";
                 std::string body = ss.str();
                 connection.set_body(body);
                 std::stringstream ssLen;
@@ -931,17 +932,29 @@ namespace pipedal
 
                 connection.set_status(websocketpp::http::status_code::internal_server_error);
             }
-            catch (const std::exception &)
+            catch (const std::exception&)
             {
             }
             return;
         };
 
-        static bool isAllowedHeader(const std::string &header)
+        static std::string endpointToString(const boost::asio::ip::tcp::endpoint& endpoint) {
+            std::stringstream ss;
+            if (endpoint.address().is_v6()) {
+                ss << "[" << endpoint.address().to_string() << "]";
+            }
+            else if (endpoint.address().is_v4())
+            {
+                ss << endpoint.address().to_string();
+            }
+            ss << ":" << endpoint.port();
+            return ss.str();
+        }
+        static bool isAllowedHeader(const std::string& header)
         {
             return strcasecmp(header.c_str(), HttpField::content_type) == 0;
         }
-        static std::vector<std::string> splitHeaders(const std::string &list)
+        static std::vector<std::string> splitHeaders(const std::string& list)
         {
             std::vector<std::string> result;
             std::stringstream s(list);
@@ -971,7 +984,7 @@ namespace pipedal
             }
             return result;
         }
-        static std::string filterCorsHeaders(const std::string &requestedHeaders)
+        static std::string filterCorsHeaders(const std::string& requestedHeaders)
         {
             std::vector<std::string> headers = splitHeaders(requestedHeaders);
             std::stringstream result;
@@ -992,18 +1005,18 @@ namespace pipedal
             return result.str();
         }
 
-        static void splitAddressAndPort(const std::string &address, std::string&addrOnly, std::string&port)
+        static void splitAddressAndPort(const std::string& address, std::string& addrOnly, std::string& port)
         {
             size_t portPos = address.length();
             for (size_t i = address.length(); i > 0; --i)
             {
-                if (address[i-1] == ':')
+                if (address[i - 1] == ':')
                 {
-                    portPos = i-1;
+                    portPos = i - 1;
                     break;
                 }
             }
-            addrOnly = address.substr(0,portPos);
+            addrOnly = address.substr(0, portPos);
             port = address.substr(portPos);
         }
         void on_http(connection_hdl hdl)
@@ -1011,7 +1024,7 @@ namespace pipedal
             // Upgrade our connection handle to a full connection_ptr
 
             server::connection_ptr con = m_endpoint.get_con_from_hdl(hdl);
-            auto &request = con->get_request();
+            auto& request = con->get_request();
 
             std::string origin = con->get_request_header(HttpField::origin);
             if (origin.size() == 0)
@@ -1036,33 +1049,31 @@ namespace pipedal
             {
                 requestUri.set(con->get_uri()->str().c_str());
             }
-            catch (const std::exception &e)
+            catch (const std::exception& e)
             {
                 ServerError(*con, SS("Unexpected error. " << e.what()));
                 return;
             }
 
-            std::string fromAddress = SS(con->get_remote_endpoint());
 
             // redirect requests to IPV6 local connections to a better address.
 
-            std::string addrOnly,portStr;
-            splitAddressAndPort(fromAddress,addrOnly,portStr);
 
             std::string nonLinkLocalUrl;
 
-            if (RemapLinkLocalUrl(con->get_socket().remote_endpoint().address(), con->get_uri()->str(),&nonLinkLocalUrl))
+            if (RemapLinkLocalUrl(con->get_socket().local_endpoint().address(), con->get_uri()->str(), &nonLinkLocalUrl))
             {
                 try {
-                    Lv2Log::info(SS("Redirecting " << fromAddress << " to " << nonLinkLocalUrl));
+                    Lv2Log::info(SS("Redirecting " << con->get_socket().local_endpoint().address().to_string() << " to " << nonLinkLocalUrl));
                     res.keepAlive(false);
-                    res.set(HttpField::location,nonLinkLocalUrl.c_str());
+                    res.set(HttpField::location, nonLinkLocalUrl.c_str());
                     con->set_status(websocketpp::http::status_code::temporary_redirect);
                     res.setBody("");
                     return;
-                } catch (const std::exception&e)
+                }
+                catch (const std::exception& e)
                 {
-                    ServerError(*con,"Invalid request on link-local address.");
+                    ServerError(*con, "Invalid request on link-local address.");
                     return;
                 }
             }
@@ -1085,13 +1096,18 @@ namespace pipedal
                     try
                     {
 
+                        std::string fromAddress = endpointToString(con->get_socket().remote_endpoint());
+                        std::string toAddress = endpointToString(con->get_socket().local_endpoint());
+                        // std::string addrOnly, portStr;
+                        // splitAddressAndPort(toAddress, addrOnly, portStr);
+
                         if (req.method() == HttpVerb::head)
                         {
                             std::error_code ec;
                             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                             res.set(HttpField::access_control_allow_origin, origin);
 
-                            requestHandler->head_response(fromAddress, requestUri, req, res, ec);
+                            requestHandler->head_response(fromAddress, toAddress, requestUri, req, res, ec);
                             res.keepAlive(req.keepAlive());
                             if (ec == std::errc::no_such_file_or_directory)
                             {
@@ -1113,7 +1129,7 @@ namespace pipedal
                             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
                             res.set(HttpField::access_control_allow_origin, origin);
 
-                            requestHandler->get_response(fromAddress, requestUri, req, res, ec);
+                            requestHandler->get_response(fromAddress, toAddress, requestUri, req, res, ec);
                             res.keepAlive(req.keepAlive());
 
                             if (ec == std::errc::no_such_file_or_directory)
@@ -1157,7 +1173,7 @@ namespace pipedal
                         ServerError(*con, "Unknown HTTP-Method");
                         return;
                     }
-                    catch (std::exception &e)
+                    catch (std::exception& e)
                     {
                         ServerError(*con, SS("Unexpected error. " << e.what()));
                         return;
@@ -1186,10 +1202,10 @@ namespace pipedal
 
             std::filesystem::path gzName;
 
-            if (can_use_gzip_encoding(req.get(HttpField::accept_encoding) ,filename,&gzName) )
-            {   
+            if (can_use_gzip_encoding(req.get(HttpField::accept_encoding), filename, &gzName))
+            {
                 filename = gzName;
-                res.set(HttpField::content_encoding,"gzip");
+                res.set(HttpField::content_encoding, "gzip");
             }
 
             if (req.method() != HttpVerb::get)
@@ -1210,7 +1226,7 @@ namespace pipedal
             file.seekg(0, std::ios::beg);
 
             response.assign((std::istreambuf_iterator<char>(file)),
-                            std::istreambuf_iterator<char>());
+                std::istreambuf_iterator<char>());
 
             res.set("Content-Type", mimeType);
 
@@ -1242,14 +1258,14 @@ namespace pipedal
                     WebSocketSession::ptr socketSession = std::make_shared<WebSocketSession>(this, webSocket);
                     socketSession->Open();
                     {
-                        std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
+                        std::lock_guard<std::recursive_mutex> lock{ m_sessionsMutex };
                         m_connections.insert(hdl);
                         m_sessions.insert(std::move(socketSession));
                         return;
                     }
                 }
             }
-            catch (const std::exception &e)
+            catch (const std::exception& e)
             {
 
                 Lv2Log::error("Failed to open session: %s", e.what());
@@ -1259,12 +1275,12 @@ namespace pipedal
 
         void on_fail(connection_hdl hdl)
         {
-            std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
+            std::lock_guard<std::recursive_mutex> lock{ m_sessionsMutex };
             m_connections.erase(hdl);
         }
         void on_close(connection_hdl hdl)
         {
-            std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
+            std::lock_guard<std::recursive_mutex> lock{ m_sessionsMutex };
             m_connections.erase(hdl);
         }
 
@@ -1274,7 +1290,7 @@ namespace pipedal
             {
                 SetThreadName("webMain");
                 // The io_context is required for all I/O
-                boost::asio::io_service ioc{threads};
+                boost::asio::io_service ioc{ threads };
                 //*********************************
 
                 m_endpoint.set_reuse_addr(true);
@@ -1319,13 +1335,13 @@ namespace pipedal
                 /****************** */
 
                 ioc.stop();
-                for (auto &thread : v)
+                for (auto& thread : v)
                 {
                     thread.join();
                 }
                 Lv2Log::info("Web server terminated.");
             }
-            catch (websocketpp::exception const &e)
+            catch (websocketpp::exception const& e)
             {
                 Lv2Log::error(SS("Web server: " << e.what()));
             }
@@ -1335,11 +1351,11 @@ namespace pipedal
             }
         }
 
-        static void ThreadProc(WebServerImpl *server)
+        static void ThreadProc(WebServerImpl* server)
         {
             server->Run();
         }
-        std::shared_ptr<ISocketFactory> GetSocketFactory(const uri &requestUri);
+        std::shared_ptr<ISocketFactory> GetSocketFactory(const uri& requestUri);
 
         std::vector<std::shared_ptr<RequestHandler>> request_handlers;
         std::vector<std::shared_ptr<ISocketFactory>> socket_factories;
@@ -1349,7 +1365,7 @@ namespace pipedal
             request_handlers.push_back(requestHandler);
         }
 
-        virtual void AddSocketFactory(std::shared_ptr<ISocketFactory> &socketHandler)
+        virtual void AddSocketFactory(std::shared_ptr<ISocketFactory>& socketHandler)
         {
             socket_factories.push_back(socketHandler);
         }
@@ -1369,7 +1385,7 @@ namespace pipedal
                 {
                     m_endpoint.stop_listening();
                 }
-                catch (const std::exception &e)
+                catch (const std::exception& e)
                 {
                     Lv2Log::warning(SS("WebServer:StopListening: " << e.what()));
                 }
@@ -1381,16 +1397,16 @@ namespace pipedal
         {
             using clock = std::chrono::steady_clock;
 
-            clock::time_point endWait = clock::now() + std::chrono::milliseconds(timeoutMs/2);
+            clock::time_point endWait = clock::now() + std::chrono::milliseconds(timeoutMs / 2);
             while (true)
             {
                 {
-                    if (clock::now() > endWait) 
+                    if (clock::now() > endWait)
                     {
                         break;
                     }
-                    std::lock_guard<std::recursive_mutex> lock{m_sessionsMutex};
-                    if (m_connections.size() ==0)
+                    std::lock_guard<std::recursive_mutex> lock{ m_sessionsMutex };
+                    if (m_connections.size() == 0)
                     {
                         return true;
                     }
@@ -1406,7 +1422,7 @@ namespace pipedal
             StopListening();
 
             //linger bit to see of connections will shut down normally
-            if(WaitForAllEndpointsClosed(timeoutMs))
+            if (WaitForAllEndpointsClosed(timeoutMs))
             {
                 return;
             }
@@ -1435,11 +1451,11 @@ namespace pipedal
 
         virtual void DisplayIpAddresses() override;
 
-        WebServerImpl(const std::string &address, int port, const char *rootPath, int threads, size_t maxUploadSize);
+        WebServerImpl(const std::string& address, int port, const char* rootPath, int threads, size_t maxUploadSize);
     };
 } // namespace pipedal
 
-std::shared_ptr<ISocketFactory> WebServerImpl::GetSocketFactory(const uri &requestUri)
+std::shared_ptr<ISocketFactory> WebServerImpl::GetSocketFactory(const uri& requestUri)
 {
 
     for (auto factory : this->socket_factories)
@@ -1451,20 +1467,20 @@ std::shared_ptr<ISocketFactory> WebServerImpl::GetSocketFactory(const uri &reque
     }
     return nullptr;
 }
-WebServerImpl::WebServerImpl(const std::string &address, int port, const char *rootPath, int threads, size_t maxUploadSize)
+WebServerImpl::WebServerImpl(const std::string& address, int port, const char* rootPath, int threads, size_t maxUploadSize)
     : address(address),
-      rootPath(rootPath),
-      port(port),
-      threads(threads),
-      maxUploadSize(maxUploadSize)
+    rootPath(rootPath),
+    port(port),
+    threads(threads),
+    maxUploadSize(maxUploadSize)
 {
     ::CustomPpConfig::max_http_body_size = maxUploadSize;
 }
 
 std::shared_ptr<WebServer> pipedal::WebServer::create(
-    const boost::asio::ip::address &address,
+    const boost::asio::ip::address& address,
     int port,
-    const char *rootPath, int threads,
+    const char* rootPath, int threads,
     size_t maxUploadSize)
 {
     return std::shared_ptr<WebServer>(new WebServerImpl(address.to_string(), port, rootPath, threads, maxUploadSize));
@@ -1480,7 +1496,7 @@ void WebServerImpl::DisplayIpAddresses()
         Lv2Log::info(ss.str());
     }
     auto ethAddresses = GetEthernetIpv4Addresses();
-    for (const auto&ethAddress: ethAddresses)
+    for (const auto& ethAddress : ethAddresses)
     {
         Lv2Log::info(SS("Listening on " << ethAddress << ":" << this->port));
 

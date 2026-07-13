@@ -186,7 +186,8 @@ namespace pipedal::implementation {
     void UpgradeBank(PiPedalModel& model,
         const std::filesystem::path& existingBankFilePath,
         const std::filesystem::path& piBankFilePath,
-        const std::vector<std::string>& presetsToUpgrade
+        const std::vector<std::string>& presetsToOverwrite,
+        const std::vector<std::string>&mediaFilesToOverwrite
     ) {
         BankFile sourceBankFile;
 
@@ -198,7 +199,7 @@ namespace pipedal::implementation {
         if (IsZipFile(piBankFilePath))
         {
             auto presetReader = PresetBundleReader::LoadPresetsFile(model, piBankFilePath);
-            presetReader->ExtractMediaFiles();
+            presetReader->ExtractMediaFiles(mediaFilesToOverwrite);
 
             std::stringstream ss(presetReader->GetPresetJson());
             json_reader reader(ss);
@@ -224,16 +225,24 @@ namespace pipedal::implementation {
             json_reader reader{ ifs };
             reader.read(&existingBankFile);
         }
-
-        for (const std::string& presetToUpgrade : presetsToUpgrade)
+        // Overwrite specified presets.
+        for (const std::string& presetToOverwrite : presetsToOverwrite)
         {
-            BankFileEntry* existingEntry = existingBankFile.getPresetByName(presetToUpgrade);
+            BankFileEntry* existingEntry = existingBankFile.getPresetByName(presetToOverwrite);
             if (existingEntry) {
-                BankFileEntry* newEntry = sourceBankFile.getPresetByName(presetToUpgrade);
+                BankFileEntry* newEntry = sourceBankFile.getPresetByName(presetToOverwrite);
                 if (newEntry)
                 {
                     existingEntry->preset(newEntry->preset());
                 }
+            }
+        }
+        // Add new presets
+        for (const auto& newPreset: sourceBankFile.presets())
+        {
+            BankFileEntry* existingEntry = existingBankFile.getPresetByName(newPreset->preset().name());
+            if (!existingEntry) {
+                existingBankFile.addPreset(newPreset->preset());
             }
         }
         {
@@ -1441,9 +1450,9 @@ public:
         portNumber(portNumber)
     {
     }
-    std::string GetConfig(const std::string& fromAddress)
+    std::string GetConfig(const std::string& serverAddress)
     {
-        std::string webSocketAddress = GetNonLinkLocalAddress(StripPortNumber(fromAddress));
+        std::string webSocketAddress = GetNonLinkLocalAddress(StripPortNumber(serverAddress));
         Lv2Log::info(SS("Web Socket Address: " << webSocketAddress << ":" << portNumber));
 
         std::stringstream s;
@@ -1453,8 +1462,11 @@ public:
             << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
             << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
             << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")
-            << ", \"tone3000_A2_models\": " << (model.Configuration().GetTone3000A2Models() ? " true" : "false")
-            << " }";
+            << ", \"tone3000_A2_models\": " << (model.Configuration().GetTone3000A2Models() ? " true" : "false");
+#ifndef NDEBUG
+            s << ", \"debug\": true";
+#endif
+        s << " }";
 
         return s.str();
     }
@@ -1471,12 +1483,13 @@ public:
 
     virtual void head_response(
         const std::string& fromAddress,
+        const std::string& toAddress,
         const uri& request_uri,
         HttpRequest& req,
         HttpResponse& res,
         std::error_code& ec) override
     {
-        std::string response = GetConfig(fromAddress);
+        std::string response = GetConfig(toAddress);
         res.set(HttpField::content_type, "application/json");
         res.set(HttpField::cache_control, "no-cache");
         res.setContentLength(response.length());
@@ -1494,12 +1507,13 @@ public:
 
     virtual void get_response(
         const std::string& fromAddress,
+        const std::string& toAddress,
         const uri& request_uri,
         HttpRequest& req,
         HttpResponse& res,
         std::error_code& ec) override
     {
-        std::string response = GetConfig(fromAddress);
+        std::string response = GetConfig(toAddress);
         res.set(HttpField::content_type, "application/json");
         res.set(HttpField::cache_control, "no-cache");
         res.setContentLength(response.length());

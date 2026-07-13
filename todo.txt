@@ -1,38 +1,17 @@
-Create Factory Model.piBank.
 
-Install procedure for upgrading of Factory Preset. 
+ Test Factory Model migration.
 
-Relocate image files. 
-
-Prep readme files in Factory Presets.
+Factory Model license info.
+SQLite leaked install files 
 
 
 A final solution for rate-limiting on Tone3000.
 
-
-
-T3k links in the readme files. Can we start a Popup Flow from the given links?
-
-File Player Underrun is NOT CPU use related. There's an underrun somewhere.
-
-
-
-summaries for Mono audio adapaters.
-Check PWA on windows, edge and chrome.
-Make sure Pi 4 default audio device is still hidden when selecting devices!
-
-sAFEfILEnAMES: RENAME, &C. Safe bank names? 
-NEW BANK
-WINDOW SIZE CALCUALTIONS ARE WRONG ON LINUX HIDEF DISPLAYS.
-
-check reload after change of LV2 plugins.
-
-
+File Player Underrun is NOT CPU use related. There's an procedural underrun somewhere at the end of file.
 
 
 - pipewire aux in?
-
-
+s
 
 pcm.pipedal_aux_in {
     type file

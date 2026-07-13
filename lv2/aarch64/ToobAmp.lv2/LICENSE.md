@@ -124,7 +124,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 © www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li  
 © www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley  
 © www.openairlib.net, AudioLab University of York, www.ncem.co.uk  
-© www.openairlib.net  
+© Gregory Hopkins, Hopkins Media Services LLC  
 © Adventure Kid Research and Technology, Kristoffer Ekstrand.  
   
 Creative Commons Attribution 4.0 International Public License

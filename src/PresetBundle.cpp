@@ -334,12 +334,12 @@ public:
     }
     virtual ~PresetBundleReaderImpl() noexcept;
 
-    virtual void ExtractMediaFiles() override;
+    virtual void ExtractMediaFiles(const std::vector<std::string>&mediaFilesToOverwrite = std::vector<std::string>()) override;
     virtual std::string GetPresetJson() override;
     virtual std::string GetPluginPresetsJson() override;
 
 private:
-    void ExtractMediaFile(const std::string &zipFileName);
+    void ExtractMediaFile(const std::string &zipFileName, bool overwrite);
     bool IsSameFile(const std::string &zipFileName, const std::filesystem::path &filePath)
     {
         if (!zipFile->CompareFiles(zipFileName, filePath))
@@ -527,8 +527,15 @@ PresetBundleReader::ptr PresetBundleReader::LoadPluginPresetsFile(PiPedalModel &
     return result;
 }
 
-void PresetBundleReaderImpl::ExtractMediaFiles()
+void PresetBundleReaderImpl::ExtractMediaFiles(const std::vector<std::string>&mediaFilesToOverwrite_)
 {
+
+    std::set<std::string> mediaFilesToOverwrite;
+    for (const auto&mediaFile: mediaFilesToOverwrite_)
+    {
+        mediaFilesToOverwrite.insert(SS("media/" << mediaFile));
+    }
+
     auto zipFiles = zipFile->GetFiles();
     for (const auto &zipFile : zipFiles)
     {
@@ -536,7 +543,8 @@ void PresetBundleReaderImpl::ExtractMediaFiles()
         {
             if (!zipFile.ends_with('/')) // don't process diretories.
             {
-                ExtractMediaFile(zipFile);
+                bool overwrite = mediaFilesToOverwrite.find(zipFile) != mediaFilesToOverwrite.end();
+                ExtractMediaFile(zipFile, overwrite);
             }
         }
     }
@@ -585,7 +593,7 @@ static std::filesystem::path NextFileName(const std::filesystem::path &fileName)
     std::string newFileName = SS(baseName << "(" << (n + 1) << ')' << fileNameOnly.substr(extPos));
     return fileName.parent_path() / newFileName;
 }
-void PresetBundleReaderImpl::ExtractMediaFile(const std::string &zipFileName)
+void PresetBundleReaderImpl::ExtractMediaFile(const std::string &zipFileName, bool overwrite)
 {
     namespace fs = std::filesystem;
     if (zipFileName.starts_with("media/"))
@@ -599,7 +607,7 @@ void PresetBundleReaderImpl::ExtractMediaFile(const std::string &zipFileName)
         bool renamed = false;
         while (true)
         {
-            if (fs::exists(targetFileName))
+            if (fs::exists(targetFileName) && !overwrite)
             {
                 if (IsSameFile(zipFileName, targetFileName))
                 {

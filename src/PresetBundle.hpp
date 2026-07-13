@@ -21,6 +21,7 @@
 
 #include <string>
 #include <filesystem>
+#include <set>
 
 namespace pipedal {
     class PiPedalModel;
@@ -46,7 +47,7 @@ namespace pipedal {
 
         virtual ~PresetBundleReader() noexcept = 0;
 
-        virtual void ExtractMediaFiles() = 0;
+        virtual void ExtractMediaFiles(const std::vector<std::string>&mediaFilesToOverwrite = std::vector<std::string>()) = 0;
         virtual std::string GetPresetJson() = 0;
         virtual std::string GetPluginPresetsJson() = 0;
         static ptr LoadPresetsFile(PiPedalModel&model,const std::filesystem::path &path);

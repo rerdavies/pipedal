@@ -216,85 +216,138 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                                     {this.model.serverVersion?.osVersion ?? ""}
                                 </Typography>
                             </div>
-                        </div><div style={{ marginLeft: 24, marginRight: 24 }}>
-
+                        </div>
+                        <div style={{ marginLeft: 24, marginRight: 24 }}>
                             <Divider />
-                            <Typography display="block" variant="caption" style={{ marginTop: 16 }}>
-                                T3K LICENSED FILES
-                            </Typography>
-                            <Typography display="block" variant="body2" style={{ marginTop: 8 }}>
-                                The following files are provided under a T3K license. Under an arrangement with Tone3000.com,
-                                permission has been granted to Robin Davies to distribute these files ONLY with PiPedal.
-                            </Typography>
-                            <ul style={{ marginTop: 8, marginBottom: 8 }}>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        "default_presets/V3 Factory Presets.piBank" (contains compressed versions of the protected files).
-                                    </Typography>
-                                </li>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        The installed file "/etc/pipedal/config/default_presets/presets/V3 Factory Presets.piBank"
-                                    </Typography>
-                                </li>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        Files installed in "/var/pipedal/audio_uploads/NeuralAmpModels/Factory Models/"
-                                    </Typography>
-                                </li>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        Files installed in "/var/pipedal/audio_uploads/IRs/Factory IRs/"
-                                    </Typography>
-                                </li>
-                            </ul>
-                            <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
-                                Please contact the original authors for permission if you would like to distribute these files for
-                                other purposes, or if you would like to distribute these files in a forked version of PiPedal.
-                            </Typography>
-
-                            <Typography display="block" variant="subtitle2" style={{ marginTop: 8 }}>
-                                T3K License
-                            </Typography>
-                            <Typography display="block" variant="body2" style={{ marginTop: 4, marginBottom: 12 }}>
-                                Users may download and use the data file in software and publish the resulting outputs without
-                                royalties or restrictions. However, they may not upload, republish, or distribute the data file
-                                without the author&apos;s permission.
-                            </Typography>
-
-                            <Typography display="block" variant="subtitle2" style={{ marginTop: 8 }}>
-                                Original Authors
-                            </Typography>
-                            <ul style={{ marginTop: 8, marginBottom: 16 }}>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        tone3000 - <a href="https://tone3000.com/tone3000" target="_blank" rel="noreferrer">https://tone3000.com/tone3000</a>
-                                    </Typography>
-                                </li>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        amalgamaudio - <a href="https://tone3000.com/amalgamaudio" target="_blank" rel="noreferrer">https://tone3000.com/amalgamaudio</a>
-                                    </Typography>
-                                </li>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        kenazmusic - <a href="https://tone3000.com/kenazmusic" target="_blank" rel="noreferrer">https://tone3000.com/kenazmusic</a>
-                                    </Typography>
-                                </li>
-                                <li>
-                                    <Typography display="inline" variant="body2">
-                                        outmodedelectronics - <a href="https://tone3000.com/outmodedelectronics" target="_blank" rel="noreferrer">https://tone3000.com/outmodedelectronics</a>
-                                    </Typography>
-                                </li>
-                            </ul>
-
-                            <Divider />
-                            <Typography display="block" variant="caption"  >
+                            <Typography display="block" variant="caption"   >
                                 LEGAL NOTICES
                             </Typography>
-                            <div dangerouslySetInnerHTML={{ __html: this.state.openSourceNotices }} style={{ fontSize: "0.8em", maxWidth: 400 }}>
-                            </div>
+                            <div style={{ marginLeft: 24, marginTop: 32 }}>
+                                <Divider style={{ marginBottom: 24 }} />
 
+                                <Typography display="block" variant="body2" style={{ marginTop: 8 }}>
+                                    The following files are provided under a T3K license. Under an arrangement with Tone3000.com,
+                                    permission has been granted to Robin Davies to distribute these files for use ONLY with PiPedal.
+                                </Typography>
+                                <ul style={{ marginTop: 8, marginBottom: 16, listStyle: "none", paddingLeft: 24 }}>
+
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            /etc/pipedal/config/default_presets/presets/Factory Presets.piBank (contains
+                                            compressed versions of the files listed below)
+                                        </Typography>
+                                    </li>
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            Files installed in "/var/pipedal/audio_uploads/NeuralAmpModels/Factory Models/"
+                                        </Typography>
+                                    </li>
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            Files installed in "/var/pipedal/audio_uploads/IRs/Factory IRs/"
+                                        </Typography>
+                                    </li>
+                                </ul>
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    Please contact the original authors for permission if you would like to distribute these files for
+                                    other purposes, or if you would like to distribute these files in a forked version of PiPedal.
+                                </Typography>
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    See the following files for detailed attributions:
+                                </Typography>
+                                <ul style={{ marginTop: 8, marginBottom: 16, listStyle: "none", paddingLeft: 24 }}>
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            /var/pipedal/audio_uploads/NeuralAmpModels/Factory Models/README.md<br />
+                                        </Typography>
+                                    </li>
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            /var/pipedal/audio_uploads/IRs/Factory IRs/README.md<br />
+                                        </Typography>
+                                    </li>
+                                </ul>
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    &copy; 2dor - <a href="https://tone3000.com/t2dor" target="_blank" rel="noreferrer">https://tone3000.com/t2dor</a><br />
+                                    &copy; amalgamaudio - <a href="https://tone3000.com/amalgamaudio" target="_blank" rel="noreferrer">https://tone3000.com/amalgamaudio</a><br />
+                                    &copy; kenazmusic - <a href="https://tone3000.com/kenazmusic" target="_blank" rel="noreferrer">https://tone3000.com/kenazmusic</a><br />
+                                    &copy; outmodedelectronics - <a href="https://tone3000.com/outmodedelectronics" target="_blank" rel="noreferrer">https://tone3000.com/outmodedelectronics</a><br />
+                                    &copy; scottcorgan - <a href="https://tone3000.com/scottcorgan" target="_blank" rel="noreferrer">https://tone3000.com/scottcorgan</a><br />
+                                    &copy; tone3000 - <a href="https://tone3000.com/tone3000" target="_blank" rel="noreferrer">https://tone3000.com/tone3000</a><br />
+                                </Typography>
+
+                                <div style={{ marginLeft: 64, marginRight: 64 }}>
+                                    <Typography display="block" variant="subtitle2" style={{ marginTop: 8 }}>
+                                        T3K License
+                                    </Typography>
+                                    <Typography display="block" variant="body2" style={{ marginTop: 4, marginBottom: 12 }}>
+                                        Users may download and use the data file in software and publish the resulting outputs without
+                                        royalties or restrictions. However, they may not upload, republish, or distribute the data file
+                                        without the author&apos;s permission.
+                                    </Typography>
+                                </div>
+
+
+                                <Divider style={{ marginTop: 24, marginBottom: 24 }} />
+                                <Typography display="block" variant="body2" style={{ marginTop: 8 }}>
+                                    PiPedal factory presets are licensed under a <a href="https://creativecommons.org/licenses/by/4.0/"
+                                        target="_blank"
+                                        rel="noreferrer">CC-BY-4.0 license</a>.
+                                </Typography>
+                                <Typography display="block" variant="body2" style={{ marginTop: 8, marginBottom: 8 }}>
+                                    &copy; Robin Davies<br />
+                                    &copy; Andrew Curtis<br />
+                                </Typography>
+
+                                <Divider style={{ marginTop: 24, marginBottom: 24 }} />
+
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    Installed files in the  "/var/pipedal/audio_uploads/CabIR" directory are provided
+                                    under a <a href="https://creativecommons.org/licenses/by/4.0/"
+                                        target="_blank"
+                                        rel="noreferrer">CC-BY-4.0 license</a>. By: Kristoffer Ekstrand, Adventure Kid Research &amp; Technology. Refer
+                                    to the following file for detailed attributions:
+                                </Typography>
+                                <ul style={{ marginTop: 8, marginBottom: 16, listStyle: "none", paddingLeft: 24 }}>
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            /var/pipedal/audio_uploads/CabIR/LICENSE.md<br />
+                                        </Typography>
+                                    </li>
+                                </ul>
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    &copy; Kristoffer Ekstrand, Adventure Kid Research &amp; Technology<br />
+                                </Typography>
+
+
+                                <Divider style={{ marginTop: 24, marginBottom: 24 }} />
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    Installed files in the  "/var/pipedal/audio_uploads/ConvolutionReverb" directory are provided
+                                    under a <a href="https://creativecommons.org/licenses/by/4.0/"
+                                        target="_blank"
+                                        rel="noreferrer">CC-BY-4.0 license</a>. See the following file for detailed attributions:
+                                </Typography>
+                                <ul style={{ marginTop: 8, marginBottom: 16, listStyle: "none", paddingLeft: 24 }}>
+                                    <li>
+                                        <Typography display="inline" variant="body2">
+                                            /var/pipedal/audio_uploads/ConvolutionReverb/LICENSE.md<br />
+                                        </Typography>
+                                    </li>
+                                </ul>
+                                <Typography display="block" variant="body2" style={{ marginBottom: 12 }}>
+                                    &copy; Greg Hopkins - <a href="https://hopkinsmedia.services/ir" target="_blank" rel="noreferrer">https://hopkinsmedia.services/ir</a><br />
+                                    &copy; www.openairlib.net, University of York - <a href="https://www.openairlib.net/" target="_blank" rel="noreferrer">https://www.openairlib.net/</a><br />
+                                    &copy; www.openairlib.net, Audiolab University of York, Alex Duffell, Aishwarya Sridhar, Zhong Li<br />
+                                    &copy; www.openairlib.net, Audio Lab University of York, Andrew Chadwick, Simon Shelley<br />
+                                    &copy; www.openairlib.net, AudioLab University of York, www.ncem.co.uk<br />
+                                </Typography>
+                                <Divider />
+
+
+
+                                <div dangerouslySetInnerHTML={{ __html: this.state.openSourceNotices }} style={{ fontSize: "0.8em", maxWidth: 400 }}>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
