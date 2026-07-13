@@ -131,6 +131,28 @@ namespace pipedal
                 return 1;
             }
         };
+        class StringVectorOption : public OptionBase
+        {
+
+            std::string name;
+            std::vector<std::string> *pOutput;
+
+        public:
+            StringVectorOption(const std::string &name, std::vector<std::string> *pOutput)
+                :   OptionBase(name),
+                    pOutput(pOutput)
+            {
+            }
+            virtual int Execute(int argcRemaining, const char **argvRemaining)
+            {
+                if (argcRemaining == 0 || argvRemaining[0][0] == '-')
+                {
+                    throw PiPedalException("Expecting a parameter for option " + GetName());
+                }
+                pOutput->push_back(argvRemaining[0]);
+                return 1;
+            }
+        };
 
         int ProcessOption(const std::string &text, int argsRemaining, const char *argv[])
         {
@@ -187,6 +209,12 @@ namespace pipedal
         {
             options.push_back(new StringOption("-" + shortOption, pResult));
             options.push_back(new StringOption("--" + longOption, pResult));
+        }
+
+
+        void AddOption(const std::string &option, std::vector<std::string> *pResult)
+        {
+            options.push_back(new StringVectorOption(option, pResult));
         }
 
 

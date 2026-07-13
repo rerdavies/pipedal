@@ -37,11 +37,15 @@ ignore:
   - .well-known
   - /rollup-linux-x64-gnu/rollup.linux-x64-gnu.node
   - /rollup.
+  - /hast-util-table-cell-style/LICENSE
+  - /uri-js/LICENSE
   - /artifacts/
   - /img/
   - /modules/libzip/man/mkdocset.pl
   - copyrightMain.cpp
   - copyright
+  - vite/node_modules/caniuse-lite/*
+  - vite/node_modules/argparse/*
 
 
   suffixes:
@@ -104,6 +108,7 @@ ignore:
   - psd
   - ttl
   - so
+  - node
   - sh
   - zh
   - raw

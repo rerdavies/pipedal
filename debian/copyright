@@ -1,17 +1,4 @@
 Files: *
-Copyright: 2022-2026, Robin Davies
-License: Expat
-
-Files: PiPedalCommon/src/AlsaSequencer.cpp
- PiPedalCommon/src/ConfigSerializer.cpp
- PiPedalCommon/src/ConfigUtil.cpp
- PiPedalCommon/src/HtmlHelper.cpp
- PiPedalCommon/src/Lv2Log.cpp
- PiPedalCommon/src/ServiceConfiguration.cpp
- PiPedalCommon/src/Utf8Utils.cpp
- PiPedalCommon/src/json.cpp
- PiPedalCommon/src/json_variant.cpp
- PiPedalCommon/src/util.cpp
 Copyright: Robin E.R. Davies
 License: Expat
 
@@ -23,19 +10,14 @@ Copyright: Robin E.R. Davies
  2007, 2008, Johannes Berg
 License: BSD-3-clause
 
-Files: PiPedalCommon/src/include/AlsaSequencer.hpp
- PiPedalCommon/src/include/ChannelInfo.hpp
- PiPedalCommon/src/include/ConfigSerializer.hpp
- PiPedalCommon/src/include/ConfigUtil.hpp
- PiPedalCommon/src/include/P2pConfigFiles.hpp
- PiPedalCommon/src/include/ServiceConfiguration.hpp
- PiPedalCommon/src/include/Utf8Utils.hpp
- PiPedalCommon/src/include/WifiDirectConfigSettings.hpp
- PiPedalCommon/src/include/autoptr_vector.h
- PiPedalCommon/src/include/json_variant.hpp
- PiPedalCommon/src/include/restrict.hpp
- PiPedalCommon/src/include/util.hpp
-Copyright: Robin E.R. Davies
+Files: PiPedalCommon/src/WifiRegs.cpp
+Copyright: 2022-2026, Robin Davies
+License: Expat
+
+Files: PiPedalCommon/src/include/Finally.hpp
+ PiPedalCommon/src/include/WifiRegs.hpp
+ PiPedalCommon/src/include/json.hpp
+Copyright: 2022-2026, Robin Davies
 License: Expat
 
 Files: PiPedalCommon/src/include/NetLinkChannelInfo.hpp.x
@@ -217,93 +199,70 @@ Files: modules/websocketpp/websocketpp/utf8_validator.hpp
 Copyright: 2008, 2009, Bjoern Hoehrmann <bjoern@hoehrmann.de>
 License: Expat
 
-Files: src/AesDigest.hpp
- src/AlsaDriver.cpp
- src/AlsaDriver.hpp
- src/AlsaDriverTest.cpp
- src/AtomBuffer.hpp
- src/AtomConverter.cpp
- src/AtomConverter.hpp
- src/AudioConfig.hpp
- src/AudioDriver.hpp
- src/AudioFileMetadata.cpp
- src/AudioFileMetadata.hpp
- src/AudioFileMetadataReader.cpp
- src/AudioFileMetadataReader.hpp
- src/AudioFiles.cpp
- src/AudioFiles.hpp
- src/AudioFilesDb.cpp
- src/AudioFilesDb.hpp
- src/AutoLilvNode.cpp
- src/AutoLilvNode.hpp
- src/AvahiService.cpp
- src/AvahiService.hpp
- src/AvahiServiceTest.cpp
- src/BootConfig.cpp
- src/BootConfig.hpp
- src/CpuUse.cpp
- src/CpuUse.hpp
- src/CrashGuard.cpp
- src/CrashGuard.hpp
- src/Curl.cpp
- src/Curl.hpp
- src/DbDezipper.cpp
- src/DbDezipper.hpp
- src/DeviceVus.hpp
- src/DummyAudioDriver.cpp
- src/DummyAudioDriver.hpp
- src/FileBrowserFilesFeature.cpp
- src/FileBrowserFilesFeature.hpp
- src/JackDriver.cpp
- src/JackDriver.hpp
- src/LRUCache.hpp
- src/LiteralVersion.cpp
- src/LiteralVersion.hpp
- src/Locale.cpp
- src/MidiEvent.hpp
- src/ModGui.cpp
- src/ModGui.hpp
- src/ModTemplateGenerator.cpp
- src/ModTemplateGenerator.hpp
- src/PiLatencyMain.cpp
- src/PiPedalUI.cpp
- src/PiPedalUI.hpp
- src/PipewireInputStream.cpp
- src/PipewireInputStream.hpp
- src/PluginHost.hpp
- src/PrettyPrinter.hpp
- src/RtInversionGuard.hpp
- src/SchedulerPriority.cpp
- src/SchedulerPriority.hpp
- src/ThreadedQueue.hpp
- src/Tone3000Download.cpp
- src/Tone3000Download.hpp
- src/Tone3000DownloadProgress.cpp
- src/Tone3000DownloadProgress.hpp
- src/Tone3000DownloadType.cpp
- src/Tone3000DownloadType.hpp
- src/Tone3000Downloader.cpp
- src/Tone3000Downloader.hpp
- src/Tone3000DownloaderImpl.hpp
- src/Tone3000Throttler.cpp
- src/Tone3000Throttler.hpp
- src/Tone3000Tone.cpp
- src/Tone3000Tone.hpp
- src/UnixSocket.cpp
- src/UnixSocket.hpp
- src/UnixSocketTest.cpp
- src/UpdaterSecurity.hpp
- src/Vst3Effect.cpp
- src/Vst3Host.cpp
- src/Vst3PresetFile.cpp
- src/Vst3test.cpp
- src/WebServerMod.cpp
- src/WebServerMod.hpp
- src/alsaCheck.cpp
- src/alsaCheck.hpp
- src/kconfigMain.cpp
- src/utilTest.cpp
+Files: src/AdminInstallUpdate.cpp
+ src/AdminInstallUpdate.hpp
+ src/AudioFilesTest.cpp
+ src/AuxIn.hpp
+ src/AuxInTest.cpp
+ src/CapturePresetsMain.cpp
+ src/ChannelRouterSettings.cpp
+ src/ChannelRouterSettings.hpp
+ src/ConfigMain.cpp
+ src/CpuTemperatureMonitor.hpp
+ src/DBusToLv2Log.cpp
+ src/DBusToLv2Log.hpp
+ src/FileEntry.cpp
+ src/FileEntry.hpp
+ src/FilePropertyDirectoryTree.cpp
+ src/FilePropertyDirectoryTree.hpp
+ src/Finally.hpp
+ src/GithubResponseHeaders.hpp
+ src/HotspotManager.hpp
+ src/IHost.hpp
+ src/LRUCacheTest.cpp
+ src/Lv2Effect.hpp
+ src/Lv2PluginChangeMonitor.cpp
+ src/Lv2PluginChangeMonitor.hpp
+ src/MapPathFeature.cpp
+ src/MapPathFeature.hpp
+ src/MimeTypes.cpp
+ src/MimeTypes.hpp
+ src/ModFileTypes.cpp
+ src/ModFileTypes.hpp
+ src/ModGuiTest.cpp
+ src/PatchPropertyWriter.hpp
+ src/PiPedalCommon.hpp
+ src/PiPedalConfiguration.cpp
+ src/PiPedalModel.cpp
+ src/PiPedalSocket.cpp
+ src/PipewireInputStreamTest.cpp
+ src/PresetBundle.cpp
+ src/PresetBundle.hpp
+ src/Promise.hpp
+ src/PromiseTest.cpp
+ src/RealtimeMidiEventType.hpp
+ src/StateInterface.cpp
+ src/StateInterface.hpp
+ src/TemporaryFile.cpp
+ src/TemporaryFile.hpp
+ src/UpdateMain.cpp
+ src/UpdateResults.cpp
+ src/UpdateResults.hpp
+ src/Updater.cpp
+ src/Updater.hpp
+ src/UpdaterStatus.hpp
+ src/WebServer.cpp
+ src/WebServerConfig.cpp
+ src/WebServerConfig.hpp
+ src/Worker.hpp
+ src/ZipFile.cpp
+ src/ZipFile.hpp
+Copyright: 2022-2026, Robin Davies
+License: Expat
+
+Files: src/AlsaDriver.cpp
 Copyright: Robin E.R. Davies
+ Roberto Figliè
 License: Expat
 
 Files: src/AudioHost.cpp
@@ -319,12 +278,6 @@ License: Expat
 
 Files: src/Base64.hpp
 Copyright: 2016, tomykaira
-License: Expat
-
-Files: src/RingBufferReader.hpp
- src/atom_object.cpp
- src/atom_object.hpp
-Copyright: Robin E.R Davies
 License: Expat
 
 Files: src/Vst3MidiToEvent.hpp
@@ -348,8 +301,8 @@ Files: src/mustache.hpp
 Copyright: 2015-2020, Kevin Wojniak
 License: BSL-1.0
 
-Files: src/vst3/*
-Copyright: Robin E.R. Davies
+Files: submodules/pipedal_p2pd/*
+Copyright: 2022-2026, Robin Davies
 License: Expat
 
 Files: submodules/pipedal_p2pd/lib/*
@@ -382,75 +335,63 @@ Copyright: no-info-found
 License: Apache-2.0
 
 Files: vite/node_modules/@babel/code-frame/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/compat-data/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/core/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/generator/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helper-compilation-targets/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helper-module-imports/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helper-module-transforms/*
-Copyright: 2013-2017, 2019
-License: Expat
-
-Files: vite/node_modules/@babel/helper-plugin-utils/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helper-string-parser/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helper-validator-identifier/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helper-validator-option/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/helpers/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/parser/*
 Copyright: 2012-2022, various contributors (see AUTHORS)
 License: Expat
 
-Files: vite/node_modules/@babel/plugin-transform-react-jsx-self/*
-Copyright: 2013-2017, 2019
-License: Expat
-
-Files: vite/node_modules/@babel/plugin-transform-react-jsx-source/*
-Copyright: 2013-2017, 2019
-License: Expat
-
 Files: vite/node_modules/@babel/runtime/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/template/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/traverse/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@babel/traverse/node_modules/globals/*
@@ -458,7 +399,7 @@ Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 License: Expat
 
 Files: vite/node_modules/@babel/types/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@emotion/babel-plugin/*
@@ -601,9 +542,9 @@ Files: vite/node_modules/@jridgewell/trace-mapping/*
 Copyright: 2019, 2022, Justin Ridgewell <jridgewell@google.com>
 License: Expat
 
-Files: vite/node_modules/@mapbox/hast-util-table-cell-style/*
+Files: vite/node_modules/@mapbox/*
 Copyright: 2018, Mapbox
-License: BSD-2-Clause-FreeBSD
+License: BSD-2-clause
 
 Files: vite/node_modules/@mui/core-downloads-tracker/*
 Copyright: 2014, Call-Em-All
@@ -653,6 +594,10 @@ Files: vite/node_modules/@nodelib/fs.walk/*
 Copyright: Denis Malinochkin
 License: Expat
 
+Files: vite/node_modules/@oxc-project/types/*
+Copyright: 2023, Boshen
+License: Expat
+
 Files: vite/node_modules/@react-hook/debounce/*
 Copyright: 2019, Jared Lunde
 License: Expat
@@ -673,12 +618,16 @@ Files: vite/node_modules/@react-hook/window-size/*
 Copyright: 2019, Jared Lunde
 License: Expat
 
+Files: vite/node_modules/@rolldown/pluginutils/*
+Copyright: 2013-2017, 2019, 2024, 2026
+License: Expat
+
 Files: vite/node_modules/@rollup/pluginutils/*
 Copyright: 2019, RollupJS Plugin Contributors (https://github.com/rollup/plugins/graphs/contributors)
 License: Expat
 
 Files: vite/node_modules/@rollup/pluginutils/node_modules/picomatch/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/@svgr/babel-plugin-add-jsx-attribute/*
@@ -731,22 +680,6 @@ License: Expat
 
 Files: vite/node_modules/@svgr/plugin-jsx/*
 Copyright: 2017, Smooth Code
-License: Expat
-
-Files: vite/node_modules/@types/babel__core/*
-Copyright: 2015, Microsoft Corporation.
-License: Expat
-
-Files: vite/node_modules/@types/babel__generator/*
-Copyright: 2015, Microsoft Corporation.
-License: Expat
-
-Files: vite/node_modules/@types/babel__template/*
-Copyright: 2015, Microsoft Corporation.
-License: Expat
-
-Files: vite/node_modules/@types/babel__traverse/*
-Copyright: 2015, Microsoft Corporation.
 License: Expat
 
 Files: vite/node_modules/@types/debug/*
@@ -854,7 +787,7 @@ Copyright: 2018-2025, Andrea Giammarchi, @WebReflection
 License: ISC
 
 Files: vite/node_modules/@vitejs/plugin-react/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/acorn-jsx/*
@@ -873,10 +806,6 @@ Files: vite/node_modules/ansi-styles/*
 Copyright: Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 License: Expat
 
-Files: vite/node_modules/argparse/*
-Copyright: 2001-2010, i.e., "
-License: CNRI-Python-GPL-Compatible or GPL or PSF-2.0
-
 Files: vite/node_modules/babel-plugin-macros/*
 Copyright: 2020, Kent C. Dodds
 License: Expat
@@ -890,7 +819,7 @@ Copyright: 2013, Julian Gruber <julian@juliangruber.com>
 License: Expat
 
 Files: vite/node_modules/braces/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/browserslist/*
@@ -904,10 +833,6 @@ License: Expat
 Files: vite/node_modules/camelcase/*
 Copyright: Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
 License: Expat
-
-Files: vite/node_modules/caniuse-lite/*
-Copyright: including, without limitation
-License: CC-BY-4.0
 
 Files: vite/node_modules/ccount/*
 Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
@@ -966,7 +891,7 @@ Copyright: 2018, Made With MOXY Lda <hello@moxy.studio>
 License: Expat
 
 Files: vite/node_modules/css-vendor/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/csstype/*
@@ -991,6 +916,10 @@ License: Expat
 Files: vite/node_modules/dequal/*
 Copyright: Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
 License: Expat
+
+Files: vite/node_modules/detect-libc/*
+Copyright: no-info-found
+License: Apache-2.0
 
 Files: vite/node_modules/devlop/*
 Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
@@ -1095,7 +1024,7 @@ Copyright: Roy Riojas & Jared Wray
 License: Expat
 
 Files: vite/node_modules/fill-range/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/find-up/*
@@ -1263,7 +1192,7 @@ Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
 License: Expat
 
 Files: vite/node_modules/is-number/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/is-plain-obj/*
@@ -1291,40 +1220,52 @@ Copyright: 2015-2017, Evgeny Poberezkin
 License: Expat
 
 Files: vite/node_modules/jss-plugin-camel-case/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss-plugin-default-unit/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss-plugin-global/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss-plugin-nested/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss-plugin-props-sort/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss-plugin-rule-value-function/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss-plugin-vendor-prefixer/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/jss/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/levn/*
 Copyright: George Zahariev
 License: Expat
+
+Files: vite/node_modules/lightningcss-linux-x64-gnu/*
+Copyright: under Patent Claims infringedCovered Software in the absence of
+License: MPL-2.0
+
+Files: vite/node_modules/lightningcss-linux-x64-musl/*
+Copyright: under Patent Claims infringedCovered Software in the absence of
+License: MPL-2.0
+
+Files: vite/node_modules/lightningcss/*
+Copyright: under Patent Claims infringedCovered Software in the absence of
+License: MPL-2.0
 
 Files: vite/node_modules/lines-and-columns/*
 Copyright: 2015, Brian Donovan
@@ -1653,7 +1594,7 @@ Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
 License: Expat
 
 Files: vite/node_modules/micromatch/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/minimatch/*
@@ -1729,7 +1670,7 @@ Copyright: 2021-2024, Oleksii Raspopov, Kostiantyn Denysov, Anton Verinov
 License: ISC
 
 Files: vite/node_modules/picomatch/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/postcss/*
@@ -1741,7 +1682,7 @@ Copyright: George Zahariev
 License: Expat
 
 Files: vite/node_modules/prop-types/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/prop-types/node_modules/react-is/*
@@ -1844,10 +1785,6 @@ Files: vite/node_modules/react-markdown/node_modules/vfile/*
 Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
 License: Expat
 
-Files: vite/node_modules/react-refresh/*
-Copyright: Facebook, Inc. and its affiliates.
-License: Expat
-
 Files: vite/node_modules/react-remark/*
 Copyright: 2020, Christian Murphy
 License: Expat
@@ -1861,7 +1798,7 @@ Copyright: Meta Platforms, Inc. and affiliates.
 License: Expat
 
 Files: vite/node_modules/regenerator-runtime/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/rehype-external-links/*
@@ -1938,6 +1875,10 @@ Files: vite/node_modules/reusify/*
 Copyright: 2015, Matteo Collina <matteo.collina@gmail.com>
 License: Expat
 
+Files: vite/node_modules/rolldown/*
+Copyright: 2013-2017, 2019, 2024, 2026
+License: Expat
+
 Files: vite/node_modules/run-parallel/*
 Copyright: Feross Aboukhadijeh
 License: Expat
@@ -1964,7 +1905,7 @@ License: Expat
 
 Files: vite/node_modules/source-map-js/*
 Copyright: 2009-2011, Mozilla Foundation and contributors
-License: Expat
+License: MPL-2.0
 
 Files: vite/node_modules/space-separated-tokens/*
 Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
@@ -1991,7 +1932,7 @@ Copyright: 2017, 2020, Menglin "Mark" Xu <mark@remarkablemark.org>
 License: Expat
 
 Files: vite/node_modules/stylis/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/supports-color/*
@@ -2015,11 +1956,11 @@ Copyright: 2023, Abdullah Atta
 License: Expat
 
 Files: vite/node_modules/tinyglobby/node_modules/picomatch/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/to-regex-range/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/trim-lines/*
@@ -2078,10 +2019,6 @@ Files: vite/node_modules/update-browserslist-db/*
 Copyright: 2014, 2022, Andrey Sitnik <andrey@sitnik.ru> and other contributors
 License: Expat
 
-Files: vite/node_modules/uri-js/*
-Copyright: 2011, Gary Court.
-License: BSD-2-Clause-Views
-
 Files: vite/node_modules/vfile-location/*
 Copyright: 2014-2017, 2020, 2021, 2023, Titus Wormer <tituswormer@gmail.com>
 License: Expat
@@ -2102,12 +2039,8 @@ Files: vite/node_modules/vite-plugin-svgr/*
 Copyright: 2021, Rongjian Zhang
 License: Expat
 
-Files: vite/node_modules/vite/node_modules/fdir/*
-Copyright: 2023, Abdullah Atta
-License: Expat
-
 Files: vite/node_modules/vite/node_modules/picomatch/*
-Copyright: 2013-2017, 2019
+Copyright: 2013-2017, 2019, 2024, 2026
 License: Expat
 
 Files: vite/node_modules/web-namespaces/*

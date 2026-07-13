@@ -13,13 +13,13 @@ using namespace std;
 
 #define UNKNOWN_LICENSE "~unknown" // primary purpose: show this group last, not first.
 
-std::vector<std::string> unknownLicense ={
+std::vector<std::string> unknownLicense = {
     "Unknown License",
     "."
     "These copyright notices were found, but we were unable to automatically identify an associated license."
 };
 
-bool ContainsName(const std::string &value, const char*name)
+bool ContainsName(const std::string& value, const char* name)
 {
     return value.find(name) != -1;
 }
@@ -30,8 +30,8 @@ class Copyrights {
         std::vector<std::string> licenseText;
         std::set<std::string> copyrights;
     };
-    std::map<std::string,std::shared_ptr<License> > licenseMap;
-    static std::string trim(const std::string&value)
+    std::map<std::string, std::shared_ptr<License> > licenseMap;
+    static std::string trim(const std::string& value)
     {
         size_t start = 0;
         while (start < value.length() && (value[start] == ' ' || value[start] == '\t'))
@@ -39,13 +39,13 @@ class Copyrights {
             ++start;
         }
         size_t end = value.length();
-        while (end > start && (value[end-1] == ' ' || value[end-1] == '\t'))
+        while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t'))
         {
             --end;
         }
-        return value.substr(start,end-start);
+        return value.substr(start, end - start);
     }
-    void addLicense(const std::string&license,const std::vector<std::string> &licenseText)
+    void addLicense(const std::string& license, const std::vector<std::string>& licenseText)
     {
         auto currentLicense = licenseMap.find(license);
         if (currentLicense == licenseMap.end())
@@ -54,16 +54,17 @@ class Copyrights {
             l->tag = license;
             l->licenseText = licenseText;
             licenseMap[license] = std::move(l);
-        } else {
+        }
+        else {
             (*currentLicense).second->licenseText = licenseText;
         }
 
     }
 
-    void addCopyright(std::string license,std::string copyrightString)
+    void addCopyright(std::string license, std::string copyrightString)
     {
         if (copyrightString.length() == 0) return;
-        if (copyrightString ==  "no-info-found") return;
+        if (copyrightString == "no-info-found") return;
         if (copyrightString == "info-missing") return;
         if (license == "")
         {
@@ -81,57 +82,77 @@ class Copyrights {
             l->tag = license;
             l->copyrights.insert(copyrightString);
             licenseMap[license] = l;
-        } else {
-            auto & copyrights = (*currentLicense).second->copyrights;
+        }
+        else {
+            auto& copyrights = (*currentLicense).second->copyrights;
             copyrights.insert(copyrightString);
         }
     }
-    bool splitLicense(const std::string & license, const std::string &match, std::string*pLeft, std::string *pRight)
+    bool splitLicense(const std::string& license, const std::string& match, std::string* pLeft, std::string* pRight)
     {
         auto pos = license.find(match);
         if (pos != std::string::npos)
         {
-            *pLeft = trim(license.substr(0,pos));
-            *pRight = trim(license.substr(pos+match.length()));
+            *pLeft = trim(license.substr(0, pos));
+            *pRight = trim(license.substr(pos + match.length()));
             return true;
         }
         return false;
     }
-    void parseLicenses(const std::string &license,std::vector<std::string>*pLicenses)
+    void parseLicenses(const std::string& license, std::vector<std::string>* pLicenses)
     {
-        std::string l,r;
-        if (splitLicense(license," and ",&l,&r))
+        std::string l, r;
+        if (splitLicense(license, " and ", &l, &r))
         {
-            parseLicenses(l,pLicenses);
-            parseLicenses(r,pLicenses);
+            parseLicenses(l, pLicenses);
+            parseLicenses(r, pLicenses);
 
-        } else if (splitLicense(license," or ",&l,&r))
+        }
+        else if (splitLicense(license, " or ", &l, &r))
         {
-            parseLicenses(l,pLicenses);
-            parseLicenses(r,pLicenses);
+            parseLicenses(l, pLicenses);
+            parseLicenses(r, pLicenses);
 
-        } else {
+        }
+        else {
             auto pos = license.find_last_of(',');
             if (pos != std::string::npos) {
-                pLicenses->push_back(license.substr(0,pos));
-            } else {
+                pLicenses->push_back(license.substr(0, pos));
+            }
+            else {
                 pLicenses->push_back(license);
             }
         }
     }
-    void addCopyright(
-        std::string license, 
-        const std::vector<std::string> &licenseText,
-        const std::vector<std::string> &copyrights)
+
+    bool isNumberedList(const std::string& line, int64_t& number)
     {
-        if (license.length() == 0  && licenseText.size() != 0)
+        size_t ix = 0;
+        int64_t value = 0;
+        if (!isdigit(line[ix])) { return false; }
+        while (ix < line.size() && isdigit(line[ix])) {
+            value = value * 10 + line[ix] - '0';
+            ++ix;
+        }
+        if (ix >= line.size() || line[ix] != '.') {
+            return false;
+        }
+        number = value;
+        return true;
+    }
+    void addCopyright(
+        std::string license,
+        const std::vector<std::string>& licenseText,
+        const std::vector<std::string>& copyrights)
+    {
+        if (license.length() == 0 && licenseText.size() != 0)
         {
             std::stringstream uniqueName;
             uniqueName << "unique-" << licenseMap.size();
             license = uniqueName.str();
         }
         std::vector<std::string> licenses;
-        parseLicenses(license,&licenses);
+        parseLicenses(license, &licenses);
         for (size_t i = 0; i < licenses.size(); ++i)
         {
             for (size_t j = 0; j < copyrights.size(); ++j)
@@ -141,26 +162,127 @@ class Copyrights {
         }
         if (licenseText.size() != 0)
         {
-            addLicense(license,licenseText);
+            addLicense(license, licenseText);
         }
     }
-    void writeLicenseText(std::ostream &os, const std::vector<std::string>&licenseText)
+    std::string olStrip(const std::string& line) {
+        size_t npos = line.find_first_of('.');
+        if (npos == std::string::npos) return line; // wth?
+        ++npos;
+        while (npos < line.size() && line[npos] == ' ')
+        {
+            ++npos;
+        }
+        return line.substr(npos);
+    }
+    bool isHr(const std::string& line)
+    {
+        for (char c : line) {
+            if (c != '-')
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    void writeLicenseText(std::ostream& os, const std::vector<std::string>& licenseText)
     {
         bool open = false;
-        for (const std::string&line: licenseText)
+        bool ulOpen = false;
+        bool olOpen = false;
+        int64_t listNumber;
+        int64_t nextListNumber;
+        std::string closeTag;
+        for (const std::string& line : licenseText)
         {
             if (line == ".")
             {
                 if (open) {
-                    os << "</p>" << endl;
-                } else {
+                    os << closeTag << endl;
+                    open = false;
+                    ulOpen = false;
+                    olOpen = false;
+                }
+                else {
                     os << "<p>&nbsp;</p>" << endl;
                 }
                 open = false;
-            } else {
+            }
+            else if (isHr(line))
+            {
+                if (open) {
+                    os << closeTag << endl;
+                    open = false;
+                    ulOpen = false;
+                    olOpen = false;
+                }
+                os << "<hr/>" << endl;
+            }
+            else if (isNumberedList(line, listNumber)) {
+                if (olOpen && listNumber == nextListNumber)
+                {
+                    os << "</li>" << endl << "<li>";
+                    nextListNumber = listNumber + 1;
+                    open = true;
+                    olOpen = true;
+
+                    os << HtmlHelper::HtmlEncode(olStrip(line)) << endl;
+                }
+                else {
+                    if (open)
+                    {
+                        os << closeTag << endl;
+                        ulOpen = false; olOpen = false; open = false;
+                    }
+                    if (listNumber == 1)
+                    {
+                        os << "<ol><li>";
+                        olOpen = true;
+                        open = true;
+                        closeTag = "</li></ol>";
+                        os << HtmlHelper::HtmlEncode(olStrip(line)) << endl;
+                        nextListNumber = listNumber + 1;
+                    }
+                    else {
+                        open = true;
+                        olOpen = false;
+                        os << "<p>";
+                        closeTag = "</p>";
+                        nextListNumber = -1;
+                        os << HtmlHelper::HtmlEncode(line) << ' ';
+                    }
+
+
+                }
+            }
+            else if (line.starts_with("* ") || line.starts_with("- ")) {
+                if (ulOpen)
+                {
+                    os << "</li>" << endl << "<li>";
+                }
+                else
+                {
+                    if (open) {
+                        os << closeTag << endl;
+                        open = false;
+                        olOpen = false;
+                        ulOpen = false;
+                    }
+                    open = true;
+                    ulOpen = true;
+                    os << "<ul><li>";
+                    closeTag = "</li></ul>";
+                }
+                std::string remainder = trim(line.substr(1));
+                os << HtmlHelper::HtmlEncode(remainder) << ' ';
+            }
+            else {
                 if (!open)
                 {
                     open = true;
+                    ulOpen = false;
+                    olOpen = false;
+                    closeTag = "</p>";
                     os << "<p>";
                 }
                 os << HtmlHelper::HtmlEncode(line) << ' ';
@@ -168,7 +290,7 @@ class Copyrights {
         }
         if (open)
         {
-            os << "</p>" << endl;
+            os << closeTag << endl;
         }
     }
     static std::vector<std::string> copyrightPrefixes;
@@ -178,9 +300,9 @@ class Copyrights {
         while (true)
         {
             bool found = false;
-            for (auto & prefix: copyrightPrefixes)
+            for (auto& prefix : copyrightPrefixes)
             {
-                if (text.rfind(prefix,0) != std::string::npos)
+                if (text.rfind(prefix, 0) != std::string::npos)
                 {
                     text = trim(text.substr(prefix.length()));
                     found = true;
@@ -193,7 +315,7 @@ class Copyrights {
         }
     }
 public:
-    void write(const std::filesystem::path&path)
+    void write(const std::filesystem::path& path)
     {
         ofstream f(path);
         if (!f.is_open())
@@ -205,18 +327,27 @@ public:
         f << "<div class='fossIntro'>" << endl;
         f << "<p>PiPedal uses open-source software covered by the following copyright notices and licenses.</p>" << endl;
         f << "</div>" << endl;
-        for (auto &iter: licenseMap)
+        for (auto& iter : licenseMap)
         {
             auto license = (iter).second;
+            // ignore CC-BY-SA-3.0 for lv2-dev (we don't use the covered files)
+            if (license->tag == "CC-BY-SA-3.0")
+            {
+                if (license->copyrights.size() != 1) {
+                    cout << "Error: Review CC-BY-SA-3.0 licenses!" << endl;
+                }
+                continue;
+            }
             if (license->copyrights.size() != 0)
             {
                 f << "<div class='fossCopyrights'>" << endl;
                 f << "<p>";
                 bool firstLicense = true;
-                for (auto&copyright: license->copyrights) {
+                for (auto& copyright : license->copyrights) {
                     if (!firstLicense) {
                         f << "<br/>" << endl;
-                    } else {
+                    }
+                    else {
                         f << endl;
                     }
                     firstLicense = false;
@@ -226,19 +357,33 @@ public:
                 f << endl << "</p>";
                 f << "</div>" << endl;
                 f << "<div class='fossLicense' tag='" << license->tag << "'>" << endl;
+                f << "<p class=spdxName>" << license->tag << " License</p>" << endl;
                 if (license->tag == UNKNOWN_LICENSE) {
-                    writeLicenseText(f,unknownLicense);
-                } else {
-                    writeLicenseText(f,license->licenseText);
+                    writeLicenseText(f, unknownLicense);
+                }
+                else if (license->tag == "CC-BY-4.0")
+                {
+                    f << "<p><a target='_blank' href='https://creativecommons.org/licenses/by/4.0/'> Creative Commons Attribute 4.0 International</a></p>" << endl;
+                }
+                else {
+                    if (license->licenseText.size() == 0)
+                    {
+                        // ignore for now.
+                        // writeLicenseText(f,std::vector<std::string>{SS("License text not found: " << license->tag)});
+
+                    }
+                    else {
+                        writeLicenseText(f, license->licenseText);
+                    }
                 }
                 f << "</div>" << endl;
             }
         }
     }
-    void loadFile(const std::filesystem::path&path)
+    void loadFile(const std::filesystem::path& path)
     {
         std::ifstream f(path);
-        if (!f.is_open()) 
+        if (!f.is_open())
         {
             stringstream s;
             s << "Can't open file " << path;
@@ -259,7 +404,7 @@ public:
         {
             if (f.eof()) break;
             std::string line;
-            std::getline(f,line);
+            std::getline(f, line);
             bool isContinuation = (line[0] == ' ' || line[0] == '\t');
             line = trim(line);
 
@@ -268,12 +413,13 @@ public:
             {
                 if (copyrights.size() != 0 || licenseText.size() != 0)
                 {
-                    addCopyright(license,licenseText,copyrights);
+                    addCopyright(license, licenseText, copyrights);
                 }
                 copyrights.clear();
                 license.clear();
                 licenseText.clear();
-            } else {
+            }
+            else {
                 if (isContinuation)
                 {
                     switch (state)
@@ -290,21 +436,24 @@ public:
                         // ignore
                         break;
                     }
-                } else {
+                }
+                else {
                     int nPos = line.find(':');
                     if (nPos != std::string::npos)
                     {
-                        std::string tag = line.substr(0,nPos);
-                        std::string arg = trim(line.substr(nPos+1));
+                        std::string tag = line.substr(0, nPos);
+                        std::string arg = trim(line.substr(nPos + 1));
                         if (tag == "Copyright")
                         {
                             copyrights.push_back(arg);
                             state = State::copyright;
-                        } else if (tag == "License")
+                        }
+                        else if (tag == "License")
                         {
                             license = arg;
                             state = State::license;
-                        } else {
+                        }
+                        else {
                             state = State::other;
                         }
                     }
@@ -326,21 +475,21 @@ std::vector<std::string> Copyrights::copyrightPrefixes = {
     "\u00A9"
 };
 
-int main(int argc, const char*argv[])
+int main(int argc, const char* argv[])
 {
     CommandLineParser parser;
     bool help = false;
     bool helpError = false;
-    std::string copyrightFile;
+    std::vector<std::string> copyrightFiles;
     std::string outputFile;
-    parser.AddOption("-h",&help);
-    parser.AddOption("--help",&help);   
-    parser.AddOption("--projectCopyright",&copyrightFile);
+    parser.AddOption("-h", &help);
+    parser.AddOption("--help", &help);
+    parser.AddOption("--projectCopyright", &copyrightFiles);
     parser.AddOption("--output", &outputFile);
 
     try {
-        parser.Parse(argc,argv);
-        if (copyrightFile == "")
+        parser.Parse(argc, argv);
+        if (copyrightFiles.size() == 0)
         {
             throw PiPedalException("--projectCopyright not specified.");
         }
@@ -349,7 +498,8 @@ int main(int argc, const char*argv[])
             throw PiPedalException("--output file not specified.");
         }
 
-    } catch (const std::exception& e)
+    }
+    catch (const std::exception& e)
     {
         cerr << "Error: " << e.what() << endl;
         helpError = true;
@@ -361,23 +511,25 @@ int main(int argc, const char*argv[])
             cerr << endl;
         }
         cout << "Syntax: processcopyrights --projectCopyright debian/copyright -output <outputfile> [<dependents>]*" << endl;
-        return helpError? EXIT_FAILURE: EXIT_SUCCESS;
+        return helpError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
     Copyrights copyrights;
-    copyrights.loadFile(copyrightFile);
-    for (std::string dependent: parser.Arguments())
+    for (std::string dependent : parser.Arguments())
     {
         cout << "Processing copyrights for " << dependent << endl;
-        std::filesystem::path dependentCopyrightFile = 
+        std::filesystem::path dependentCopyrightFile =
             std::filesystem::path("/usr/share/doc")
             / dependent / "copyright";
         copyrights.loadFile(dependentCopyrightFile);
     }
 
     // our file last, so that our notices take precedence.
-    cout << "Processing copyrights for " << copyrightFile << endl;
-    copyrights.loadFile(copyrightFile);
+    for (const auto& copyrightFile : copyrightFiles)
+    {
+        cout << "Processing copyrights for " << copyrightFile << endl;
+        copyrights.loadFile(copyrightFile);
+    }
 
 
     copyrights.write(outputFile);

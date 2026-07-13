@@ -210,13 +210,13 @@
             "name": "(gdb) processCopyrights Launch",
             "type": "cppdbg",
             "request": "launch",
-            // Resolved by CMake Tools:
-            "program": "${command:cmake.launchTargetPath}",
-            ///"args": [            "[lv2host_leak]" ],
+            "program": "${workspaceFolder}/build/src/processcopyrights",
             
             "args": [
                 "--projectCopyright",
                 "debian/copyright",
+                "--projectCopyright",
+                "debian/copyright-extra",
                 "--output",
                 "/tmp/copyrights.txt",
                 "liblilv-0-0", "lv2-dev", "libsdbus-c++-dev", "librsvg2-2", "libpango-1.0-0", "libx11-6", "libxrandr2"

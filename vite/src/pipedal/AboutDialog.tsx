@@ -295,7 +295,7 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                                         rel="noreferrer">CC-BY-4.0 license</a>.
                                 </Typography>
                                 <Typography display="block" variant="body2" style={{ marginTop: 8, marginBottom: 8 }}>
-                                    &copy; Robin Davies<br />
+                                    &copy; Robin E.R. Davies<br />
                                     &copy; Andrew Curtis<br />
                                 </Typography>
 
@@ -305,8 +305,8 @@ const AboutDialog = class extends Component<AboutDialogProps, AboutDialogState> 
                                     Installed files in the  "/var/pipedal/audio_uploads/CabIR" directory are provided
                                     under a <a href="https://creativecommons.org/licenses/by/4.0/"
                                         target="_blank"
-                                        rel="noreferrer">CC-BY-4.0 license</a>. By: Kristoffer Ekstrand, Adventure Kid Research &amp; Technology. Refer
-                                    to the following file for detailed attributions:
+                                        rel="noreferrer">CC-BY-4.0 license</a>. 
+                                    Refer to the following file for detailed attributions:
                                 </Typography>
                                 <ul style={{ marginTop: 8, marginBottom: 16, listStyle: "none", paddingLeft: 24 }}>
                                     <li>

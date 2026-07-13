@@ -18,4 +18,21 @@ vite/node_modules/source-map-js/*:
   copyright: 2009-2011, Mozilla Foundation and contributors
   license: MPL-2.0
 
+vite/node_modules/@mapbox/hast-util-table-cell-style/*:
+  copyright: 2018, Mapbox
+  license: BSD-2-clause
+
+vite/node_modules/uri-js/*:
+  copyright: 2011, Gary Court
+  license: BSD-2-clause
+
+vite/node_modules/caniuse-lite/*:
+  copyright: Andrey Sitnik
+  license: CC-BY-4.0
+
+
+vite/node_modules/argparse/*:
+   copyright: 2001-2010, i.e., "
+   license: PSF-2.0
+
 

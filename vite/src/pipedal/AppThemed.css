@@ -15,6 +15,13 @@
     border-bottom: 1px #CCC solid
 }
 
+.spdxName {
+    font-style: italic;
+}
+.fossLicense LI {
+    margin-bottom: 8px;
+}
+
 div {
     min-width: 0;
 }
