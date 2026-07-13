@@ -1,7 +1,5 @@
 
- Test Factory Model migration.
-
-SQLite leaked install files 
+Test Factory Model migration.
 
 
 A final solution for rate-limiting on Tone3000.
