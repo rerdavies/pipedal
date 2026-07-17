@@ -56,11 +56,6 @@ set (VITE_BUILD_DIRECTORY ${PROJECT_SOURCE_DIR}/vite/dist/)
 # install
 
 
-# Remove sqlite3.h from the package - SQLiteCpp's bundled sqlite3 installs it
-# unconditionally but we don't want it in the binary .deb package.
-install(CODE "file(REMOVE \"\${CMAKE_INSTALL_PREFIX}/include/sqlite3.h\")")
-
-
 install(
     DIRECTORY config/ DESTINATION /etc/pipedal/config
 )
