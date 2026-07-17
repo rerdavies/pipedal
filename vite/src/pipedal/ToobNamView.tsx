@@ -51,6 +51,8 @@ function floatToModelType(value: number): NamModelType {
 }
 // offset 0: an integer with the following bits set.
 // Must match ToobAmp/src/NeuralAmpModeler_Lv2Extensions.hpp enum TOOB_NAM_METADATA_OFFSETS
+const MAX_SLIMMABLE_SIZES = 20;
+
 class TOOB_NAM_METADATA_OFFSETS {
     static readonly flags = 0;
     static readonly preset_version = 1;
@@ -61,7 +63,8 @@ class TOOB_NAM_METADATA_OFFSETS {
     static readonly has_slimmable_weights = 6;
     static readonly model_weight = 7;
     static readonly model_type = 8;
-    static readonly max_metadata = 9;
+    static readonly slimmable_sizes_length = 9;
+    static readonly max_metadata = 10+MAX_SLIMMABLE_SIZES;
 };
 
 
@@ -93,6 +96,13 @@ class ModelMetadata {
             this.hasSlimmableWeights = metadataValues[TOOB_NAM_METADATA_OFFSETS.has_slimmable_weights] !== 0;
             this.modelWeight = metadataValues[TOOB_NAM_METADATA_OFFSETS.model_weight];
             this.modelType = floatToModelType(metadataValues[TOOB_NAM_METADATA_OFFSETS.model_type]);
+            this.slimmableWeights = [];
+            if (metadataValues.length > TOOB_NAM_METADATA_OFFSETS.slimmable_sizes_length) {
+                let slimmableSizesLength = metadataValues[TOOB_NAM_METADATA_OFFSETS.slimmable_sizes_length];
+                for (let i = 0; i < slimmableSizesLength; ++i) {
+                    this.slimmableWeights.push(metadataValues[TOOB_NAM_METADATA_OFFSETS.slimmable_sizes_length+1 + i]);
+                }
+            }
         } else {
             this.hasModel = false;
             this.hasLoudness = false;
@@ -107,6 +117,7 @@ class ModelMetadata {
             this.outputLevelDBU = 0;
             this.preset_version = 1;
             this.modelWeight = -1;
+            this.slimmableWeights = [];
         }
     }
 
@@ -119,6 +130,7 @@ class ModelMetadata {
     hasGain: boolean = false;
     hasInputLevelDBU: boolean = false;
     hasOutputLevelDBU: boolean = false;
+    slimmableWeights: number[] = [];
 
     loudness: number;
     gain: number;
@@ -186,10 +198,17 @@ const ToobNamView =
                 patchedOutputControl.controlType = ControlType.Select;
                 this.noCalibrationOutputControl = patchedOutputControl
                 this.noCalibrationOutputControl.scale_points.splice(1, 1);
+
+                let modelSizeControl = pluginInfo.getControl("modelSize");
+                if (!modelSizeControl) {
+                    throw new Error("Control not found.");
+                }
+                this.modelSizeControl = modelSizeControl;
             }
 
             private patchedInputControl: UiControl;
             private noCalibrationOutputControl: UiControl;
+            private modelSizeControl: UiControl;
             fullScreen() {
                 return false;
             }
@@ -254,7 +273,18 @@ const ToobNamView =
                     controls[EqPos] = null;
                 }
                 if (!this.state.modelMetadata.hasSlimmableWeights) {
-                    controls[ModelWeightControlPos] = null;
+                    controls[ModelWeightControlPos] = (
+                        <div style={{ visibility: "hidden" }}> 
+                            {controls[ModelWeightControlPos] as React.ReactNode}
+                        </div>
+                    )
+                } else {
+                    let slimmableWeights = [ 0.5, 1.0];
+
+                    controls[ModelWeightControlPos] = (
+                        host.makeStandardControl(this.modelSizeControl, this.props.item.controlValues, { slimmableWeights: slimmableWeights })
+                    );  
+
                 }
                 return controls;
             }

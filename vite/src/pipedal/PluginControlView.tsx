@@ -65,7 +65,7 @@ const LANDSCAPE_HEIGHT_BREAK = 500;
 
 
 export interface ICustomizationHost {
-    makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode;
+    makeStandardControl(uiControl: UiControl, controlValues: ControlValue[], options?: { slimmableWeights: number[] }): ReactNode;
     makeCustomControl(title: string, mainControl: ReactNode, editControl?: ReactNode): ReactNode;
     renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode;
     isLandscapeGrid(): boolean;
@@ -365,6 +365,7 @@ export interface PluginControlViewProps extends WithStyles<typeof styles> {
     customizationId?: number;
     showModGui: boolean;
     onSetShowModGui: (instanceId: number, showModGui: boolean) => void;
+    options?: { slimmableWeights: number[] };
 }
 type PluginControlViewState = {
     landscapeGrid: boolean;
@@ -498,11 +499,12 @@ const PluginControlView =
             private ixKey: number = 1;
 
 
-            makeStandardControl(uiControl: UiControl, controlValues: ControlValue[]): ReactNode {
+            makeStandardControl(uiControl: UiControl, controlValues: ControlValue[], options?: { slimmableWeights?: number[] }): ReactNode {
                 let symbol = uiControl.symbol;
                 if (!uiControl.is_input) {
                     return (
-                        <PluginOutputControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} />
+                        <PluginOutputControl key={uiControl.symbol} instanceId={this.props.instanceId} uiControl={uiControl} 
+                        />
 
                     );
                 }
@@ -522,6 +524,7 @@ const PluginControlView =
                         onChange={(value: number) => { this.onControlValueChanged(controlValue!.key, value) }}
                         onPreviewChange={(value: number) => { this.onPreviewChange(controlValue!.key, value) }}
                         requestIMEEdit={(uiControl: any, value: any) => this.requestImeEdit(uiControl, value)}
+                        options={options}
 
                     />
                 ));

@@ -148,6 +148,7 @@ export interface PluginControlProps extends WithStyles<typeof pluginControlStyle
     onChange: (value: number) => void;
     theme: Theme;
     requestIMEEdit: (uiControl: UiControl, value: number) => void;
+    options?: { slimmableWeights?: number[] }
 }
 export type PluginControlState = {
     error: boolean;
@@ -175,7 +176,7 @@ const CustomPluginControl =
             render() {
                 let classes = withStyles.getClasses(this.props);
                 return (
-                    <div 
+                    <div
                         className={classes.controlFrame}
                         style={{ width: this.props.item_width }}
                     >
@@ -712,6 +713,46 @@ const PluginControl =
                 }
 
             }
+
+            modelWeightRing(weights: number[] | undefined, value: number): ReactNode {
+                if (!weights || weights.length === 0) return null;
+                let uiControl = this.props.uiControl;
+                if (!uiControl) return null;
+
+                const SIZE = 46;
+                const STROKE_WIDTH = 2;
+                let arcs: ReactNode[] = [];
+                let lastValue = 0;
+                for (let i = 0; i < weights.length; ++i) {
+                    let min = lastValue;
+                    let max = uiControl.valueToRange(weights[i]);
+                    lastValue = max;
+                    let startAngle = min * (MAX_ANGLE - MIN_ANGLE) + MIN_ANGLE;
+                    let endAngle = max * (MAX_ANGLE - MIN_ANGLE) + MIN_ANGLE;
+                    let largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
+                    let dAngle = 5;
+                    startAngle += dAngle;
+                    endAngle -= dAngle;
+                    let cx = SIZE / 2;
+                    let cy = SIZE / 2;
+                    let r = (SIZE - STROKE_WIDTH) / 2;
+
+                    let startX = cx + r * Math.sin(startAngle * Math.PI / 180);
+                    let startY = cy - r * Math.cos(startAngle * Math.PI / 180);
+                    let endX = cx + r * Math.sin(endAngle * Math.PI / 180);
+                    let endY = cy - r * Math.cos(endAngle * Math.PI / 180);
+                    let pathData = `M ${startX} ${startY} A ${r} ${r} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
+                    let selected = value > min && value <= max || value === 0 && min === 0;
+                    arcs.push(<path key={i} d={pathData} fill="none" stroke="currentColor" strokeWidth={STROKE_WIDTH} opacity={selected ? 0.66 : 0.2} />);
+                }
+                return (
+                    <svg viewBox={"0 0 " + SIZE + " " + SIZE} style={{ width: SIZE, height: SIZE }}>
+                        {
+                            arcs
+                        }
+                    </svg>
+                );
+            }
             previewRange(dRange: number, commitValue: boolean): void {
                 let range = (this.props.uiControl?.valueToRange(this.currentValue) ?? 0) + dRange;
                 if (range > 1) range = 1;
@@ -1038,6 +1079,29 @@ const PluginControl =
 
 
                                                 />
+                                            </ControlTooltip>
+                                        </div>
+                                    ) : (this.props.options?.slimmableWeights && this.props.options.slimmableWeights.length > 0) ? (
+                                        <div style={{ flex: "0 1 auto" }}>
+                                            <ControlTooltip uiControl={control}
+                                                valueTooltip={this.state.previewValue}>
+                                                <div style={{ display: "grid", placeItems: "center", position: "relative",  }}>
+                                                    {this.modelWeightRing(this.props.options.slimmableWeights, this.props.value)}
+                                                    <div style={{ position: "absolute", left: 4.5, top: 4.5, width: 36, height: 36  }}>
+                                                        <DialIcon ref={this.imgRef}
+                                                            style={{
+                                                                position: "absolute", left: "0", top: "0", transform: `${this.getRotationTransform()}`,
+                                                                overscrollBehavior: "none", touchAction: "none", fill: dialColor,
+                                                                width: 36, height: 36, opacity: DEFAULT_OPACITY
+                                                            }}
+                                                            onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove}
+                                                            onPointerDown={this.onPointerDown} onPointerUp={this.onPointerUp}
+                                                            onPointerMove={this.onPointerMove}
+                                                            onDrag={this.onDrag}
+
+                                                        />
+                                                    </div>
+                                                </div>
                                             </ControlTooltip>
                                         </div>
                                     ) : (

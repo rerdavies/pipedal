@@ -1,26 +1,2 @@
 
-Test Factory Model migration.
-
-
-A final solution for rate-limiting on Tone3000.
-
-File Player Underrun is NOT CPU use related. There's an procedural underrun somewhere at the end of file.
-
-
-- pipewire aux in?
-s
-
-pcm.pipedal_aux_in {
-    type file
-    file "/tmp/aux_input_fifo"
-    infile "/tmp/aux_input_fifo"
-    format "raw"
-    slave {
-        pcm null
-        format S16_LE
-        rate 48000
-        channels 2
-    }
-}
-
-
+Select indicatorts for NAM model.
