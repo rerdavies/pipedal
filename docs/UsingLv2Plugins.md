@@ -17,13 +17,13 @@ Here is a brief list of other particularly recommended plugin collections.
 | Collection                      | To Install                            | Description      |
 |---------------------------------|---------------------------------------|------------------|
 | [Guitarix](https://guitarix.org) ★★★☆☆ | `sudo apt install guitarix-lv2` | A large collection of guitar amplifiers and effects. Prior to the advent of neural network amplifier emulations, Guitarix was the go-to source for open-source amp modeling.|
-| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | On Raspberry Pi Os Bookworm: `sudo apt install gxplugins`; On Rasperry Pi OS Trixie, or other arm64 platforms, download from [here](https://github.com/rerdavies/GxPlugins.lv2-aarch64/releases);  on amd64/x64 download from [here](https://github.com/brummer10/GxPlugins.lv2/releases/tag/v1.0)  | Additional amps and effects from the the principle developer of Guitarix, many of which are significantly superior to the original Guitarix plugins. Most of these plugins use circuit simulation to directly model actual original circuits. The results are uniformly excellent.|
+| [GxPlugins](https://github.com/brummer10/GxPlugins.lv2) ★★★★★   | On Raspberry Pi Os Bookworm: `sudo apt install gxplugins`; On Rasperry Pi OS Trixie, or other arm64 platforms, download from [here](https://github.com/rerdavies/GxPlugins.lv2-aarch64/releases);  on amd64/x64 download from [here](https://github.com/brummer10/GxPlugins.lv2/releases/tag/v1.0)  | Additional amps and effects from the the principle developer of Guitarix, many of which are significantly superior to the original Guitarix plugins. Most of these plugins use circuit simulation to directly model actual original circuits. The results are uniformly excellent (although not as good as equivalent NAM models).|
 | [DPF Plugins](https://github.com/DISTRHO/DPF-Plugins) ★★★★★   | `sudo apt install dpf-plugins-lv2` | Useful and interesting guitar effect plugins. Bit crusher, pitch shift, reverbs, 3-band EQ and more. |
 | [MDA Plugins](http://drobilla.net/software/mda-lv2.html) ★★★★☆ | `sudo apt install mda-lv2` | 36 high-quality plugs |
 | Invada Studio Plugins ★★★☆☆         | `sudo apt install invada-studio-plugins-lv2` | Delays, distortion, filters, phaser, reverb |
 | [Zam Plugins](https://zamaudio.com) ★★★☆☆ | `sudo apt install zam-plugins`   | Filtering, EQ, and mastering effects. |
 | [Calf Studio Gear](https:://calf-studio-gear.org) ★★★☆☆ | `sudo apt install calf-plugins` | Flanger, filters, reverb, rotary speaker &c |
-| [Dragonfly Reverb](https://michaelwillis.github.io/dragonfly-reverb/) ★★★☆☆ | `sudo apt install dragonfly-reverb-lv2` | Reverbs |
+| [Dragonfly Reverb](https://michaelwillis.github.io/dragonfly-reverb/) ★★★★☆ | `sudo apt install dragonfly-reverb-lv2` | Reverbs |
 | [x42](https://x42-plugins.com/x42/) ★★☆☆☆ | `sudo apt install x42-plugins` |Compressors, auto-tune, tuners |
 
 
