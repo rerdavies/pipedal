@@ -35,13 +35,6 @@ import TunerControl from './TunerControl';
 const GXTUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner";
 const TOOBTUNER_URI = "http://two-play.com/plugins/toob-tuner";
 
-const getWindowSize = () => {
-    return {
-        width: document.documentElement.clientWidth,
-        height: document.documentElement.clientHeight,
-    };
-};
-
 const styles = (theme: Theme) => createStyles({
 });
 
@@ -52,7 +45,8 @@ interface TunerProps extends WithStyles<typeof styles> {
 
 }
 interface TunerState {
-    windowSize: { width: number, height: number };
+    containerWidth: number;
+    containerHeight: number;
 }
 
 const TunerView =
@@ -64,18 +58,46 @@ const TunerView =
 
             customizationId: number = 1; 
 
+            containerRef: HTMLDivElement | null = null;
+            resizeObserver: ResizeObserver | null = null;
+
             constructor(props: TunerProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
                 this.state = {
-                    windowSize: getWindowSize()
+                    containerWidth: 0,
+                    containerHeight: 0
                 }
-                this.handleResize = this.handleResize.bind(this);
+                this.setContainerRef = this.setContainerRef.bind(this);
                 this.handleConnectionStateChanged = this.handleConnectionStateChanged.bind(this);
             }
 
-            handleResize() {
-                this.setState({ windowSize: getWindowSize() });
+            private setContainerRef(el: HTMLDivElement | null) {
+                if (this.resizeObserver) {
+                    this.resizeObserver.disconnect();
+                    this.resizeObserver = null;
+                }
+                this.containerRef = el;
+                if (el) {
+                    this.resizeObserver = new ResizeObserver((entries) => {
+                        for (const entry of entries) {
+                            const { width, height } = entry.contentRect;
+                            this.setState({
+                                containerWidth: width,
+                                containerHeight: height
+                            });
+                        }
+                    });
+                    this.resizeObserver.observe(el);
+                    // set initial size
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width !== 0 || rect.height !== 0) {
+                        this.setState({
+                            containerWidth: rect.width,
+                            containerHeight: rect.height
+                        });
+                    }
+                }
             }
 
             private subscribedId: number | null = null;
@@ -96,7 +118,6 @@ const TunerView =
             componentDidMount() {
                 this.subscribe();
                 this.model.state.addOnChangedHandler(this.handleConnectionStateChanged);
-                window.addEventListener("resize", this.handleResize);
             }
             componentDidUpdate(oldProps: TunerProps) {
                 if (this.props.instanceId !== this.subscribedId) {
@@ -107,7 +128,10 @@ const TunerView =
             componentWillUnmount() {
                 this.unsubscribe();
                 this.model.state.removeOnChangedHandler(this.handleConnectionStateChanged);
-                window.removeEventListener("resize", this.handleResize);
+                if (this.resizeObserver) {
+                    this.resizeObserver.disconnect();
+                    this.resizeObserver = null;
+                }
             }
 
             getControlIndex(key: string): number {
@@ -127,7 +151,12 @@ const TunerView =
             }
 
             isLandscape(): boolean {
-                return this.state.windowSize.width > this.state.windowSize.height;
+                const { containerWidth, containerHeight } = this.state;
+                if (containerWidth === 0 || containerHeight === 0) {
+                    // fallback before first measurement
+                    return false;
+                }
+                return containerWidth > containerHeight;
             }
 
             modifyControls(host: ICustomizationHost, controls: (React.ReactNode | ControlGroup)[]): (React.ReactNode | ControlGroup)[]
@@ -140,133 +169,65 @@ const TunerView =
                     muteIndex = this.getControlIndex("MUTE")
                 }
 
-                let auxControls: (React.ReactNode)[] = [];
-                auxControls.push(controls[refFreqIndex]);
-                auxControls.push(controls[thresholdIndex]);
+                let auxControls: React.ReactNode[] = [];
+                auxControls.push(controls[refFreqIndex] as React.ReactNode);
+                auxControls.push(controls[thresholdIndex] as React.ReactNode);
                 if (muteIndex !== -1)
                 {
-                    auxControls.push(controls[muteIndex]);
+                    auxControls.push(controls[muteIndex] as React.ReactNode);
                 }
 
                 let isLandscape = this.isLandscape();
 
-                // Choose layout based on orientation
-                if (isLandscape) {
-                    return [this.buildLandscapeLayout(auxControls)];
-                } else {
-                    return [this.buildPortraitLayout(auxControls)];
-                }
+                return [this.buildLayout(auxControls, isLandscape)];
             }
 
-            private buildPortraitLayout(auxControls: React.ReactNode[]): React.ReactNode {
+            private buildLayout(auxControls: React.ReactNode[], isLandscape: boolean): React.ReactNode {
+                const isPortrait = !isLandscape;
+
+                // Direction-specific styles
+                const flexDirection = isLandscape ? "row" : "column";
+
+                // Tuner: constrain width in portrait, height in landscape
+                const tunerConstraint = isPortrait ? "width" : "height";
+                const tunerPadding = isPortrait ? "16px 24px 0 24px" : "8px 0 8px 16px";
+
+                // Controls: min opposite dimension
+                const controlsPadding = isPortrait ? "8px 16px 44px 16px" : "12px 16px 36px 12px";
+                const controlsMin = isPortrait ? { minHeight: 120 } : { minWidth: 100 };
+
                 return (
-                    <div style={{
+                    <div key="tuner-root" ref={this.setContainerRef} style={{
                         width: "100%",
                         height: "100%",
                         display: "flex",
-                        flexDirection: "column",
+                        flexDirection: flexDirection,
                         overflow: "hidden"
                     }}>
-                        {/* Tuner dial area — takes all available space */}
+                        {/* Tuner. sized by {tunerConstraint}, other dim from aspect ratio */}
                         <div style={{
-                            flex: "1 1 auto",
-                            minHeight: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: "4% 6% 2% 6%"
+                            flex: "0 1 auto",
+                            [tunerConstraint]: "100%",
+                            aspectRatio: "220 / 100",
+                            padding: tunerPadding
                         }}>
-                            <div style={{
-                                width: "100%",
-                                height: "100%",
-                                maxWidth: "100%",
-                                maxHeight: "100%",
-                                aspectRatio: "220 / 100"
-                            }}>
+                            <div style={{ width: "100%", height: "100%" }}>
                                 <TunerControl instanceId={this.props.instanceId} valueIsMidi={false} />
                             </div>
                         </div>
 
-                        {/* Auxiliary controls strip (scrollable) */}
-                        <div style={{
-                            flex: "0 0 auto",
-                            overflowX: "auto",
-                            overflowY: "hidden",
-                            width: "100%"
-                        }}>
-                            <div style={{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 12,
-                                padding: "8px 16px 12px 16px",
-                                flexWrap: "nowrap",
-                                width: "fit-content",
-                                minWidth: "100%"
-                            }}>
-                                {auxControls.map((ctl, i) => (
-                                    <div key={"aux" + i} style={{ flex: "0 0 auto" }}>
-                                        {ctl}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            private buildLandscapeLayout(auxControls: React.ReactNode[]): React.ReactNode {
-                return (
-                    <div style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "row",
-                        overflow: "hidden"
-                    }}>
-                        {/* Tuner dial area */}
+                        {/* Auxiliary controls. remaining space, wraps */}
                         <div style={{
                             flex: "1 1 auto",
-                            minWidth: 0,
                             display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: "2% 2% 2% 4%"
+                            alignContent: "start",
+                            flexWrap: "wrap",
+                            gap: 12,
+                            padding: controlsPadding,
+                            overflow: "auto",
+                            ...controlsMin
                         }}>
-                            <div style={{
-                                width: "100%",
-                                height: "100%",
-                                maxWidth: "100%",
-                                maxHeight: "100%",
-                                aspectRatio: "220 / 100"
-                            }}>
-                                <TunerControl instanceId={this.props.instanceId} valueIsMidi={false} />
-                            </div>
-                        </div>
-
-                        {/* Auxiliary controls column (scrollable) */}
-                        <div style={{
-                            flex: "0 0 auto",
-                            overflowY: "auto",
-                            overflowX: "hidden",
-                            height: "100%"
-                        }}>
-                            <div style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 8,
-                                padding: "12px 16px 36px 8px",
-                                minHeight: "100%"
-                            }}>
-                                {auxControls.map((ctl, i) => (
-                                    <div key={"aux" + i} style={{ flex: "0 0 auto" }}>
-                                        {ctl}
-                                    </div>
-                                ))}
-                            </div>
+                            {auxControls}
                         </div>
                     </div>
                 );
