@@ -32,12 +32,12 @@ clean and acoustic guitar tones. See the plugin's Info dialog for detail guidanc
 New Features
 - New TooB Multi-Tap Delay plugin.
 - Drag and copy/paste Split nodes (and all their children) to new locations in the pedalboard. This allows you to easily rearrange the structure of your pedalboard.
-- Range mapping controls in MIDI bindings now use the units of the target control, instead of 0..1 ranges. Provided by Fulgenzio Ruiz Rubio.
-- New system MIDI bindings for Next/Previous Snapshot. Provided by Fulgenzio Ruiz Rubio.
+- Range mapping controls in MIDI bindings now use the units of the target control, instead of 0..1 ranges. Provided by Fulgencio Ruiz Rubio.
+- New system MIDI bindings for Next/Previous Snapshot. Provided by Fulgencio Ruiz Rubio.
 
 Minor Features:
-- Alpha release of PiPedal build procedure for ARCH Linux. Provided by Fulgenzio Ruiz Rubio.
-- Fix compilation warnings/errors when compiling with GCC 16. Provided by Fulgenzio Ruiz Rubio.
+- Alpha release of PiPedal build procedure for ARCH Linux. Provided by Fulgencio Ruiz Rubio.
+- Fix compilation warnings/errors when compiling with GCC 16. Provided by Fulgencio Ruiz Rubio.
 - Better display names for ALSA USB audio devices in the UI.
 
 Bug fixes:

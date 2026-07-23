@@ -212,7 +212,7 @@ const TunerView =
                             padding: tunerPadding
                         }}>
                             <div style={{ width: "100%", height: "100%" }}>
-                                <TunerControl instanceId={this.props.instanceId} valueIsMidi={false} />
+                                <TunerControl instanceId={this.props.instanceId} valueIsMidi={this.props.isToobTuner} />
                             </div>
                         </div>
 
