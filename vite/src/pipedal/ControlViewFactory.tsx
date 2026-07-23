@@ -27,7 +27,7 @@ import PluginControlView from './PluginControlView';
 import SplitControlView from './SplitControlView';
 import Typography from '@mui/material/Typography';
 import IControlViewFactory from './IControlViewFactory';
-import { GxTunerViewFactory, ToobTunerViewFactory } from './GxTunerView';
+import { GxTunerViewFactory, ToobTunerViewFactory } from './TunerView';
 import ToobPowerstage2ViewFactory from './ToobPowerStage2View';
 import ToobWarmerViewFactory from './ToobWarmerView';
 import ToobSpectrumAnalyzerViewFactory from './ToobSpectrumAnalyzerView';
