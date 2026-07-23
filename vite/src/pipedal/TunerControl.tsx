@@ -18,7 +18,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import React, {Component} from 'react';
-import { Theme } from '@mui/material/styles';
+import { Theme } from '@mui/material/styles';1
 import WithStyles from './WithStyles';
 import {createStyles} from './WithStyles';
 
@@ -87,28 +87,28 @@ const NOTES_24TET: string[] = [
 // // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // const NOTES_53TET = ["la","laa","lo","law","ta","teh","te","tu","tuh","ti","tih","to","taw","da","do","di","daw","ro","rih","ra","ru","ruh","reh","re ","ri","raw","ma","meh","me","mu","muh","mi","maa","mo","maw","fe","fa","fih","fu","fuh","fi","se","suh","su","sih","sol","si","saw","lo","leh","le","lu","luh"];
 
-interface GxTunerControlProps extends WithStyles<typeof styles> {
+interface TunerControlProps extends WithStyles<typeof styles> {
     instanceId: number;
     valueIsMidi: boolean;
     symbolName?: string;
 }
-type GxTunerControlState = {
+type TunerControlState = {
     pitchInfo: PitchInfo
     tet: number;
     refFrequency: number;
     animationTime: number;
 };
 
-const GxTunerControl =
+const TunerControl =
     withStyles(
-        class extends Component<GxTunerControlProps, GxTunerControlState>
+        class extends Component<TunerControlProps, TunerControlState>
         {
             model: PiPedalModel;
 
 
             refRoot: React.RefObject<HTMLDivElement|null>;
 
-            constructor(props: GxTunerControlProps) {
+            constructor(props: TunerControlProps) {
                 super(props);
                 this.model = PiPedalModelFactory.getInstance();
 
@@ -437,4 +437,4 @@ const GxTunerControl =
 
 
 
-export default GxTunerControl;
+export default TunerControl;

@@ -27,7 +27,7 @@ import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle, State } from './PiPedalModel';
 import { isDarkMode } from './DarkMode';
-import GxTunerControl from './GxTunerControl';
+import TunerControl from './TunerControl';
 import Units from './Units';
 import ControlTooltip from './ControlTooltip';
 import { css } from '@emotion/react';
@@ -425,7 +425,7 @@ const PluginOutputControl =
                     item_width = undefined;
                     return (
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
-                            <GxTunerControl instanceId={this.props.instanceId} symbolName={control.symbol}
+                            <TunerControl instanceId={this.props.instanceId} symbolName={control.symbol}
                                 valueIsMidi={control.units === Units.midiNote}
                             />
                         </div >

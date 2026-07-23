@@ -29,7 +29,7 @@ import IControlViewFactory from './IControlViewFactory';
 import { PiPedalModelFactory, PiPedalModel } from "./PiPedalModel";
 import { PedalboardItem } from './Pedalboard';
 import PluginControlView, {   ICustomizationHost,ControlGroup,ControlViewCustomization } from './PluginControlView';
-import GxTunerControl from './GxTunerControl';
+import TunerControl from './TunerControl';
 
 const GXTUNER_URI = "http://guitarix.sourceforge.net/plugins/gxtuner#tuner";
 const TOOBTUNER_URI = "http://two-play.com/plugins/toob-tuner";
@@ -93,7 +93,7 @@ const GxTunerView =
 
                 let result: (React.ReactNode | ControlGroup)[] = [];
 
-                let tunerControl = (<GxTunerControl instanceId={this.props.instanceId} valueIsMidi={false} />);
+                let tunerControl = (<TunerControl instanceId={this.props.instanceId} valueIsMidi={false} />);
                 result.push(tunerControl);
 
                 result.push(controls[refFreqIndex]);
