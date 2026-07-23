@@ -30,5 +30,18 @@ option(BUILD_DOC "Build documentation" OFF)
 
 option(LIBZIP_DO_INSTALL "Install libzip and the related files" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
+# Arch's zstd package only provides libzstd.so, not libzstd.a, so
+# libzip's Findzstd.cmake won't create the zstd::libzstd_static target.
+# Create it ourselves so libzip can link against the system zstd.
+if(NOT TARGET zstd::libzstd_static)
+  find_library(ZSTD_LIBRARY zstd)
+  if(ZSTD_LIBRARY)
+    add_library(zstd::libzstd_static UNKNOWN IMPORTED)
+    set_target_properties(zstd::libzstd_static PROPERTIES
+      IMPORTED_LOCATION "${ZSTD_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "/usr/include"
+    )
+  endif()
+endif()
 add_subdirectory("libzip")
 
