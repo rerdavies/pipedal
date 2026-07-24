@@ -368,14 +368,17 @@ const TunerControl =
 
                     const absCents = Math.abs(cents);
                     if (absCents < 0.001 || Math.abs(absCents % 10) < 0.001) {
-                        const angleRad = (DIAL_ANGLE_DEGREES * Math.PI/180) * (cents*2/(range));
+                        const angleDeg = DIAL_ANGLE_DEGREES * (cents*2/(range));
+                        const angleRad = angleDeg * Math.PI/180
                         const textR = 0.98 * NEEDLE_CY;
                         const tx = textR * Math.sin(angleRad) + CX;
                         const ty = -textR * Math.cos(angleRad) + NEEDLE_CY;
                         const label = Math.round(cents).toString();
                         this.cachedTickElements.push(
-                            <text key={"label-" + cents} x={tx} y={ty} textAnchor="middle"
+                            <text key={"label-" + cents} 
+                            textAnchor="middle"
                                   fill={isDarkMode() ? "#999" : "#666"}
+                                  transform={`translate(${tx}, ${ty}) rotate(${angleDeg}) `}
                                   fontSize="6" fontFamily="arial,roboto,helvetica,sans">
                                 {label}
                             </text>
