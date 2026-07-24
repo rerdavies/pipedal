@@ -173,7 +173,7 @@ add_custom_command(
     src/pipedal/JackServerSettings.tsx
     src/pipedal/ChannelBindingsHelpDialog.tsx
     src/pipedal/UploadPresetDialog.tsx
-    src/pipedal/GxTunerControl.tsx
+    src/pipedal/TunerControl.tsx
     src/pipedal/ButtonEx.tsx
     src/pipedal/ImportPresetFromBankDialog.tsx
     src/pipedal/PluginControlView.tsx
@@ -224,7 +224,7 @@ add_custom_command(
     src/pipedal/WindowScale.tsx
     src/pipedal/NumericInput.tsx
     src/pipedal/UploadFileDialog.tsx
-    src/pipedal/GxTunerView.tsx
+    src/pipedal/TunerView.tsx
     src/pipedal/GraphicEqCtl.tsx
     src/pipedal/ToobSpectrumResponseView.tsx
     src/pipedal/OptionsDialog.tsx
