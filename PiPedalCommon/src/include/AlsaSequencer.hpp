@@ -69,12 +69,15 @@ namespace pipedal
     };
     class AlsaSequencerConfiguration {
     private:
+        int32_t midiChannel_ = -1; // -1 -> OMNI, or channels 0..15.
         std::vector<AlsaSequencerPortSelection> connections_;
     public:
         const std::vector<AlsaSequencerPortSelection>& connections() const { return connections_; }
         std::vector<AlsaSequencerPortSelection>& connections() { return connections_; }
         void connections(const std::vector<AlsaSequencerPortSelection>& value) { connections_ = value; }    
 
+        int32_t midiChannel() const { return midiChannel_; }
+        void midiChannel(int32_t value) { this->midiChannel_ = value; }
 
         bool operator==(const AlsaSequencerConfiguration &other) const
         {
@@ -87,6 +90,10 @@ namespace pipedal
                 {
                     return false;
                 }
+            }
+            if (this->midiChannel() != other.midiChannel()) 
+            {
+                return false;
             }
             return true;
         }

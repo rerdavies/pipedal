@@ -536,6 +536,11 @@ const SettingsDialog = withStyles(
                 }
                 result += port.name;
             }
+            if (this.state.alsaSequencerConfiguration.midiChannel >= 0) {
+                result += " (Ch " + this.state.alsaSequencerConfiguration.midiChannel + ")";
+            } else {
+                result += " (OMNI)";
+            }
             return result;
         }
         handleShowWifiConfigDialog() {

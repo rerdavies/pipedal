@@ -10,6 +10,7 @@ Minor Features:
 - Prevent underruns cueing or looping compressed audio files. (TooB File Player, TooB Loopers).
 - Allow access from other local subnets.
 - Serve react .js files using gzip compression, to reduce bandwidth server bandwidth.
+- The MIDI Devices settings dialog now allows MIDI channel selection (OMNI, or accept messages on only a specific channel).
 
 
 Bug Fixes:

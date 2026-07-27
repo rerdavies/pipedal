@@ -27,6 +27,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 
 import Checkbox from '@mui/material/Checkbox';
 import { AlsaSequencerConfiguration, AlsaSequencerPortSelection } from './AlsaSequencer';
@@ -39,7 +41,7 @@ export interface SelectMidiChannelsDialogProps {
     onClose: () => void;
 }
 
-interface DialogItem {
+interface DeviceListItem {
     id: string;
     name: string;
     sortOrder: number
@@ -51,10 +53,11 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
     const { open, onClose } = props;
     const [availablePorts, setAvailablePorts] = useState<AlsaSequencerPortSelection[] | null>(null);
     const [configuration, setConfiguration] = useState<AlsaSequencerConfiguration | null>(null);
-    const [allPorts, setAllPorts] = useState<DialogItem[] | null>(null);
+    const [allPorts, setAllPorts] = useState<DeviceListItem[] | null>(null);
     const [model] = useState<PiPedalModel>(PiPedalModelFactory.getInstance());
     const [changed, setChanged] = useState<boolean>(false);
     const [ readyToDisplay, setReadyToDisplay ] = useState<boolean>(false);
+
 
     React.useEffect(() => {
         if (open) {
@@ -81,7 +84,7 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
     }, [open]);
     React.useEffect(() => {
         if (availablePorts !== null && configuration !== null) {
-            let result: DialogItem[] = [];
+            let result: DeviceListItem[] = [];
             setReadyToDisplay(true);
             for (let port of availablePorts) {
                 result.push({
@@ -99,7 +102,7 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
                         {
                             id: port.id,
                             name: port.name,
-                            sortOrder: port.sortOrder,
+                            sortOrder: port.sortOrder+100,
                             offline: true
                         }
                     );
@@ -115,13 +118,13 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
 
     }, [availablePorts, configuration]);
 
-    const isChecked = (value: DialogItem) => {
+    const isChecked = (value: DeviceListItem) => {
         if (availablePorts === null || configuration === null) {
             return false;
         }
         return configuration.connections.some((port) => port.id === value.id);
     };
-    const setChecked = (value_: DialogItem, checked: boolean) => {
+    const setChecked = (value_: DeviceListItem, checked: boolean) => {
         if (availablePorts === null || configuration === null) {
             return;
         }
@@ -136,10 +139,11 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
             newConnections = newConnections.filter((port) => port.id !== value.id);
         }
         let newConfiguration = new AlsaSequencerConfiguration();
+        newConfiguration.midiChannel = configuration.midiChannel;
         newConfiguration.connections = newConnections;
         setConfiguration(newConfiguration);
     };
-    let toggleSelect = (value: DialogItem) => {
+    let toggleSelect = (value: DeviceListItem) => {
         if (availablePorts === null || configuration === null) {
             return;
         }
@@ -160,6 +164,15 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
         }
         onClose();
     };
+    const handleChannelChanged = (channel: number) => {
+        if (configuration !== null) {
+            let newConfiguration = new AlsaSequencerConfiguration();
+            newConfiguration.midiChannel = channel;
+            newConfiguration.connections = configuration.connections.slice();
+            setConfiguration(newConfiguration);
+            setChanged(true);
+        }
+    }
 
 
     return (
@@ -170,6 +183,30 @@ function SelectMidiChannelsDialog(props: SelectMidiChannelsDialogProps) {
         >
             <DialogTitle id="select-midi-inputs">Select MIDI Inputs</DialogTitle>
             <DialogContent dividers>
+                <div style={{ marginLeft: 16, marginRight: 16, marginTop: 8, marginBottom: 8 }}>
+                    <Typography display="block" variant="caption">MIDI Channel</Typography>
+                    <Select variant='standard' value={configuration? configuration.midiChannel.toString(): ""} style={{ width: 100 }}
+                        sx={{ '& .MuiSelect-select': { textAlign: 'right' } }} disabled={!readyToDisplay} 
+                        onChange={(event) => handleChannelChanged(parseInt(event.target.value))}>
+                        <MenuItem key={-1} value={-1} sx={{ justifyContent: 'flex-end' }}>OMNI</MenuItem>
+                        <MenuItem key={0} value={0} sx={{ justifyContent: 'flex-end' }}>0</MenuItem>
+                        <MenuItem key={1} value={1} sx={{ justifyContent: 'flex-end' }}>1</MenuItem>
+                        <MenuItem key={2} value={2} sx={{ justifyContent: 'flex-end' }}>2</MenuItem>
+                        <MenuItem key={3} value={3} sx={{ justifyContent: 'flex-end' }}>3</MenuItem>
+                        <MenuItem key={4} value={4} sx={{ justifyContent: 'flex-end' }}>4</MenuItem>
+                        <MenuItem key={5} value={5} sx={{ justifyContent: 'flex-end' }}>5</MenuItem>
+                        <MenuItem key={6} value={6} sx={{ justifyContent: 'flex-end' }}>6</MenuItem>
+                        <MenuItem key={7} value={7} sx={{ justifyContent: 'flex-end' }}>7</MenuItem>
+                        <MenuItem key={8} value={8} sx={{ justifyContent: 'flex-end' }}>8</MenuItem>
+                        <MenuItem key={9} value={9} sx={{ justifyContent: 'flex-end' }}>9</MenuItem>
+                        <MenuItem key={10} value={10} sx={{ justifyContent: 'flex-end' }}>10</MenuItem>
+                        <MenuItem key={11} value={11} sx={{ justifyContent: 'flex-end' }}>11</MenuItem>
+                        <MenuItem key={12} value={12} sx={{ justifyContent: 'flex-end' }}>12</MenuItem>
+                        <MenuItem key={13} value={13} sx={{ justifyContent: 'flex-end' }}>13</MenuItem>
+                        <MenuItem key={14} value={14} sx={{ justifyContent: 'flex-end' }}>14</MenuItem>
+                        <MenuItem key={15} value={15} sx={{ justifyContent: 'flex-end' }}>15</MenuItem>
+                    </Select>
+                </div>
                 <List>
                     {allPorts !== null && allPorts.length === 0 && (
                         <Typography variant="body2" style={{ marginLeft: 32, marginRight: 24, marginTop: 8, marginBottom: 16 }}>
