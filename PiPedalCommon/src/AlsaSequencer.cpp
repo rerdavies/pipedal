@@ -437,8 +437,10 @@ namespace pipedal
                 }
                 else
                 {
-                    // Handle other errors
-                    throw std::runtime_error(SS("ALSA sequencer input error: " << snd_strerror(rc)));
+                    // -EPIPE and -ENOSPACE recover automatically. 
+                    // For other errors, let's just carry on, and assume that 
+                    // sequencer control notifications will reset the device eventually.
+                    return false;
                 }
             }
             else if (event)
@@ -846,10 +848,8 @@ namespace pipedal
         {
             if (snd_seq_get_port_subscription(seq, subs) < 0)
             {
-                Lv2Log::warning(
-                    "Failed to disconnect ALSA sequencer port %d:%d. Subscripton not found.",
-                    (int)clientId,
-                    (int)portId);
+                // Do nothing. 
+                // The system unsubscribed for us.
             }
             else
             {
