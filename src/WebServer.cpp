@@ -1181,10 +1181,15 @@ namespace pipedal
 
             std::filesystem::path gzName;
 
+            size_t contentLength = 0;
+
             if (can_use_gzip_encoding(req.get(HttpField::accept_encoding), filename, &gzName))
             {
                 filename = gzName;
+                contentLength = std::filesystem::file_size(filename);
                 res.set(HttpField::content_encoding, "gzip");
+            } else {
+                contentLength = std::filesystem::file_size(filename);                
             }
 
             if (req.method() != HttpVerb::get)
@@ -1200,9 +1205,7 @@ namespace pipedal
                 return;
             }
 
-            file.seekg(0, std::ios::end);
-            response.reserve(file.tellg());
-            file.seekg(0, std::ios::beg);
+            response.reserve(contentLength);
 
             response.assign((std::istreambuf_iterator<char>(file)),
                 std::istreambuf_iterator<char>());
@@ -1216,7 +1219,7 @@ namespace pipedal
 
             res.set(HttpField::access_control_allow_origin, origin);
             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
-            res.setContentLength(response.length());
+            res.setContentLength(contentLength);
 
             con->set_body(response);
             con->set_status(websocketpp::http::status_code::ok);

@@ -6,9 +6,7 @@ if ls dist/assets/index*.js.gz 1> /dev/null 2>&1; then
 fi
 # generate a .gz file for each index*.js file
 
-if ls dist/assets/index*.js 1> /dev/null 2>&1; then
-    for file in dist/assets/index*.js; do
-    # generate a .gz file
-        gzip -c $file > $file.gz
-    done
-fi
+for file in dist/assets/*.js; do
+# generate a .gz file
+    gzip -c $file > $file.gz
+done
