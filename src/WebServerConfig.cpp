@@ -1452,13 +1452,22 @@ public:
     }
     std::string GetConfig(const std::string& serverAddress)
     {
-        std::string webSocketAddress = GetNonLinkLocalAddress(StripPortNumber(serverAddress));
+        std::string serverOnly = StripPortNumber(serverAddress);
+        std::string webSocketAddress = GetNonLinkLocalAddress(serverOnly);
+        std::string t3kServerAddress = "";
+        try {
+            t3kServerAddress = GetIp4Address(serverOnly);
+        } catch (const std::exception&e) 
+        {
+            Lv2Log::warning(SS("Unable to generate t3k redirect address: " << e.what() << "(" << serverOnly << ")"));
+        }
         Lv2Log::info(SS("Web Socket Address: " << webSocketAddress << ":" << portNumber));
 
         std::stringstream s;
 
         s << "{ \"socket_server_port\": " << portNumber
             << ", \"socket_server_address\": \"" << webSocketAddress
+            << "\", \"t3k_server_address\": \"" << t3kServerAddress
             << "\", \"ui_plugins\": [ ], \"max_upload_size\": " << maxUploadSize
             << ", \"enable_auto_update\": " << (ENABLE_AUTO_UPDATE ? " true" : "false")
             << ", \"has_wifi_device\": " << (HotspotManager::HasWifiDevice() ? " true" : "false")

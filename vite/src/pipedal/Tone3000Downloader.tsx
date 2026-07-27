@@ -59,7 +59,7 @@ class DownloadThrottler {
             delay = Math.ceil(60000 / (ALLOWED_DOWNLOADS_PER_MINUTE-1));
         }
         this.fifo.push(now + delay);
-        console.debug(`       ${now}: Download: ${downloadCount}  Delay: ${delay} ms Throttle count: ${this.fifo.length}`);
+        // console.debug(`       ${now}: Download: ${downloadCount}  Delay: ${delay} ms Throttle count: ${this.fifo.length}`);
         ++this.downloadCount;
         return delay;
     }
@@ -520,12 +520,11 @@ export class Tone3000DownloadHandler {
     private popupWindow: Window | null = null;
 
     private redirectUrl(): string {
-        let varServerURL = new URL(this.model.varServerUrl);
-        
-        let serverUrl: string;
-        serverUrl = varServerURL.origin;
+        let serverUrl = this.model.t3k_redirect_url;
+        if (serverUrl === null || serverUrl === "") {
+            throw new Error("Unable to find an IP4 address for the PiPedalServer. Feature disabled.");
+        }
         return `${serverUrl}/html/t3k_response.html`;
-        // return `${serverUrl}/t3k_response.html`; // for a debuggable react version of the page
     }
 
 
