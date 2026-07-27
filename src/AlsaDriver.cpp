@@ -1525,6 +1525,65 @@ namespace pipedal
             }
             validate_capture_handle();
         }
+        // Bring both streams back from an xrun and start them together again.
+        //
+        // Both recovery paths need exactly this sequence. It used to be spelled
+        // out only in the input path, and the output path had its own shorter
+        // version that prepared playback, drained capture and started neither —
+        // which left capture stopped for good. That failure is invisible from
+        // inside the driver: no error is returned and no xrun is reported, the
+        // capture stream simply stops delivering while playback carries on, so
+        // the symptom is silence at the interface with the plugin chain still
+        // apparently running. Sharing one implementation is what stops the two
+        // from drifting apart again.
+        void resync_streams(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle,
+                            const char *direction)
+        {
+            int err;
+
+            // Worth a line in the log. An xrun that recovers cleanly is
+            // unremarkable, but one that does not leaves the interface silent
+            // with no other trace, and without this there is nothing to tell
+            // the two apart after the fact.
+            Lv2Log::info(SS("Recovering from ALSA " << direction << " underrun."));
+
+            // Unlink first. While the streams are linked, prepare and start
+            // propagate across the whole group, so recovering them one at a
+            // time requires them apart.
+            const bool relink = !capture_and_playback_not_synced;
+            if (relink)
+            {
+                snd_pcm_unlink(capture_handle);
+            }
+
+            if ((err = snd_pcm_prepare(playback_handle)) < 0)
+            {
+                throw std::runtime_error(SS("Cannot prepare playback stream: " << snd_strerror(err)));
+            }
+            if ((err = snd_pcm_prepare(capture_handle)) < 0)
+            {
+                throw std::runtime_error(SS("Cannot prepare capture stream: " << snd_strerror(err)));
+            }
+
+            if (relink)
+            {
+                if ((err = snd_pcm_link(capture_handle, playback_handle)) < 0)
+                {
+                    throw std::runtime_error(SS("Cannot relink streams: " << snd_strerror(err)));
+                }
+            }
+
+            // Same order the audio thread uses for the very first start: fill
+            // the playback buffer, then start capture explicitly. Playback
+            // starts itself once its start threshold is reached, but capture
+            // never does — without this call it sits in PREPARED forever.
+            FillOutputBuffer();
+            if ((err = snd_pcm_start(capture_handle)) < 0)
+            {
+                throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
+            }
+        }
+
         void recover_from_output_underrun(snd_pcm_t *capture_handle, snd_pcm_t *playback_handle, int err, size_t framesRead)
         {
             validate_capture_handle();
@@ -1534,14 +1593,7 @@ namespace pipedal
                 TraceBufferPositions(framesRead, 'w');
                 if (err == -EPIPE)
                 {
-                    err = snd_pcm_prepare(playback_handle);
-                    if (err < 0)
-                    {
-                        Lv2Log::error(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
-                        throw PiPedalStateException(SS("Can't recover from ALSA output underrun. (" << snd_strerror(err) << ")"));
-                    }
-                    snd_pcm_drain(capture_handle);
-                    FillOutputBuffer();
+                    resync_streams(capture_handle, playback_handle, "output");
                     TraceBufferPositions(framesRead, 'x');
                 }
                 else
@@ -1567,33 +1619,7 @@ namespace pipedal
                 TraceBufferPositions(bufferedFrames, 'r');
                 if (err == -EPIPE)
                 {
-
-                    // Unlink the streams before recovery
-                    snd_pcm_unlink(capture_handle);
-
-                    // Prepare both streams
-                    if ((err = snd_pcm_prepare(playback_handle)) < 0)
-                    {
-                        throw std::runtime_error(SS("Cannot prepare playback stream: " << snd_strerror(err)));
-                    }
-                    if ((err = snd_pcm_prepare(capture_handle)) < 0)
-                    {
-                        throw std::runtime_error(SS("Cannot prepare capture stream: " << snd_strerror(err)));
-                    }
-
-                    // Resynchronize the streams
-                    if ((err = snd_pcm_link(capture_handle, playback_handle)) < 0)
-                    {
-                        throw std::runtime_error(SS("Cannot relink streams: " << snd_strerror(err)));
-                    }
-
-                    // Start the streams
-                    FillOutputBuffer();
-                    if ((err = snd_pcm_start(capture_handle)) < 0)
-                    {
-                        throw std::runtime_error(SS("Cannot restart capture stream: " << snd_strerror(err)));
-                    }
-
+                    resync_streams(capture_handle, playback_handle, "input");
                     validate_capture_handle();
                 }
                 else if (err == ESTRPIPE)
