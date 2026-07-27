@@ -660,55 +660,95 @@ static std::string GetIp4NonLinkLocalAddressForInterface(const std::string &name
 
 std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
 {
-    std::string address = fromAddress;
-    std::string result;
-    if (address[0] != '[')
-    {
-        return address;
-    }
-    else
-    {
-        // ipv6
-        if (address[0] != '[' || address[address.length() - 1] != ']')
+    try {
+        std::string address = fromAddress;
+        std::string result;
+        if (address.length() == 0) 
+        {
             throw std::invalid_argument(SS("Bad address: " << address));
-        address = address.substr(1, address.length() - 2);
-
-        auto nPos = address.find('%');
-        if (nPos != std::string::npos)
-        {
-            std::string ifName = address.substr(nPos + 1);
-            return GetNonLinkLocalAddressForInterface(ifName);
         }
-        struct in6_addr inetAddr6;
-        memset(&inetAddr6, 0, sizeof(inetAddr6));
-        if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
+        if (address[0] != '[')
         {
-            int32_t remoteAddress = -1;
-            // cases:
-            //   [::FFFF:ipv4 address]
-            //   [FE80:: ]   link local.
-            //   [FEC0:: ]   site local.
-            //   others?
-            if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
-            {
-                int8_t *pAddr = (int8_t *)&inetAddr6;
-                uint32_t remoteAddress = htonl(*(int32_t *)(pAddr + 12));
-                std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
-                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
-            }
-            else
-            {
+            return address;
+        }
+        else
+        {
+            // ipv6
+            if (address[0] != '[' || address[address.length() - 1] != ']')
+                throw std::invalid_argument(SS("Bad address: " << address));
+            address = address.substr(1, address.length() - 2);
 
-                std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
-                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+            auto nPos = address.find('%');
+            if (nPos != std::string::npos)
+            {
+                std::string ifName = address.substr(nPos + 1);
+                return GetNonLinkLocalAddressForInterface(ifName);
+            }
+            struct in6_addr inetAddr6;
+            memset(&inetAddr6, 0, sizeof(inetAddr6));
+            if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
+            {
+                int32_t remoteAddress = -1;
+                // cases:
+                //   [::FFFF:ipv4 address]
+                //   [FE80:: ]   link local.
+                //   [FEC0:: ]   site local.
+                //   others?
+                if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
+                {
+                    int8_t *pAddr = (int8_t *)&inetAddr6;
+                    uint32_t remoteAddress = htonl(*(int32_t *)(pAddr + 12));
+                    std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
+                    if (!interfaceName.empty())
+                    {
+                        result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+                    }
+                    else
+                    {
+                        result = SS(
+                            ((remoteAddress >> 24) & 0xFF) << '.' << ((remoteAddress >> 16) & 0xFF) << '.'
+                                                         << ((remoteAddress >> 8) & 0xFF) << '.' << (remoteAddress & 0xFF));
+                    }
+                }
+                else
+                {
+
+                    std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
+                    if (interfaceName.empty()) 
+                    {
+                        std::ostringstream os;
+                        os << '[';
+                        char host[INET6_ADDRSTRLEN+1];
+                        if (inet_ntop(AF_INET6, &inetAddr6, host, sizeof(host)) != nullptr)
+                        {
+                            host[sizeof(host) - 1] = '\0';
+                            for (char *p = host; *p != 0; ++p)
+                            {
+                                if (*p == '%')
+                                {
+                                    break;
+                                }
+                                os << *p;
+                            }
+                            os << ']';
+                            result = os.str();
+                        } else {
+                            return fromAddress;
+                        }
+                    } else {
+                        result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+                    }
+                }
             }
         }
+        if (result == "")
+        {
+            result = fromAddress;
+        }
+        return result;
+    } catch (const std::exception&e) {
+        return fromAddress;
     }
-    if (result == "")
-    {
-        result = GetNonLinkLocalAddressForInterface("");
-    }
-    return result;
 }
 
 std::string pipedal::GetInterfaceIpv4Address(const std::string &interfaceName)
