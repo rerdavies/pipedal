@@ -701,42 +701,32 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
                     std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
                     if (!interfaceName.empty())
                     {
-                        result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
-                    }
-                    else
-                    {
-                        result = SS(
-                            ((remoteAddress >> 24) & 0xFF) << '.' << ((remoteAddress >> 16) & 0xFF) << '.'
-                                                         << ((remoteAddress >> 8) & 0xFF) << '.' << (remoteAddress & 0xFF));
+                        try {
+                            result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+                        } catch (const std::exception&)
+                        {
+
+                        }
                     }
                 }
-                else
+                if (result.empty()) 
                 {
+                    // ip v6 address without interface name.
 
-                    std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
-                    if (interfaceName.empty()) 
+                    char host[INET6_ADDRSTRLEN+1];
+                    if (inet_ntop(AF_INET6, &inetAddr6, host, sizeof(host)) != nullptr)
                     {
                         std::ostringstream os;
                         os << '[';
-                        char host[INET6_ADDRSTRLEN+1];
-                        if (inet_ntop(AF_INET6, &inetAddr6, host, sizeof(host)) != nullptr)
+                        host[sizeof(host) - 1] = '\0';
+                        for (char *p = host; *p != 0 && *p != '%'; ++p)
                         {
-                            host[sizeof(host) - 1] = '\0';
-                            for (char *p = host; *p != 0; ++p)
-                            {
-                                if (*p == '%')
-                                {
-                                    break;
-                                }
-                                os << *p;
-                            }
-                            os << ']';
-                            result = os.str();
-                        } else {
-                            return fromAddress;
+                            os << *p;
                         }
+                        os << ']';
+                        result = os.str();
                     } else {
-                        result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+                        result = fromAddress;
                     }
                 }
             }
