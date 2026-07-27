@@ -678,12 +678,6 @@ std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
                 throw std::invalid_argument(SS("Bad address: " << address));
             address = address.substr(1, address.length() - 2);
 
-            auto nPos = address.find('%');
-            if (nPos != std::string::npos)
-            {
-                std::string ifName = address.substr(nPos + 1);
-                return GetNonLinkLocalAddressForInterface(ifName);
-            }
             struct in6_addr inetAddr6;
             memset(&inetAddr6, 0, sizeof(inetAddr6));
             if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
