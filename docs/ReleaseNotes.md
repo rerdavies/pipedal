@@ -1,5 +1,5 @@
 # Release Notes
-## PiPedal 2.0.109-Release
+## PiPedal 2.0.110-Release
 7 new factory presets. If upgrading, you will find them added to the Factory Presets bank.
 
 Major Features: 
@@ -17,6 +17,8 @@ Bug Fixes:
 - Allow NeuralRack.lv2 to load in PiPedal.
 - Give correct error message when config.json request fails.
 - Remove conflict with `sqlite3.dev` package (leaked installation of /usr/include/sqlite3.h).
+- Fix missing x86/non-avx binaries missing in retracted v2.0.109 release.
+- Improve TooB NAM x86 AVX runtime detection.
 
 ## PiPedal 2.0.108-Release
 Emergency fix for breaking changes in Tone3000 API. Fixes failed downloads from Tone3000.com.
