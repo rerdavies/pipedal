@@ -242,9 +242,9 @@ static void removeFileNoThrow(const std::filesystem::path& path)
 
 int32_t Storage::GetInstallerPresetVersion()
 {
-    auto installerConfiDirectory = this->configRoot / "default_presets" / "presets";
+    auto installerConfigDirectory = this->configRoot / "default_presets" / "presets";
     BrowserFilesVersionInfo versionInfo;
-    if (!versionInfo.Load(installerConfiDirectory / "banks.versionInfo"))
+    if (!versionInfo.Load(installerConfigDirectory / "banks.versionInfo"))
     {
         throw std::runtime_error("Can't open Installer banks.versionInfo file.");
     }
@@ -590,6 +590,7 @@ void Storage::Initialize(PiPedalModel* model)
     {
         throw PiPedalStateException("Can't create presets directory. (" + (std::string)this->GetPresetsDirectory() + ") (" + e.what() + ")");
     }
+    CleanWorkingDirectories();
 
     ProvisionDefaultBanks();
 
@@ -3368,6 +3369,41 @@ void Storage::UpgradeChannelRouterSettings()
         }
         channelSelection = ChannelSelection(*channelRouterSettings);
     }
+}
+
+static void CleanDirectory(const fs::path& path)
+{
+    std::vector<fs::path> paths;
+
+    try {
+        for (const auto& directoryEntry : fs::directory_iterator(path))
+        {
+            paths.push_back(directoryEntry.path());
+        }
+        for (const auto& path : paths)
+        {
+            try {
+                fs::remove_all(path);
+            }
+            catch (const std::exception&)
+            {
+
+            }
+        }
+    }
+    catch (const std::exception&)
+    {
+
+    }
+}
+void Storage::CleanWorkingDirectories()
+{
+    if (this->dataRoot.empty())
+    {
+        throw std::runtime_error("Too soon!");
+    }
+    CleanDirectory(dataRoot / "web_temp");
+    CleanDirectory(dataRoot / "updates" / "downloads");
 }
 
 const ChannelSelection& Storage::GetChannelSelection() const

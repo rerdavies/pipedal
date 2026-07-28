@@ -62,7 +62,7 @@ using namespace pipedal;
 namespace pipedal
 {
 
-#define TRACE_BUFFER_POSITIONS 1
+#define TRACE_BUFFER_POSITIONS 0
     static bool ShouldForceStereoChannels(snd_pcm_t *pcmHandle, snd_pcm_hw_params_t *hwParams, unsigned int channelsMin, unsigned int channelsMax)
     {
         // The problem: old IC2 drivers seem to return 1-8 channels, but 8 channels is non-functinal. The assumption is that legacy drivers

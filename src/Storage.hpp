@@ -229,6 +229,7 @@ public:
 
     const ChannelSelection& GetChannelSelection() const;
 
+    void CleanWorkingDirectories();
 
     //std::string MapPropertyFileName(Lv2PluginInfo*pluginInfo, const std::string&path);
 
