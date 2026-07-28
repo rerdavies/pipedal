@@ -6,11 +6,10 @@ Major Features:
 - This release includes 7 new factory presets, created and contributed by Andrew Curtis.
 
 Minor Features:
+- The MIDI Devices settings dialog now allows MIDI channel selection (OMNI, or accept messages on only a specific channel).
 - Renamed TooB NAM "Slim" control to "Quality", to better reflect its purpose. The Quality control now shows where the quality breakpoints are.
 - Prevent underruns cueing or looping compressed audio files. (TooB File Player, TooB Loopers).
-- Allow access from other local subnets.
 - Serve react .js files using gzip compression, to reduce bandwidth server bandwidth.
-- The MIDI Devices settings dialog now allows MIDI channel selection (OMNI, or accept messages on only a specific channel).
 
 
 Bug Fixes:
