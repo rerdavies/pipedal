@@ -34,24 +34,24 @@
 
 using namespace pipedal;
 
-static bool IsIpv4MappedAddress(const struct in6_addr &inetAddr6)
+static bool IsIpv4MappedAddress(const struct in6_addr& inetAddr6)
 {
     return IN6_IS_ADDR_V4MAPPED(&inetAddr6) != 0;
 }
-static uint32_t GetIpv4MappedAddress(const struct in6_addr &inetAddr6)
+static uint32_t GetIpv4MappedAddress(const struct in6_addr& inetAddr6)
 {
     if (!IsIpv4MappedAddress(inetAddr6))
     {
         return 0;
     }
-    uint8_t *p = (uint8_t *)&inetAddr6;
-    return htonl(*(uint32_t *)(p + 12));
+    uint8_t* p = (uint8_t*)&inetAddr6;
+    return htonl(*(uint32_t*)(p + 12));
 }
-static bool ipv6NetmaskCompare(const struct in6_addr &left, const struct in6_addr &right, const struct in6_addr &mask)
+static bool ipv6NetmaskCompare(const struct in6_addr& left, const struct in6_addr& right, const struct in6_addr& mask)
 {
-    uint8_t *pLeft = (uint8_t *)&left;
-    uint8_t *pRight = (uint8_t *)&right;
-    uint8_t *pMask = (uint8_t *)&mask;
+    uint8_t* pLeft = (uint8_t*)&left;
+    uint8_t* pRight = (uint8_t*)&right;
+    uint8_t* pMask = (uint8_t*)&mask;
     for (int i = 0; i < 16; ++i)
     {
         if ((pLeft[i] & pMask[i]) != (pRight[i] & pMask[i]))
@@ -62,7 +62,7 @@ static bool ipv6NetmaskCompare(const struct in6_addr &left, const struct in6_add
     return true;
 }
 
-NetworkInterfaceType pipedal::GetNetworkInterfaceType(const char *interfaceName)
+NetworkInterfaceType pipedal::GetNetworkInterfaceType(const char* interfaceName)
 {
     // stock linux.
     if (strncmp(interfaceName, "eth", 3) == 0)
@@ -92,16 +92,16 @@ NetworkInterfaceType pipedal::GetNetworkInterfaceType(const char *interfaceName)
 
 std::optional<std::string> pipedal::GetWlanInterfaceName()
 {
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         throw std::runtime_error("No networks available.");
 
-    Finally f{[ifap]()
+    Finally f{ [ifap]()
               {
                   freeifaddrs(ifap);
-              }};
+              } };
 
-    for (struct ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (struct ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (GetNetworkInterfaceType(p->ifa_name) == NetworkInterfaceType::WiFi)
         {
@@ -130,16 +130,16 @@ std::optional<std::string> pipedal::GetWlanIpv4Address()
 static bool IsIpv4OnLocalSubnet(uint32_t ipv4Addres)
 {
     bool result = false;
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return false;
 
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         { // TODO: Add support for AF_INET6
-            uint32_t netmask = htonl(((sockaddr_in *)(p->ifa_netmask))->sin_addr.s_addr);
-            uint32_t ifAddr = htonl(((sockaddr_in *)(p->ifa_addr))->sin_addr.s_addr);
+            uint32_t netmask = htonl(((sockaddr_in*)(p->ifa_netmask))->sin_addr.s_addr);
+            uint32_t ifAddr = htonl(((sockaddr_in*)(p->ifa_addr))->sin_addr.s_addr);
 
             if ((netmask & ifAddr) == (netmask & ipv4Addres))
             {
@@ -153,10 +153,10 @@ static bool IsIpv4OnLocalSubnet(uint32_t ipv4Addres)
 }
 
 bool pipedal::ParseHttpAddress(const std::string address,
-                               std::string *pUser,
-                               std::string *pServer,
-                               int *pPort,
-                               int defaultPort)
+    std::string* pUser,
+    std::string* pServer,
+    int* pPort,
+    int defaultPort)
 {
     // strip user.
     auto start = address.find_first_of('@');
@@ -190,7 +190,7 @@ bool pipedal::ParseHttpAddress(const std::string address,
     int portNumber = defaultPort;
     if (port < address.length() && address[port] == ':')
     {
-        const char *p = address.c_str() + port + 1;
+        const char* p = address.c_str() + port + 1;
         if (*p)
         {
             portNumber = 0;
@@ -217,7 +217,7 @@ bool pipedal::ParseHttpAddress(const std::string address,
     }
     return true;
 }
-static std::string StripPortNumber(const std::string &fromAddress)
+static std::string StripPortNumber(const std::string& fromAddress)
 {
     std::string address = fromAddress;
 
@@ -243,7 +243,7 @@ static std::string StripPortNumber(const std::string &fromAddress)
     return address;
 }
 
-bool pipedal::IsOnLocalSubnet(const std::string &fromAddress)
+bool pipedal::IsOnLocalSubnet(const std::string& fromAddress)
 {
     std::string address = StripPortNumber(fromAddress);
     if (address.length() == 0)
@@ -302,19 +302,19 @@ bool pipedal::IsOnLocalSubnet(const std::string &fromAddress)
 #if JUNK
             // if the address is global, we have to reject it.
             // no point in going further.
-            struct ifaddrs *ifap = nullptr;
+            struct ifaddrs* ifap = nullptr;
             if (getifaddrs(&ifap) != 0)
                 return false;
 
             const int SITE_LOCAL_SCOPE = 5;
 
-            for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+            for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
             {
                 if (p->ifa_addr && p->ifa_addr && p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
                 {
 
-                    struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
-                    struct sockaddr_in6 *pNetMask = (struct sockaddr_in6 *)(p->ifa_netmask);
+                    struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
+                    struct sockaddr_in6* pNetMask = (struct sockaddr_in6*)(p->ifa_netmask);
                     if (pAddr->sin6_scope_id <= SITE_LOCAL_SCOPE)
                     {
                         if (ipv6NetmaskCompare(inetAddr6, pAddr->sin6_addr, pNetMask->sin6_addr))
@@ -332,7 +332,7 @@ bool pipedal::IsOnLocalSubnet(const std::string &fromAddress)
     return result;
 }
 
-static bool isEthernetAddress(const char *ifName)
+static bool isEthernetAddress(const char* ifName)
 {
     // either ethN (classic),
     if (strncmp(ifName, "eth", 3) == 0)
@@ -345,17 +345,17 @@ std::vector<std::string> pipedal::GetEthernetIpv4Addresses()
 {
     std::vector<std::string> result;
 
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return result;
 
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (isEthernetAddress(p->ifa_name))
         {
             if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
-                uint32_t netmask = htonl(((sockaddr_in *)(p->ifa_netmask))->sin_addr.s_addr);
-            uint32_t ifAddr = htonl(((sockaddr_in *)(p->ifa_addr))->sin_addr.s_addr);
+                uint32_t netmask = htonl(((sockaddr_in*)(p->ifa_netmask))->sin_addr.s_addr);
+            uint32_t ifAddr = htonl(((sockaddr_in*)(p->ifa_addr))->sin_addr.s_addr);
             {
                 if (ifAddr & 0xFF)
                 { // has an actual bound IP address.
@@ -372,16 +372,16 @@ std::vector<std::string> pipedal::GetEthernetIpv4Addresses()
 
 static std::string GetInterfaceForIp4Address(uint32_t ipv4Address)
 {
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
     std::string result;
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         { // TODO: Add support for AF_INET6
-            uint32_t netmask = htonl(((sockaddr_in *)(p->ifa_netmask))->sin_addr.s_addr);
-            uint32_t ifAddr = htonl(((sockaddr_in *)(p->ifa_addr))->sin_addr.s_addr);
+            uint32_t netmask = htonl(((sockaddr_in*)(p->ifa_netmask))->sin_addr.s_addr);
+            uint32_t ifAddr = htonl(((sockaddr_in*)(p->ifa_addr))->sin_addr.s_addr);
 
             if ((netmask & ifAddr) == (netmask & ipv4Address))
             {
@@ -396,16 +396,16 @@ static std::string GetInterfaceForIp4Address(uint32_t ipv4Address)
 
 static std::string GetInterfaceForIp6Address(const in6_addr inetAddr6)
 {
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
     std::string result;
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         { // TODO: Add support for AF_INET6
-            struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
-            struct sockaddr_in6 *pNetMask = (struct sockaddr_in6 *)(p->ifa_netmask);
+            struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
+            struct sockaddr_in6* pNetMask = (struct sockaddr_in6*)(p->ifa_netmask);
 
             if (ipv6NetmaskCompare(inetAddr6, pAddr->sin6_addr, pNetMask->sin6_addr))
             {
@@ -418,32 +418,32 @@ static std::string GetInterfaceForIp6Address(const in6_addr inetAddr6)
     return result;
 }
 
-static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV6Address)
+static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6& ipV6Address)
 {
     auto targetInterfaceId = ipV6Address.scope_id();
     boost::asio::ip::address_v6::bytes_type bytes = ipV6Address.to_bytes();
     auto scopeId = ipV6Address.scope_id();
 
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         throw std::runtime_error("No networks available.");
 
-    Finally f{[ifap]()
+    Finally f{ [ifap]()
               {
                   freeifaddrs(ifap);
-              }};
+              } };
 
     std::string result;
 
-    const char *targetInterfaceName = nullptr;
-    const ifaddrs *targetInterface = nullptr;
+    const char* targetInterfaceName = nullptr;
+    const ifaddrs* targetInterface = nullptr;
 
     // get the nameof the interface for this scopeId.
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr)
         { // TODO: Add support for AF_INET6
-            struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
+            struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
             if (pAddr->sin6_scope_id == scopeId)
             {
                 targetInterface = p;
@@ -457,7 +457,7 @@ static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV
         throw std::runtime_error("Unknown address.");
     }
     // an IPV4 address would be the ideal result.
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         {
@@ -476,16 +476,16 @@ static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV
         }
     }
     // failing that, a global unique ip address.
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         { // TODO: Add support for AF_INET6
-            struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
+            struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
             if ((!IN6_IS_ADDR_LINKLOCAL(pAddr)) && (!IN6_IS_ADDR_SITELOCAL(pAddr)))
             {
                 char buffer[128];
                 inet_ntop(AF_INET6, &(pAddr->sin6_addr),
-                          buffer, sizeof(buffer));
+                    buffer, sizeof(buffer));
                 return SS('[' << buffer << ']');
             }
         }
@@ -494,18 +494,94 @@ static std::string GetNonLinkLocalAddress(const boost::asio::ip::address_v6 &ipV
     throw std::runtime_error("Not ready. Try again later.");
 }
 
-static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
+static std::string Get(const boost::asio::ip::address_v6& ipV6Address)
 {
-    struct ifaddrs *ifap = nullptr;
+    auto targetInterfaceId = ipV6Address.scope_id();
+    boost::asio::ip::address_v6::bytes_type bytes = ipV6Address.to_bytes();
+    auto scopeId = ipV6Address.scope_id();
+
+    struct ifaddrs* ifap = nullptr;
+    if (getifaddrs(&ifap) != 0)
+        throw std::runtime_error("No networks available.");
+
+    Finally f{ [ifap]()
+              {
+                  freeifaddrs(ifap);
+              } };
+
+    std::string result;
+
+    const char* targetInterfaceName = nullptr;
+    const ifaddrs* targetInterface = nullptr;
+
+    // get the nameof the interface for this scopeId.
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr)
+        { // TODO: Add support for AF_INET6
+            struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
+            if (pAddr->sin6_scope_id == scopeId)
+            {
+                targetInterface = p;
+                targetInterfaceName = p->ifa_name;
+                break;
+            }
+        }
+    }
+    if (!targetInterface)
+    {
+        throw std::runtime_error("Unknown address.");
+    }
+    // an IPV4 address would be the ideal result.
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+        {
+            if (strcmp(p->ifa_name, targetInterfaceName) == 0)
+            {
+                constexpr int BUFSIZE = 128;
+                char host[BUFSIZE];
+                if (getnameinfo(p->ifa_addr, sizeof(struct sockaddr_in), host, BUFSIZE, NULL, 0, NI_NUMERICHOST) == 0)
+                {
+                    host[BUFSIZE - 1] = '\0';
+
+                    result = host;
+                }
+                return result;
+            }
+        }
+    }
+    // failing that, a global unique ip address.
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
+    {
+        if (p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+        { // TODO: Add support for AF_INET6
+            struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
+            if ((!IN6_IS_ADDR_LINKLOCAL(pAddr)) && (!IN6_IS_ADDR_SITELOCAL(pAddr)))
+            {
+                char buffer[128];
+                inet_ntop(AF_INET6, &(pAddr->sin6_addr),
+                    buffer, sizeof(buffer));
+                return SS('[' << buffer << ']');
+            }
+        }
+    }
+    // probably network address settling after the hotspot comes up. :-/
+    throw std::runtime_error("Not ready. Try again later.");
+}
+
+static std::string GetNonLinkLocalAddressForInterface(const std::string& name)
+{
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
     std::string result;
 
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
-        if (p->ifa_addr &&  p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
+        if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET6 && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
         { // TODO: Add support for AF_INET6
-            struct sockaddr_in6 *pAddr = (struct sockaddr_in6 *)(p->ifa_addr);
+            struct sockaddr_in6* pAddr = (struct sockaddr_in6*)(p->ifa_addr);
             if (!IN6_IS_ADDR_LINKLOCAL(&(pAddr->sin6_addr)))
             {
                 if (name == p->ifa_name)
@@ -517,7 +593,7 @@ static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
                         host[BUFSIZE - 1] = '\0';
 
                         // trim the interface spec if present
-                        for (char *p = host; *p != 0; ++p)
+                        for (char* p = host; *p != 0; ++p)
                         {
                             if (*p == '%')
                             {
@@ -539,17 +615,17 @@ static std::string GetNonLinkLocalAddressForInterface(const std::string &name)
     }
     return result;
 }
-static std::string GetIp4NonLinkLocalAddressForInterface(const std::string &name)
+static std::string GetIp4NonLinkLocalAddressForInterface(const std::string& name)
 {
-    struct ifaddrs *ifap = nullptr;
+    struct ifaddrs* ifap = nullptr;
     if (getifaddrs(&ifap) != 0)
         return "";
     std::string result = "";
-    for (ifaddrs *p = ifap; p != nullptr; p = p->ifa_next)
+    for (ifaddrs* p = ifap; p != nullptr; p = p->ifa_next)
     {
         if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET && p->ifa_addr != nullptr && p->ifa_netmask != nullptr)
-        { 
-            struct sockaddr_in *pAddr = (struct sockaddr_in *)(p->ifa_addr);
+        {
+            struct sockaddr_in* pAddr = (struct sockaddr_in*)(p->ifa_addr);
             {
                 if (name == p->ifa_name)
                 {
@@ -658,60 +734,152 @@ static std::string GetIp4NonLinkLocalAddressForInterface(const std::string &name
 //     return result;
 // }
 
-std::string pipedal::GetNonLinkLocalAddress(const std::string &fromAddress)
+
+std::string pipedal::GetIp4Address(const std::string& fromAddress)
 {
+    if (fromAddress[0] != '[')
+    {
+        return fromAddress;
+    }
+
     std::string address = fromAddress;
     std::string result;
-    if (address[0] != '[')
+    if (address.length() == 0)
     {
-        return address;
+        throw std::invalid_argument(SS("Bad address: " << address));
     }
-    else
+    // ipv6
+    if (address[0] != '[' || address[address.length() - 1] != ']')
+        throw std::invalid_argument(SS("Bad address: " << address));
+    address = address.substr(1, address.length() - 2);
+    auto nPos = address.find_last_of('&');
+    if (nPos != std::string::npos)
     {
-        // ipv6
-        if (address[0] != '[' || address[address.length() - 1] != ']')
-            throw std::invalid_argument(SS("Bad address: " << address));
-        address = address.substr(1, address.length() - 2);
-
-        auto nPos = address.find('%');
-        if (nPos != std::string::npos)
-        {
-            std::string ifName = address.substr(nPos + 1);
-            return GetNonLinkLocalAddressForInterface(ifName);
+        std::string interfaceName = address.substr(nPos + 1);
+        try {
+            return GetIp4NonLinkLocalAddressForInterface(interfaceName);
         }
-        struct in6_addr inetAddr6;
-        memset(&inetAddr6, 0, sizeof(inetAddr6));
-        if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
+        catch (const std::exception&)
         {
-            int32_t remoteAddress = -1;
-            // cases:
-            //   [::FFFF:ipv4 address]
-            //   [FE80:: ]   link local.
-            //   [FEC0:: ]   site local.
-            //   others?
-            if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
-            {
-                int8_t *pAddr = (int8_t *)&inetAddr6;
-                uint32_t remoteAddress = htonl(*(int32_t *)(pAddr + 12));
-                std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
-                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
-            }
-            else
-            {
-
-                std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
-                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
-            }
         }
     }
-    if (result == "")
+
+
+    struct in6_addr inetAddr6;
+    memset(&inetAddr6, 0, sizeof(inetAddr6));
+    if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
     {
-        result = GetNonLinkLocalAddressForInterface("");
+        int32_t remoteAddress = -1;
+        // cases:
+        //   [::FFFF:ipv4 address]
+        //   [FE80:: ]   link local.
+        //   [FEC0:: ]   site local.
+        //   others?
+        if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
+        {
+            int8_t* pAddr = (int8_t*)&inetAddr6;
+            uint32_t remoteAddress = htonl(*(int32_t*)(pAddr + 12));
+            result = SS(
+                ((remoteAddress >> 24) & 0xFF) <<
+                "." << ((remoteAddress >> 16) & 0xFF) <<
+                "." << ((remoteAddress >> 8) & 0xFF) <<
+                "." << ((remoteAddress >> 0) & 0xFF)
+            );
+        }
+        if (result.empty())
+        {
+            const std::string interfaceName = GetInterfaceForIp6Address(inetAddr6);
+            if (!interfaceName.empty())
+            {
+                result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+            }
+        }
     }
     return result;
 }
 
-std::string pipedal::GetInterfaceIpv4Address(const std::string &interfaceName)
+
+std::string pipedal::GetNonLinkLocalAddress(const std::string& fromAddress)
+{
+    try {
+        std::string address = fromAddress;
+        std::string result;
+        if (address.length() == 0)
+        {
+            throw std::invalid_argument(SS("Bad address: " << address));
+        }
+        if (address[0] != '[')
+        {
+            return address;
+        }
+        else
+        {
+            // ipv6
+            if (address[0] != '[' || address[address.length() - 1] != ']')
+                throw std::invalid_argument(SS("Bad address: " << address));
+            address = address.substr(1, address.length() - 2);
+
+            struct in6_addr inetAddr6;
+            memset(&inetAddr6, 0, sizeof(inetAddr6));
+            if (inet_pton(AF_INET6, address.c_str(), &inetAddr6) == 1)
+            {
+                int32_t remoteAddress = -1;
+                // cases:
+                //   [::FFFF:ipv4 address]
+                //   [FE80:: ]   link local.
+                //   [FEC0:: ]   site local.
+                //   others?
+                if (IN6_IS_ADDR_V4MAPPED(&inetAddr6))
+                {
+                    int8_t* pAddr = (int8_t*)&inetAddr6;
+                    uint32_t remoteAddress = htonl(*(int32_t*)(pAddr + 12));
+                    std::string interfaceName = GetInterfaceForIp4Address(remoteAddress);
+                    if (!interfaceName.empty())
+                    {
+                        try {
+                            result = GetIp4NonLinkLocalAddressForInterface(interfaceName);
+                        }
+                        catch (const std::exception&)
+                        {
+
+                        }
+                    }
+                }
+                if (result.empty())
+                {
+                    // ip v6 address without interface name.
+
+                    char host[INET6_ADDRSTRLEN + 1];
+                    if (inet_ntop(AF_INET6, &inetAddr6, host, sizeof(host)) != nullptr)
+                    {
+                        std::ostringstream os;
+                        os << '[';
+                        host[sizeof(host) - 1] = '\0';
+                        for (char* p = host; *p != 0 && *p != '%'; ++p)
+                        {
+                            os << *p;
+                        }
+                        os << ']';
+                        result = os.str();
+                    }
+                    else {
+                        result = fromAddress;
+                    }
+                }
+            }
+        }
+        if (result == "")
+        {
+            result = fromAddress;
+        }
+        return result;
+    }
+    catch (const std::exception& e) {
+        return fromAddress;
+    }
+}
+
+std::string pipedal::GetInterfaceIpv4Address(const std::string& interfaceName)
 {
     return GetIp4NonLinkLocalAddressForInterface(interfaceName);
 }
@@ -726,7 +894,7 @@ std::string pipedal::GetInterfaceIpv4Address(const std::string &interfaceName)
 
 // }
 
-static bool parseForLinkLocalUrl(const std::string &url, std::string *prefix, std::string *suffix)
+static bool parseForLinkLocalUrl(const std::string& url, std::string* prefix, std::string* suffix)
 {
     auto iter = url.begin();
     auto end = url.end();
@@ -828,8 +996,8 @@ static bool parseForLinkLocalUrl(const std::string &url, std::string *prefix, st
     return true;
 }
 bool pipedal::RemapLinkLocalUrl(
-    const boost::asio::ip::address &boostAddress,
-    const std::string &url, std::string *outputUrl)
+    const boost::asio::ip::address& boostAddress,
+    const std::string& url, std::string* outputUrl)
 {
 
     std::string prefix, suffix;

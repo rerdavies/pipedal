@@ -39,6 +39,7 @@ export class AlsaSequencerPortSelection {
 
 export class AlsaSequencerConfiguration {
     deserialize(input: any) {
+        this.midiChannel = input.midiChannel?? -1;
         this.connections = AlsaSequencerPortSelection.deserialize_array(input.connections);
         return this;
     }
@@ -50,5 +51,6 @@ export class AlsaSequencerConfiguration {
         return result;
     }
 
+    midiChannel: number = -1;
     connections: AlsaSequencerPortSelection[] = [];
 };

@@ -222,12 +222,13 @@ export const SystemMidiBindingDialog =
 
                 let items = this.state.systemMidiBindings;
 
-                for (var item of items) {
+                for (let i = 0; i < items.length; ++i) {
+                    let item = items[i];
                     let symbol = item.midiBinding.symbol;
-                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot" || symbol === "shotdown";
+                    let hasDivider = symbol === "snapshot1" || symbol === "stopHotspot" || symbol === "shutdown";
                     if (hasDivider) {
                         result.push(
-                            <tr>
+                            <tr key={"div"+i.toString()}>
                                 <td colSpan={2} className={classes.dividerRow}><div style={{ height: 1 }} /></td>
                             </tr>
                         );

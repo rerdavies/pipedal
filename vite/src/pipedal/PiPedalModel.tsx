@@ -543,6 +543,7 @@ export class PiPedalModel //implements PiPedalModel
     modResourcesUrl: string = "";
     lv2Path: string = "";
     webSocket?: PiPedalSocket;
+    t3k_redirect_url: string = "";
 
 
     static getInstance(): PiPedalModel {
@@ -1398,12 +1399,22 @@ export class PiPedalModel //implements PiPedalModel
                 this.androidHost = new FakeAndroidHost();
             }
             this.debug = !!data.debug;
-            let { socket_server_port, socket_server_address, max_upload_size } = data;
+            let { socket_server_port, socket_server_address, t3k_server_address: t3k_redirect_url, max_upload_size } = data;
+
+            if (!socket_server_port) socket_server_port = 8080;
 
             if ((!socket_server_address) || socket_server_address === "*") {
                 socket_server_address = window.location.hostname;
             }
-            if (!socket_server_port) socket_server_port = 8080;
+            if (!t3k_redirect_url) {
+                t3k_redirect_url = "";
+            } else {
+                t3k_redirect_url = "http://" + t3k_redirect_url;
+                if (socket_server_port != 80) {
+                    t3k_redirect_url += ":" + socket_server_port.toString();
+                }
+            }
+
             let socket_server = this.makeSocketServerUrl(socket_server_address, socket_server_port);
             let var_server_url = this.makeVarServerUrl("http", socket_server_address, socket_server_port);
             this.modResourcesUrl = this.makeModResourceUrl("http", socket_server_address, socket_server_port);
@@ -1411,6 +1422,7 @@ export class PiPedalModel //implements PiPedalModel
             this.socketServerUrl = socket_server;
             this.varServerUrl = var_server_url;
             this.serverUrl = this.makeServerUrl("http", socket_server_address, socket_server_port);
+            this.t3k_redirect_url = t3k_redirect_url ?? "BAD_URL:";
             this.maxFileUploadSize = parseInt(max_upload_size);
         } catch (error: any) {
             this.setError("Can't connect to server. " + getErrorMessage(error));

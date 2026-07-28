@@ -1056,27 +1056,6 @@ namespace pipedal
             }
 
 
-            // redirect requests to IPV6 local connections to a better address.
-
-
-            std::string nonLinkLocalUrl;
-
-            if (RemapLinkLocalUrl(con->get_socket().local_endpoint().address(), con->get_uri()->str(), &nonLinkLocalUrl))
-            {
-                try {
-                    Lv2Log::info(SS("Redirecting " << con->get_socket().local_endpoint().address().to_string() << " to " << nonLinkLocalUrl));
-                    res.keepAlive(false);
-                    res.set(HttpField::location, nonLinkLocalUrl.c_str());
-                    con->set_status(websocketpp::http::status_code::temporary_redirect);
-                    res.setBody("");
-                    return;
-                }
-                catch (const std::exception& e)
-                {
-                    ServerError(*con, "Invalid request on link-local address.");
-                    return;
-                }
-            }
             if (req.method() == HttpVerb::options)
             {
                 res.set(HttpField::access_control_allow_origin, origin);
@@ -1202,10 +1181,15 @@ namespace pipedal
 
             std::filesystem::path gzName;
 
+            size_t contentLength = 0;
+
             if (can_use_gzip_encoding(req.get(HttpField::accept_encoding), filename, &gzName))
             {
                 filename = gzName;
+                contentLength = std::filesystem::file_size(filename);
                 res.set(HttpField::content_encoding, "gzip");
+            } else {
+                contentLength = std::filesystem::file_size(filename);                
             }
 
             if (req.method() != HttpVerb::get)
@@ -1221,9 +1205,7 @@ namespace pipedal
                 return;
             }
 
-            file.seekg(0, std::ios::end);
-            response.reserve(file.tellg());
-            file.seekg(0, std::ios::beg);
+            response.reserve(contentLength);
 
             response.assign((std::istreambuf_iterator<char>(file)),
                 std::istreambuf_iterator<char>());
@@ -1237,7 +1219,7 @@ namespace pipedal
 
             res.set(HttpField::access_control_allow_origin, origin);
             res.set(HttpField::date, HtmlHelper::timeToHttpDate(time(nullptr)));
-            res.setContentLength(response.length());
+            res.setContentLength(contentLength);
 
             con->set_body(response);
             con->set_status(websocketpp::http::status_code::ok);

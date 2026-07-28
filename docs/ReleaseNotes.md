@@ -1,14 +1,15 @@
 # Release Notes
-## PiPedal 2.0.109-Release
+## PiPedal 2.0.110-Release
 7 new factory presets. If upgrading, you will find them added to the Factory Presets bank.
 
 Major Features: 
 - This release includes 7 new factory presets, created and contributed by Andrew Curtis.
 
 Minor Features:
+- The MIDI Devices settings dialog now allows MIDI channel selection (OMNI, or accept messages on only a specific channel).
 - Renamed TooB NAM "Slim" control to "Quality", to better reflect its purpose. The Quality control now shows where the quality breakpoints are.
 - Prevent underruns cueing or looping compressed audio files. (TooB File Player, TooB Loopers).
-- Allow access from local subnets.
+- Serve react .js files using gzip compression, to reduce bandwidth server bandwidth.
 
 
 Bug Fixes:
@@ -17,6 +18,8 @@ Bug Fixes:
 - Allow NeuralRack.lv2 to load in PiPedal.
 - Give correct error message when config.json request fails.
 - Remove conflict with `sqlite3.dev` package (leaked installation of /usr/include/sqlite3.h).
+- Fix missing x86/non-avx binaries missing in retracted v2.0.109 release.
+- Improve TooB NAM x86 AVX runtime detection.
 
 ## PiPedal 2.0.108-Release
 Emergency fix for breaking changes in Tone3000 API. Fixes failed downloads from Tone3000.com.

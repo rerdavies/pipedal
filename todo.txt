@@ -1,2 +1,4 @@
 
-Select indicatorts for NAM model.
+Check for libzstd.so dependency.
+Check sqlite package leaks
+Check x64 avx/non-avx binaries.

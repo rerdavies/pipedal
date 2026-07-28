@@ -52,6 +52,7 @@ namespace pipedal {
     // bool IsLinkLocalAddress(const std::string &fromAddress);
 
     std::string GetNonLinkLocalAddress(const std::string& fromAddress);
+    std::string GetIp4Address(const std::string& fromAddress);
 
     bool IsOnLocalSubnet(const std::string&fromAddress);
 

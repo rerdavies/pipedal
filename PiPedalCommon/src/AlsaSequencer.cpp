@@ -72,6 +72,8 @@ namespace pipedal
             virtual void RemoveAllConnections() override;
 
         private:
+
+            bool IsChannelSelected(int32_t channel);
             void ModifyConnection(int clientId, int portId, ConnectAction action);
 
             // Get the current queue ID (returns -1 if no queue is active)
@@ -88,6 +90,14 @@ namespace pipedal
             };
 
             int myClientId = -1;
+            int32_t midiChannel()  { 
+                std::lock_guard { connectionsMutex};
+                return midiChannel_;
+            }
+            void midiChannel(uint32_t value) { 
+                std::lock_guard { connectionsMutex};
+                midiChannel_ = value; 
+            }
 
             std::mutex connectionsMutex;
             std::vector<Connection> connections;
@@ -95,6 +105,7 @@ namespace pipedal
             snd_seq_t *seqHandle = nullptr;
             int inPort = -1;
             int queueId = -1; // Queue for real-time timestamps
+            int32_t midiChannel_ = -1;
         };
 
         class AlsaSequencerDeviceMonitorImpl : public AlsaSequencerDeviceMonitor
@@ -363,6 +374,7 @@ namespace pipedal
                 }
             }
         }
+        this->midiChannel(alsaSequencerConfiguration.midiChannel());
     }
 
     bool AlsaSequencerImpl::WaitForMessage(int timeoutMs)
@@ -398,6 +410,14 @@ namespace pipedal
             }
         }
     }
+
+    bool AlsaSequencerImpl::IsChannelSelected(int32_t channel) 
+    {
+        auto selection = this->midiChannel();
+        if (selection < 0) return true;
+        return selection == channel;
+        
+    }
     bool AlsaSequencerImpl::ReadMessage(AlsaMidiMessage &message, int timeoutMs)
     {
         // Event loop
@@ -417,8 +437,10 @@ namespace pipedal
                 }
                 else
                 {
-                    // Handle other errors
-                    throw std::runtime_error(SS("ALSA sequencer input error: " << snd_strerror(rc)));
+                    // -EPIPE and -ENOSPACE recover automatically. 
+                    // For other errors, let's just carry on, and assume that 
+                    // sequencer control notifications will reset the device eventually.
+                    return false;
                 }
             }
             else if (event)
@@ -430,9 +452,14 @@ namespace pipedal
                 message.realtime_nsec = event->time.time.tv_nsec;
 
                 // Process MIDI event here, e.g. NOTEON, NOTEOFF, etc.
+
                 switch (event->type)
                 {
                 case SND_SEQ_EVENT_NOTEON:
+                    if (!IsChannelSelected(event->data.note.channel))
+                    {
+                        continue;
+                    }
                     message.Set(
                         (uint8_t)(0x90 | event->data.note.channel),
                         (uint8_t)(event->data.note.note),      // note
@@ -440,40 +467,72 @@ namespace pipedal
                     break;
                 case SND_SEQ_EVENT_NOTEOFF:
                     // handle note-off
+                    if (!IsChannelSelected(event->data.note.channel))
+                    {
+                        continue;
+                    }
                     message.Set(
                         uint8_t(0x80 | event->data.note.channel),
                         uint8_t(event->data.note.note),
                         uint8_t(event->data.note.off_velocity)); // off velocity
                     break;
                 case SND_SEQ_EVENT_KEYPRESS:
+                    // handle note-off
+                    if (!IsChannelSelected(event->data.note.channel))
+                    {
+                        continue;
+                    }
                     message.Set(
                         (uint8_t)(0xA0 | event->data.note.channel), // polyphonic key pressure
                         (uint8_t)(event->data.note.note),           // note
                         (uint8_t)(event->data.note.velocity));      // pressure
                     break;
                 case SND_SEQ_EVENT_CONTROLLER:
+                    // handle note-off
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
                     message.Set(
                         (uint8_t)(0xB0 | event->data.control.channel), // control change
                         (uint8_t)(event->data.control.param),          // controller number
                         (uint8_t)(event->data.control.value));         // controller value
                     break;
                 case SND_SEQ_EVENT_PGMCHANGE:
+                                    // handle note-off
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
+
                     message.Set(
                         (uint8_t)(0xC0 | event->data.control.channel), // program change
                         (uint8_t)(event->data.control.value));
                     break;
 
                 case SND_SEQ_EVENT_CHANPRESS:
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
                     message.Set(
                         uint8_t(0xD0 | event->data.control.channel),
                         uint8_t(event->data.control.value));
                     break;
                 case SND_SEQ_EVENT_PITCHBEND:
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
                     message.Set(uint8_t(0xE0 | event->data.control.channel),
                                 uint8_t((event->data.control.value >> 7) & 0x7F),
                                 uint8_t(event->data.control.value & 0x7F));
                     break;
                 case SND_SEQ_EVENT_CONTROL14:
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
                     message.size = 6;
                     message.data = message.fixedBuffer;
                     message.fixedBuffer[0] = uint8_t(0xB0 | event->data.control.channel);    // Control Change 14-bit
@@ -485,6 +544,10 @@ namespace pipedal
                     break;
 
                 case SND_SEQ_EVENT_NONREGPARAM:
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
                     message.size = 12;
                     message.data = message.fixedBuffer;
                     message.fixedBuffer[0] = uint8_t(0xB0 | event->data.control.channel);    // Non-registered parameter
@@ -501,6 +564,10 @@ namespace pipedal
                     message.fixedBuffer[11] = uint8_t(event->data.control.value) & 0x7F; // LSb
                     break;
                 case SND_SEQ_EVENT_REGPARAM:
+                    if (!IsChannelSelected(event->data.control.channel))
+                    {
+                        continue;
+                    }
                     message.size = 12;
                     message.data = message.fixedBuffer;
                     message.fixedBuffer[0] = uint8_t(0xB0 | event->data.control.channel);    // Registered parameter
@@ -781,10 +848,8 @@ namespace pipedal
         {
             if (snd_seq_get_port_subscription(seq, subs) < 0)
             {
-                Lv2Log::warning(
-                    "Failed to disconnect ALSA sequencer port %d:%d. Subscripton not found.",
-                    (int)clientId,
-                    (int)portId);
+                // Do nothing. 
+                // The system unsubscribed for us.
             }
             else
             {
@@ -1035,6 +1100,7 @@ namespace pipedal
     JSON_MAP_END()
 
     JSON_MAP_BEGIN(AlsaSequencerConfiguration)
+    JSON_MAP_REFERENCE(AlsaSequencerConfiguration, midiChannel)
     JSON_MAP_REFERENCE(AlsaSequencerConfiguration, connections)
     JSON_MAP_END()
 
