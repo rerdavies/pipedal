@@ -95,7 +95,7 @@ namespace pipedal
                 return midiChannel_;
             }
             void midiChannel(uint32_t value) { 
-                std::lock_guard { connectionsMutex};
+                std::lock_guard lock{ connectionsMutex};
                 midiChannel_ = value; 
             }
 
