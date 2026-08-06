@@ -41,6 +41,7 @@ import { isDarkMode } from './DarkMode';
 import {
     Pedalboard, PedalboardItem, PedalboardSplitItem, SplitType
 } from './Pedalboard';
+import { getUiPluginCategory } from './PluginCategories';
 
 // import MidiIcon from './svg/ic_midi.svg?react';
 // import { midiChannelBindingControlFeatureEnabled } from './MidiChannelBinding';
@@ -274,6 +275,7 @@ class PedalLayout {
     pluginType: PluginType = PluginType.Plugin;
     iconUrl: string = "";
     iconColor: string = "";
+    categoryColor: string = "";
 
     bounds: Rect = new Rect();
 
@@ -363,6 +365,7 @@ class PedalLayout {
                 }
                 this.iconUrl = SelectIconUri(pluginType);
                 this.iconColor = pedalItem.iconColor;
+                this.categoryColor = getUiPluginCategory(uiPlugin).color;
                 this.name = uiPlugin.label;
                 if (pedalItem.title !== "") {
                     this.name = pedalItem.title;
@@ -1223,7 +1226,7 @@ const PedalboardView =
                                         {this.pedalButton(
                                             item.pedalItem?.instanceId ?? -1,
                                             pluginType,
-                                            item.pedalItem?.iconColor ?? "",
+                                            item.pedalItem?.iconColor || item.categoryColor,
                                             !item.isEmpty(),
                                             item.pedalItem?.isEnabled ?? false,
                                             true,
