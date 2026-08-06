@@ -875,7 +875,10 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
-            constexpr float scale = 1.0f / (0x00FFFFFFL + 1L);
+            // Signed 24-bit full-scale is 0x7FFFFF (2^23-1), not 0x00FFFFFF.
+            // Using 2^24 here decoded full-scale input to only 0.5, i.e. 6 dB
+            // low, matching S16/S32/S24_3 (which all map full-scale to 1.0).
+            constexpr float scale = 1.0f / (0x7FFFFFL + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -891,7 +894,10 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->deviceCaptureBuffers;
             int channels = this->captureChannels;
-            constexpr float scale = 1.0f / (0x00FFFFFFL + 1L);
+            // Signed 24-bit full-scale is 0x7FFFFF (2^23-1), not 0x00FFFFFF.
+            // Using 2^24 here decoded full-scale input to only 0.5, i.e. 6 dB
+            // low, matching S16/S32/S24_3 (which all map full-scale to 1.0).
+            constexpr float scale = 1.0f / (0x7FFFFFL + 1L);
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -985,7 +991,13 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
-            constexpr double scale = 0x00FFFFFF;
+            // Signed 24-bit full-scale is 0x7FFFFF (2^23-1). The old value of
+            // 0x00FFFFFF mapped any float above 0.5 (-6 dBFS) to 0x800000.., i.e.
+            // past the signed-24-bit range, so the low 24 bits wrapped to the
+            // opposite polarity -> harsh high-frequency distortion proportional
+            // to signal level (no xruns, normal CPU). The clamp above now limits
+            // correctly to full-scale.
+            constexpr double scale = 0x7FFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
@@ -1007,7 +1019,13 @@ namespace pipedal
 
             std::vector<float *> &buffers = this->devicePlaybackBuffers;
             int channels = this->playbackChannels;
-            constexpr double scale = 0x00FFFFFF;
+            // Signed 24-bit full-scale is 0x7FFFFF (2^23-1). The old value of
+            // 0x00FFFFFF mapped any float above 0.5 (-6 dBFS) to 0x800000.., i.e.
+            // past the signed-24-bit range, so the low 24 bits wrapped to the
+            // opposite polarity -> harsh high-frequency distortion proportional
+            // to signal level (no xruns, normal CPU). The clamp above now limits
+            // correctly to full-scale.
+            constexpr double scale = 0x7FFFFF;
             for (size_t frame = 0; frame < frames; ++frame)
             {
                 for (int channel = 0; channel < channels; ++channel)
