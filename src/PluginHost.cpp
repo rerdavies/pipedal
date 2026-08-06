@@ -138,15 +138,22 @@ void PluginHost::LilvUris::Initialize(LilvWorld *pWorld)
     atom__bufferType = lilv_new_uri(pWorld, LV2_ATOM__bufferType);
     atom__Path = lilv_new_uri(pWorld, LV2_ATOM__Path);
     atom__String = lilv_new_uri(pWorld, LV2_ATOM__String);
+    atom__Float = lilv_new_uri(pWorld, LV2_ATOM__Float);
     presets__preset = lilv_new_uri(pWorld, LV2_PRESETS__Preset);
     state__state = lilv_new_uri(pWorld, LV2_STATE__state);
     rdfs__label = lilv_new_uri(pWorld, LILV_NS_RDFS "label");
+    rdf__value = lilv_new_uri(pWorld, LILV_NS_RDF "value");
 
     lv2core__symbol = lilv_new_uri(pWorld, LV2_CORE__symbol);
     lv2core__name = lilv_new_uri(pWorld, LV2_CORE__name);
     lv2core__shortName = lilv_new_uri(pWorld, LV2_CORE_PREFIX "shortName"); // ?? from mod sources
     lv2core__index = lilv_new_uri(pWorld, LV2_CORE__index);
     lv2core__Parameter = lilv_new_uri(pWorld, LV2_CORE_PREFIX "Parameter");
+    lv2core__minimum = lilv_new_uri(pWorld, LV2_CORE_PREFIX "minimum");
+    lv2core__maximum = lilv_new_uri(pWorld, LV2_CORE_PREFIX "maximum");
+    lv2core__default = lilv_new_uri(pWorld, LV2_CORE_PREFIX "default");
+    lv2core__portProperty = lilv_new_uri(pWorld, LV2_CORE_PREFIX "portProperty");
+    lv2core__scalePoint = lilv_new_uri(pWorld, LV2_CORE_PREFIX "scalePoint");
     lv2core__minorVersion = lilv_new_uri(pWorld, LV2_CORE__minorVersion);
     lv2core__microVersion = lilv_new_uri(pWorld, LV2_CORE__microVersion);
 
@@ -801,7 +808,10 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                 {
                     if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__String))
                     {
-                        
+                        // String properties have no generic control, but they don't make a plugin unusable either.
+                    } else if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__Float))
+                    {
+                        // Numeric patch properties are rendered with generic PiPedal controls.
                     } else {
                         std::string strPluginUri = pluginUri.AsUri();
                         if (strPluginUri == "urn:brummer:neuralrack") {
@@ -2217,6 +2227,11 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
     {
         this->type_ = range.AsUri();
     }
+    AutoLilvNode label = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->rdfs__label, nullptr);
+    if (label)
+    {
+        this->label_ = label.AsString();
+    }
     AutoLilvNode comment = lilv_world_get(pWorld, propertyUri, pluginHost->lilvUris->rdfs__Comment, nullptr);
     if (comment)
     {
@@ -2247,6 +2262,45 @@ Lv2PatchPropertyInfo::Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNod
         std::string strSupportedExtensions = modSupportedExtensionsNode.AsString();
         this->supportedExtensions_ = split(strSupportedExtensions, ',');
     }
+
+    // Range and presentation metadata, so a numeric patch property can be
+    // rendered with the same controls as an ordinary control port. Absent
+    // values fall back to a plain 0..1 range.
+    AutoLilvNode minValue = lilv_world_get(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__minimum, nullptr);
+    AutoLilvNode maxValue = lilv_world_get(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__maximum, nullptr);
+    AutoLilvNode defaultValue = lilv_world_get(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__default, nullptr);
+    this->minValue_ = minValue.AsFloat(0);
+    this->maxValue_ = maxValue.AsFloat(1);
+    this->defaultValue_ = defaultValue.AsFloat(this->minValue_);
+    this->logarithmic_ = lilv_world_ask(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__portProperty, pluginHost->lilvUris->port_logarithmic);
+    this->integer_ = lilv_world_ask(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__portProperty, pluginHost->lilvUris->integer_property_uri);
+    this->enumeration_ = lilv_world_ask(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__portProperty, pluginHost->lilvUris->enumeration_property_uri);
+    this->toggled_ = lilv_world_ask(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__portProperty, pluginHost->lilvUris->core__toggled);
+
+    AutoLilvNodes scalePointNodes = lilv_world_find_nodes(
+        pWorld, propertyUri, pluginHost->lilvUris->lv2core__scalePoint, nullptr);
+    LILV_FOREACH(nodes, iNode, scalePointNodes)
+    {
+        AutoLilvNode scalePointNode = lilv_nodes_get(scalePointNodes, iNode);
+        AutoLilvNode scalePointLabel = lilv_world_get(
+            pWorld, scalePointNode, pluginHost->lilvUris->rdfs__label, nullptr);
+        AutoLilvNode scalePointValue = lilv_world_get(
+            pWorld, scalePointNode, pluginHost->lilvUris->rdf__value, nullptr);
+        if (scalePointValue)
+        {
+            this->scalePoints_.emplace_back(
+                scalePointValue.AsFloat(0),
+                scalePointLabel ? scalePointLabel.AsString() : "");
+        }
+    }
+    std::sort(this->scalePoints_.begin(), this->scalePoints_.end(), scale_points_sort_compare);
 }
 
 // ffs.
@@ -2470,11 +2524,22 @@ json_map::storage_type<Lv2PluginUiInfo>
         }};
 JSON_MAP_BEGIN(Lv2PatchPropertyInfo)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, uri)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, writable)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, readable)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, label)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, index)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, type)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, comment)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, shortName)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, fileTypes)
 JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, supportedExtensions)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, minValue)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, maxValue)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, defaultValue)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, logarithmic)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, integer)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, enumeration)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, toggled)
+JSON_MAP_REFERENCE(Lv2PatchPropertyInfo, scalePoints)
 
 JSON_MAP_END()
