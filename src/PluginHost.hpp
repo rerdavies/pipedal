@@ -349,6 +349,14 @@ namespace pipedal
         std::string shortName_;
         std::vector<std::string> fileTypes_;
         std::vector<std::string> supportedExtensions_;
+        float minValue_ = 0;
+        float maxValue_ = 1;
+        float defaultValue_ = 0;
+        bool logarithmic_ = false;
+        bool integer_ = false;
+        bool enumeration_ = false;
+        bool toggled_ = false;
+        std::vector<Lv2ScalePoint> scalePoints_;
 
     public:
         Lv2PatchPropertyInfo() {}
@@ -364,6 +372,14 @@ namespace pipedal
         LV2_PROPERTY_GETSET(shortName);
         LV2_PROPERTY_GETSET(fileTypes);
         LV2_PROPERTY_GETSET(supportedExtensions);
+        LV2_PROPERTY_GETSET_SCALAR(minValue);
+        LV2_PROPERTY_GETSET_SCALAR(maxValue);
+        LV2_PROPERTY_GETSET_SCALAR(defaultValue);
+        LV2_PROPERTY_GETSET_SCALAR(logarithmic);
+        LV2_PROPERTY_GETSET_SCALAR(integer);
+        LV2_PROPERTY_GETSET_SCALAR(enumeration);
+        LV2_PROPERTY_GETSET_SCALAR(toggled);
+        LV2_PROPERTY_GETSET(scalePoints);
 
         DECLARE_JSON_MAP(Lv2PatchPropertyInfo);
     };
@@ -818,6 +834,7 @@ namespace pipedal
             AutoLilvNode atom__bufferType;
             AutoLilvNode atom__Path;
             AutoLilvNode atom__String;
+            AutoLilvNode atom__Float;
             AutoLilvNode presets__preset;
             AutoLilvNode state__state;
             AutoLilvNode rdfs__label;
@@ -826,6 +843,12 @@ namespace pipedal
             AutoLilvNode lv2core__shortName;
             AutoLilvNode lv2core__index;
             AutoLilvNode lv2core__Parameter;
+            AutoLilvNode lv2core__minimum;
+            AutoLilvNode lv2core__maximum;
+            AutoLilvNode lv2core__default;
+            AutoLilvNode lv2core__portProperty;
+            AutoLilvNode lv2core__scalePoint;
+            AutoLilvNode rdf__value;
             AutoLilvNode lv2core__minorVersion;
             AutoLilvNode lv2core__microVersion;
             AutoLilvNode pipedalUI__ui;
