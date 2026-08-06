@@ -222,6 +222,10 @@ namespace pipedal
         virtual void SetNotificationCallbacks(IAudioHostCallbacks *pNotifyCallbacks) = 0;
 
         virtual void SetListenForMidiEvent(bool listen) = 0;
+        // When set, every MIDI channel-voice message is reported to
+        // OnNotifyMidiListen, not just the note-on/control-change subset that
+        // MIDI learn can bind to. Used by the MIDI monitor.
+        virtual void SetMonitorAllMidiEvents(bool monitor) = 0;
         virtual void SetListenForAtomOutput(bool listen) = 0;
 
         //virtual bool UpdatePluginStates(Pedalboard &pedalboard) = 0;
