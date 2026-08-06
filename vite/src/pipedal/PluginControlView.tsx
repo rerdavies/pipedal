@@ -635,6 +635,16 @@ const PluginControlView =
             isLandscapeGrid(): boolean {
                 return this.state.landscapeGrid;
             }
+            // The `data-pipedal-role` attributes emitted here and in
+            // controlNodesToNodes/renderPiPedalControl are a styling seam for
+            // custom plugin views: a view can wrap PluginControlView and restyle
+            // the control-group frames, titles and grid from its own stylesheet
+            // without this component having to know the plugin exists. The roles
+            // are "plugin-control-frame", "control-grid", "control-group",
+            // "control-group-title", "control-group-controls" and
+            // "custom-control"; `data-group-name` carries the LV2 port-group
+            // name so a view can style individual groups. They carry no
+            // behaviour and nothing reads them back.
             renderControlGroup(controlGroup: ControlGroup, key: string): ReactNode {
                 let isLandscapeGrid = this.state.landscapeGrid;
 
@@ -653,18 +663,21 @@ const PluginControlView =
                     );
                 }
                 return (
-                    <div key={key} className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}
+                    <div key={key}
+                        data-pipedal-role="control-group"
+                        data-group-name={controlGroup.name}
+                        className={!isLandscapeGrid ? classes.portGroup : classes.portGroupLandscape}
                         style={{ borderWidth: (controlGroup.name === "" ? 0 : undefined) }}
                     >
                         {controlGroup.name !== "" && (
-                            <div className={classes.portGroupTitle}>
+                            <div data-pipedal-role="control-group-title" className={classes.portGroupTitle}>
                                 <ToolTipEx title={controlGroup.name}
                                 >
                                     <Typography noWrap variant="caption" >{controlGroup.name}</Typography>
                                 </ToolTipEx>
                             </div>
                         )}
-                        <div className={
+                        <div data-pipedal-role="control-group-controls" className={
                             this.state.landscapeGrid ? classes.portGroupControlsLandscape : classes.portGroupControls} >
                             {
                                 controls
@@ -849,7 +862,11 @@ const PluginControlView =
                             );
                         } else {
                             result.push((
-                                <div key={"ctl" + (this.controlKeyIndex++)} className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding} >
+                                <div
+                                    key={"ctl" + (this.controlKeyIndex++)}
+                                    data-pipedal-role="custom-control"
+                                    className={hasGroups ? classes.portgroupControlPadding : classes.controlPadding}
+                                >
                                     {node as ReactNode}
                                 </div>
                             ));
@@ -1025,7 +1042,7 @@ const PluginControlView =
                 }
                 return (
                     <div className={scrollClass}>
-                        <div className={gridClass}  >
+                        <div data-pipedal-role="control-grid" className={gridClass}>
                             {
                                 nodes
                             }
@@ -1066,7 +1083,7 @@ const PluginControlView =
 
 
                 return (
-                    <div className={frameClass}>
+                    <div data-pipedal-role="plugin-control-frame" className={frameClass}>
                         <div className={classes.vuMeterL}>
                             <VuMeter displayText={true} display="input" instanceId={pedalboardItem.instanceId} />
                         </div>
