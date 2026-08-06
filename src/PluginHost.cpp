@@ -51,6 +51,7 @@
 #include "util.hpp"
 #include "ModFileTypes.hpp"
 #include <algorithm>
+#include <cctype>
 
 #include "Locale.hpp"
 
@@ -647,6 +648,17 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
     return p1->index() < p2->index();
 }
 
+static bool isSidechainGroupName(const Lv2PortGroup &portGroup)
+{
+    std::string text = portGroup.name() + " " + portGroup.symbol();
+    std::transform(
+        text.begin(), text.end(), text.begin(),
+        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return text.find("sidechain") != std::string::npos
+        || text.find("side chain") != std::string::npos
+        || text.find("side_chain") != std::string::npos;
+}
+
 bool Lv2PluginInfo::HasFactoryPresets(PluginHost *lv2Host, const LilvPlugin *plugin)
 {
     AutoLilvNodes nodes = lilv_plugin_get_related(plugin, lv2Host->lilvUris->presets__preset);
@@ -977,7 +989,9 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
                 {
                     if (pg->uri() == port->port_group())
                     {
-                        if (!pg->sideChainOf().empty())
+                        // JUCE exports named sidechain groups but currently omits
+                        // pg:sideChainOf, so retain the semantic group-name fallback.
+                        if (!pg->sideChainOf().empty() || isSidechainGroupName(*pg))
                         {
                             port->is_sidechain(true);
                             audio_sidechain_title_ = pg->name();
