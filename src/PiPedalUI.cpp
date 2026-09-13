@@ -377,8 +377,8 @@ UiPortNotification::UiPortNotification(PluginHost *pHost, const LilvNode *node)
 
 UiFileProperty::UiFileProperty(const std::string&label, const std::string&patchProperty, const ModFileTypes&modFileTypes)
 : label_(label),
-    patchProperty_(patchProperty),
-    directory_("")
+    directory_(""),
+    patchProperty_(patchProperty)
 {
     setModFileTypes(modFileTypes);
 }
@@ -423,8 +423,9 @@ void UiFileProperty::setModFileTypes(const ModFileTypes&modFileTypes)
 
 UiFileProperty::UiFileProperty(const std::string &name, const std::string &patchProperty, const std::string &directory)
     : label_(name),
-      patchProperty_(patchProperty),
-      directory_(directory)
+      directory_(directory),
+      patchProperty_(patchProperty)
+      
 {
 }
 PiPedalUI::PiPedalUI(
@@ -551,15 +552,6 @@ const std::set<std::string>& UiFileProperty::GetPermittedFileExtensions(const st
     if (result != fileExtensionsByModDirectory.end())
     {
         return result->second;
-    }
-    if (modDirectory == this->directory_)
-    {
-        std::set<std::string> result;
-        for (auto &x : this->fileTypes_)
-        {
-
-        }
-        return emptySet;
     }
     return emptySet;
 }

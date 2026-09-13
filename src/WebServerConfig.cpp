@@ -569,7 +569,7 @@ public:
 
                 res.set(HttpField::content_type, PLUGIN_PRESETS_MIME_TYPE);
                 res.set(HttpField::cache_control, "no-cache");
-                res.setContentLength(content.length());
+                res.setContentLength(contentLength);
                 res.set(HttpField::content_disposition, GetContentDispositionHeader(name, PLUGIN_PRESETS_EXTENSION));
                 return;
             }
@@ -1412,7 +1412,6 @@ static std::string StripPortNumber(const std::string& fromAddress)
     if (address.size() == 0)
         return fromAddress;
 
-    char lastChar = address[address.size() - 1];
     size_t pos = address.find_last_of(':');
 
     // if ipv6, make sure we found an actual port address.

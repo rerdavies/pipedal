@@ -237,7 +237,7 @@ void UpdaterImpl::Stop()
     if (event_writer != -1)
     {
         uint64_t value = CLOSE_EVENT;
-        auto _ = write(this->event_writer, &value, sizeof(uint64_t));
+        (void)write(this->event_writer, &value, sizeof(uint64_t));
     }
     if (thread)
     {
@@ -257,7 +257,7 @@ void UpdaterImpl::Stop()
 void UpdaterImpl::CheckNow()
 {
     uint64_t value = CHECK_NOW_EVENT;
-    auto _ = write(this->event_writer, &value, sizeof(uint64_t));
+    (void)write(this->event_writer, &value, sizeof(uint64_t));
 }
 
 void UpdaterImpl::SetUpdateListener(UpdateListener &&listener)
@@ -438,7 +438,7 @@ bool UpdateStatus::UpdateAvailable() const
         case UpdatePolicyT::ReleaseOnly:
             return this->releaseOnlyRelease_.UpdateAvailable();
         case UpdatePolicyT::ReleaseOrBeta:
-        this->releaseOrBetaRelease_.UpdateAvailable();
+            return this->releaseOrBetaRelease_.UpdateAvailable();
         default:
         case UpdatePolicyT::Disabled:
             return false;
@@ -508,35 +508,35 @@ UpdateRelease UpdaterImpl::getUpdateRelease(
     return UpdateRelease();
 }
 
-static void CheckUpdateHttpResponse(std::string errorCode)
-{
-    if (errorCode.starts_with("%"))
-    {
-        errorCode = errorCode.substr(1);
-    }
-    int code = -999;
-    {
-        std::istringstream ss{errorCode};
-        ss >> code;
-    }
-    if (code == -999)
-    {
-        throw std::runtime_error(SS("Invalid curl response: " << errorCode));
-    }
-    if (code == 200)
-    {
-        return;
-    }
-    if (code == 0)
-    {
-        throw std::runtime_error("PiPedal server can't reach the internet.");
-    }
+// static void CheckUpdateHttpResponse(std::string errorCode)
+// {
+//     if (errorCode.starts_with("%"))
+//     {
+//         errorCode = errorCode.substr(1);
+//     }
+//     int code = -999;
+//     {
+//         std::istringstream ss{errorCode};
+//         ss >> code;
+//     }
+//     if (code == -999)
+//     {
+//         throw std::runtime_error(SS("Invalid curl response: " << errorCode));
+//     }
+//     if (code == 200)
+//     {
+//         return;
+//     }
+//     if (code == 0)
+//     {
+//         throw std::runtime_error("PiPedal server can't reach the internet.");
+//     }
 
-    {
-        std::string message = SS("HTTP error " << code << "");
-        throw std::runtime_error(message);
-    }
-}
+//     {
+//         std::string message = SS("HTTP error " << code << "");
+//         throw std::runtime_error(message);
+//     }
+// }
 
 static std::chrono::system_clock::time_point http_date_to_time_point(const std::string &http_date)
 {
@@ -916,7 +916,7 @@ void UpdaterImpl::SetUpdatePolicy(UpdatePolicyT updatePolicy)
 void UpdaterImpl::ForceUpdateCheck()
 {
     uint64_t value = UNCACHED_CHECK_NOW_EVENT;
-    auto _ = write(this->event_writer, &value, sizeof(uint64_t));
+    (void)write(this->event_writer, &value, sizeof(uint64_t));
 }
 
 UpdateStatus::UpdateStatus()

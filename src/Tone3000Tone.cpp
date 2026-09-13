@@ -25,6 +25,8 @@
 #include "ss.hpp"
 
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 
 using namespace pipedal;
 using namespace pipedal::tone3000;
@@ -242,6 +244,7 @@ namespace
         case LicenseFlags::Cc:
             url = "img/cc.svg";
             break;
+        case LicenseFlags::CcBy:
         case LicenseFlags::By:
             url = "img/by.svg";
             break;

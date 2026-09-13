@@ -42,6 +42,7 @@
 using namespace pipedal;
 namespace fs = std::filesystem;
 
+#pragma GCC diagnostic ignored "-Wunused-function"
 
 // Pulls in the define for T3kConfig.h
 
@@ -88,7 +89,7 @@ namespace {
             result.push_back('=');
         }
 
-        for (char &ch : result)
+        for (char& ch : result)
         {
             if (ch == '+')
             {
@@ -119,18 +120,18 @@ namespace {
 }
 
 
-std::string pipedal::Sha256Base64Url(const std::string &text)
+std::string pipedal::Sha256Base64Url(const std::string& text)
 {
     std::array<unsigned char, EVP_MAX_MD_SIZE> digest{};
     size_t digestLength = 0;
     if (EVP_Q_digest(
-            nullptr,
-            "SHA256",
-            nullptr,
-            reinterpret_cast<const unsigned char *>(text.data()),
-            text.size(),
-            digest.data(),
-            &digestLength)
+        nullptr,
+        "SHA256",
+        nullptr,
+        reinterpret_cast<const unsigned char*>(text.data()),
+        text.size(),
+        digest.data(),
+        &digestLength)
         != 1)
     {
         throw std::runtime_error("EVP_Q_digest(SHA256) failed.");
@@ -138,8 +139,8 @@ std::string pipedal::Sha256Base64Url(const std::string &text)
     return Base64UrlEncode(digest.data(), digestLength);
 }
 
-static const std::filesystem::path WEB_TEMP_DIR{"/var/pipedal/web_temp"};
-static const std::filesystem::path TONE3000_THUMBNAIL_PATH{"/var/pipedal/tone3000_thumbnails"};
+static const std::filesystem::path WEB_TEMP_DIR{ "/var/pipedal/web_temp" };
+static const std::filesystem::path TONE3000_THUMBNAIL_PATH{ "/var/pipedal/tone3000_thumbnails" };
 
 class Tone3000CancelledError : std::exception
 {
@@ -147,7 +148,7 @@ public:
     Tone3000CancelledError() = default;
     virtual ~Tone3000CancelledError() = default;
 
-    virtual const char *what() const noexcept override
+    virtual const char* what() const noexcept override
     {
         std::exception::what();
         return "Canceled.";
@@ -176,9 +177,9 @@ Tone3000DownloaderImpl::~Tone3000DownloaderImpl()
     this->thread = nullptr;
 }
 
-void Tone3000DownloaderImpl::SetListener(Listener *listener)
+void Tone3000DownloaderImpl::SetListener(Listener* listener)
 {
-    std::lock_guard<std::mutex> lockGuard{this->mutex};
+    std::lock_guard<std::mutex> lockGuard{ this->mutex };
     this->listener = listener;
 }
 
@@ -191,9 +192,9 @@ Tone3000DownloaderImpl::handle_t Tone3000DownloaderImpl::NextHandle()
 void Tone3000DownloaderImpl::CancelDownload(
     handle_t handle)
 {
-    std::lock_guard<std::mutex> lockGuard{this->mutex};
+    std::lock_guard<std::mutex> lockGuard{ this->mutex };
     requestQueue.Erase([handle](std::shared_ptr<DownloadRequest> entry)
-                       { return entry->handle = handle; });
+        { return entry->handle = handle; });
     if (activeRequest)
     {
         if (activeRequest->handle == handle)
@@ -205,9 +206,9 @@ void Tone3000DownloaderImpl::CancelDownload(
 
 void Tone3000DownloaderImpl::Close()
 {
-    bool notify = false;
     {
-        std::lock_guard<std::mutex> lockGuard{this->mutex};
+        std::lock_guard<std::mutex> lockGuard{ this->mutex };
+        bool notify = false;
         if (!closed)
         {
             closed = true;
@@ -217,9 +218,12 @@ void Tone3000DownloaderImpl::Close()
         Tone3000DownloadProgress progress;
         fgDownloadProgress = progress;
 
-        if (listener)
+        if (notify)
         {
-            listener->OnTone3000Progress(progress);
+            if (listener)
+            {
+                listener->OnTone3000Progress(progress);
+            }
         }
         if (this->activeRequest != nullptr)
         {
@@ -232,16 +236,16 @@ Tone3000DownloadProgress Tone3000DownloaderImpl::GetDownloadStatus()
 {
     Tone3000DownloadProgress result;
     {
-        std::lock_guard<std::mutex> lockGuard{this->mutex};
+        std::lock_guard<std::mutex> lockGuard{ this->mutex };
         result = fgDownloadProgress;
     }
     return result;
 }
 
-void Tone3000DownloaderImpl::bgUpdateDownloadProgress(const Tone3000DownloadProgress &progress)
+void Tone3000DownloaderImpl::bgUpdateDownloadProgress(const Tone3000DownloadProgress& progress)
 {
 
-    std::lock_guard<std::mutex> lockGuard{this->mutex};
+    std::lock_guard<std::mutex> lockGuard{ this->mutex };
     if (closed)
     {
         return;
@@ -256,9 +260,9 @@ void Tone3000DownloaderImpl::bgUpdateDownloadProgress(const Tone3000DownloadProg
     }
 }
 
-static void ValidateTone3000Url(const std::string &url)
+static void ValidateTone3000Url(const std::string& url)
 {
-    uri downloadUri{url};
+    uri downloadUri{ url };
     if (!downloadUri.authority().ends_with(".tone3000.com"))
     {
         throw std::runtime_error("Invalid Tone3000 URL address.");
@@ -268,13 +272,13 @@ static void ValidateTone3000Url(const std::string &url)
 namespace
 {
     template <typename T>
-    static T ParseIntegerOrThrow(const std::string &text, const char *fieldName)
+    static T ParseIntegerOrThrow(const std::string& text, const char* fieldName)
     {
         static_assert(std::is_integral_v<T>, "ParseIntegerOrThrow requires an integral type.");
 
         T value{};
-        const char *begin = text.data();
-        const char *end = begin + text.size();
+        const char* begin = text.data();
+        const char* end = begin + text.size();
         auto [ptr, ec] = std::from_chars(begin, end, value);
         if (ec == std::errc::invalid_argument || ptr != end)
         {
@@ -292,7 +296,7 @@ void Tone3000DownloaderImpl::ThreadProc()
 {
     while (true)
     {
-        Listener *currentListener = nullptr;
+        Listener* currentListener = nullptr;
 
         Tone3000DownloadProgress progress;
 
@@ -303,7 +307,7 @@ void Tone3000DownloaderImpl::ThreadProc()
         }
 
         {
-            std::unique_lock<std::mutex> lock{this->mutex};
+            std::unique_lock<std::mutex> lock{ this->mutex };
             activeRequest = request;
             currentListener = listener;
         }
@@ -316,9 +320,9 @@ void Tone3000DownloaderImpl::ThreadProc()
 
         // Create cancellation predicate that checks the atomic flag
         auto isCancelled = [request]() -> bool
-        {
-            return request->cancelled.load();
-        };
+            {
+                return request->cancelled.load();
+            };
 
         try
         {
@@ -348,10 +352,10 @@ void Tone3000DownloaderImpl::ThreadProc()
             //     }
             // }
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             {
-                std::lock_guard lockGuard{mutex};
+                std::lock_guard lockGuard{ mutex };
                 // Notify error
                 if (!request->cancelled.load() && currentListener)
                 {
@@ -361,7 +365,7 @@ void Tone3000DownloaderImpl::ThreadProc()
         }
 
         {
-            std::lock_guard<std::mutex> lock{this->mutex};
+            std::lock_guard<std::mutex> lock{ this->mutex };
             activeRequest = nullptr;
         }
     }
@@ -371,9 +375,8 @@ void Tone3000DownloaderImpl::DownloadTone3000ToneBg(
     std::shared_ptr<DownloadRequest> request)
 {
     handle_t handle = request->handle;
-    uri requestUri{request->requestUri};
-    const Tone3000PkceParams &pkceParams = request->pkceParams;
-    const std::string &downloadPath = request->downloadPath;
+    uri requestUri{ request->requestUri };
+    const Tone3000PkceParams& pkceParams = request->pkceParams;
 
     Tone3000DownloadProgress progress;
     progress.handle(handle);
@@ -394,12 +397,12 @@ void Tone3000DownloaderImpl::DownloadTone3000ToneBg(
         }
         std::shared_ptr<Tone3000Download> download = GetTone3000Tone(oAuthResult.toneId.value());
     }
-    catch (const Tone3000CancelledError &e)
+    catch (const Tone3000CancelledError& e)
     {
         OnTone3000DownloadCancelled(progress.handle());
         return;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         OnTone3000DownloadError(progress.handle(), e.what());
         return;
@@ -408,8 +411,8 @@ void Tone3000DownloaderImpl::DownloadTone3000ToneBg(
 }
 
 Tone3000DownloaderImpl::OAuthCallbackResult Tone3000DownloaderImpl::handleOAuthCallback(
-    const uri &callbackUri,
-    const Tone3000PkceParams &pkce)
+    const uri& callbackUri,
+    const Tone3000PkceParams& pkce)
 {
     OAuthCallbackResult result;
 
@@ -445,16 +448,16 @@ Tone3000DownloaderImpl::OAuthCallbackResult Tone3000DownloaderImpl::handleOAuthC
             throw std::runtime_error("Tone3000 Auth: missing code.");
         }
 
-        std::string body = HtmlFormBuilder({{"grant_type", "authorization_code"},
+        std::string body = HtmlFormBuilder({ {"grant_type", "authorization_code"},
                                             {"code", code},
                                             {"code_verifier", codeVerifier},
                                             {"redirect_uri", pkce.redirectUrl()},
-                                            {"client_id", pkce.publishableKey()}})
-                               .build();
+                                            {"client_id", pkce.publishableKey()} })
+            .build();
 
         auto postResult = Post(
             uri("http://www.tone3000.com/api/v1/oauth/token"),
-            {{"Content-Type: application/x-www-form-urlencoded"}},
+            { {"Content-Type: application/x-www-form-urlencoded"} },
             body);
         if (!postResult.ok)
         {
@@ -474,7 +477,7 @@ Tone3000DownloaderImpl::OAuthCallbackResult Tone3000DownloaderImpl::handleOAuthC
         }
         return result;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         throw;
     }
@@ -492,15 +495,15 @@ std::string Tone3000DownloaderImpl::GetBearerToken() const
 
 
 std::string Tone3000DownloaderImpl::Tone3000GetText(
-    const uri &requestedUri
+    const uri& requestedUri
 )
 {
-    TemporaryFile tempFile{WEB_TEMP_DIR};
+    TemporaryFile tempFile{ WEB_TEMP_DIR };
 
-    std::vector<std::string> inputHeaders {
-        SS("Authorization: Bearer " << this->GetBearerToken())  
+    std::vector<std::string> inputHeaders{
+        SS("Authorization: Bearer " << this->GetBearerToken())
     };
-    int httpCode = CurlGet(requestedUri.str(),tempFile.Path(),nullptr,&inputHeaders);
+    int httpCode = CurlGet(requestedUri.str(), tempFile.Path(), nullptr, &inputHeaders);
     if (httpCode != 200)
     {
         throw std::runtime_error(
@@ -518,9 +521,9 @@ std::string Tone3000DownloaderImpl::Tone3000GetText(
 }
 
 Tone3000DownloaderImpl::PostResult Tone3000DownloaderImpl::Post(
-    const uri &requestedUri,
+    const uri& requestedUri,
     std::vector<std::string> headers,
-    const std::string &body)
+    const std::string& body)
 {
     PostResult result;
     try
@@ -544,7 +547,7 @@ Tone3000DownloaderImpl::PostResult Tone3000DownloaderImpl::Post(
             result.ok = true;
         }
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         result.ok = false;
         result.error = e.what();
@@ -552,7 +555,7 @@ Tone3000DownloaderImpl::PostResult Tone3000DownloaderImpl::Post(
     return result;
 }
 
-Tone3000AuthResponse::Tone3000AuthResponse(const std::string &responseBody)
+Tone3000AuthResponse::Tone3000AuthResponse(const std::string& responseBody)
 {
     std::stringstream ss(responseBody);
     json_reader reader(ss);
@@ -560,23 +563,23 @@ Tone3000AuthResponse::Tone3000AuthResponse(const std::string &responseBody)
     expires_at_ = clock_t::now() + std::chrono::seconds(expires_in_);
 }
 
-Tone3000AccessTokens::Tone3000AccessTokens(const Tone3000AuthResponse &authResponse)
+Tone3000AccessTokens::Tone3000AccessTokens(const Tone3000AuthResponse& authResponse)
     : access_token_(authResponse.access_token()),
-      expires_in_(authResponse.expires_in()),
-      refresh_token_(authResponse.refresh_token()),
-      token_type_(authResponse.token_type())
+    expires_in_(authResponse.expires_in()),
+    refresh_token_(authResponse.refresh_token()),
+    token_type_(authResponse.token_type())
 {
 }
 
 Tone3000DownloaderImpl::handle_t Tone3000DownloaderImpl::RequestTone3000Download(
-    const uri &uri,
-    const Tone3000PkceParams &pkceParams,
-    const std::string &downloadPath,
+    const uri& uri,
+    const Tone3000PkceParams& pkceParams,
+    const std::string& downloadPath,
     Tone3000DownloadType downloadType)
 {
     handle_t handle;
     {
-        std::lock_guard<std::mutex> lockGuard{this->mutex};
+        std::lock_guard<std::mutex> lockGuard{ this->mutex };
         handle = NextHandle();
         std::shared_ptr<DownloadRequest> request =
             std::make_shared<DownloadRequest>(handle, uri.str(), pkceParams, downloadPath, downloadType);
@@ -586,14 +589,14 @@ Tone3000DownloaderImpl::handle_t Tone3000DownloaderImpl::RequestTone3000Download
         if (!this->thread)
         {
             this->thread = std::make_unique<std::jthread>([this]
-                                                          { this->ThreadProc(); });
+                { this->ThreadProc(); });
         }
     }
     return handle;
 }
 
 
-static void cancellableSleep(std::chrono::steady_clock::duration duration, std::function<bool()> &isCancelled)
+static void cancellableSleep(std::chrono::steady_clock::duration duration, std::function<bool()>& isCancelled)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     while (true)
@@ -610,7 +613,7 @@ static void cancellableSleep(std::chrono::steady_clock::duration duration, std::
     }
 }
 
-static std::string mdSanitize(const std::string &str, const std::string &illegalCharacters = "")
+static std::string mdSanitize(const std::string& str, const std::string& illegalCharacters = "")
 {
     std::ostringstream os;
     for (char c : str)
@@ -632,7 +635,7 @@ static std::string mdSanitize(const std::string &str, const std::string &illegal
     return os.str();
 }
 
-static std::string mdDate(const tone3000_time_point &date_)
+static std::string mdDate(const tone3000_time_point& date_)
 {
     std::ostringstream os;
     // C++ doesn't handle timezones. Just zap the timezone, and replace it with "Z"
@@ -658,7 +661,7 @@ static std::string mdDate(const tone3000_time_point &date_)
     return os.str();
 }
 
-static std::string mdEnum(const std::string &value, const std::map<std::string, std::string> &enumValues)
+static std::string mdEnum(const std::string& value, const std::map<std::string, std::string>& enumValues)
 {
     auto ff = enumValues.find(value);
     if (ff == enumValues.end())
@@ -669,8 +672,8 @@ static std::string mdEnum(const std::string &value, const std::map<std::string, 
 }
 
 static std::string mdEnumList(
-    const std::vector<std::string> &values,
-    const std::map<std::string, std::string> &enumValues)
+    const std::vector<std::string>& values,
+    const std::map<std::string, std::string>& enumValues)
 {
     if (values.size() == 1)
     {
@@ -679,7 +682,7 @@ static std::string mdEnumList(
     std::ostringstream os;
     os << '[';
     bool first = true;
-    for (const auto &value : values)
+    for (const auto& value : values)
     {
         if (first)
         {
@@ -696,26 +699,26 @@ static std::string mdEnumList(
 }
 
 static std::map<std::string, std::string> sizeEnumValues =
-    {
-        {"standard", "Standard"},
-        {"lite", "Lite"},
-        {"feather", "Feather"},
-        {"nano", "Nano"},
-        {"custom", "Custom"}};
-static std::string mdSizes(const std::vector<std::string> &sizes)
+{
+    {"standard", "Standard"},
+    {"lite", "Lite"},
+    {"feather", "Feather"},
+    {"nano", "Nano"},
+    {"custom", "Custom"} };
+static std::string mdSizes(const std::vector<std::string>& sizes)
 {
     return mdEnumList(sizes, sizeEnumValues);
 }
 
 static std::map<std::string, std::string> gearEnumValues =
-    {
-        {"amp", "Amp only"},
-        {"full-rig", "Full rig"},
-        {"pedal", "Pedal"},
-        {"outboard", "Outboard"},
-        {"ir", "IR"}};
+{
+    {"amp", "Amp only"},
+    {"full-rig", "Full rig"},
+    {"pedal", "Pedal"},
+    {"outboard", "Outboard"},
+    {"ir", "IR"} };
 
-static std::string mdGear(const std::string &gear)
+static std::string mdGear(const std::string& gear)
 {
     return mdEnum(gear, gearEnumValues);
 }
@@ -793,7 +796,7 @@ static std::vector<LicenseInfo> licenses{
 static std::map<std::string, LicenseInfo> makeLicenseEnum()
 {
     std::map<std::string, LicenseInfo> result;
-    for (const auto &license : licenses)
+    for (const auto& license : licenses)
     {
         result[license.key] = license;
     }
@@ -812,6 +815,7 @@ static std::string mdLicenseIcon(LicenseFlags licenseFlag)
     case LicenseFlags::Cc:
         url = "img/cc.svg";
         break;
+    case LicenseFlags::CcBy:
     case LicenseFlags::By:
         url = "img/by.svg";
         break;
@@ -835,7 +839,7 @@ static std::string mdLicenseIcon(LicenseFlags licenseFlag)
     return os.str();
 }
 
-static void mdEscapeString(std::ostream &f, const std::string &str)
+static void mdEscapeString(std::ostream& f, const std::string& str)
 {
     size_t ix = 0;
     while (ix < str.size())
@@ -859,7 +863,7 @@ static void mdEscapeString(std::ostream &f, const std::string &str)
     }
 }
 
-static std::string mdHref(const std::string &url)
+static std::string mdHref(const std::string& url)
 {
     std::ostringstream os;
     os << '\'';
@@ -874,7 +878,7 @@ static std::string mdHref(const std::string &url)
     os << '\'';
     return os.str();
 }
-static std::string mdLicense(const std::string &license)
+static std::string mdLicense(const std::string& license)
 {
 
     auto ff = licenseEnum.find(license);
@@ -892,7 +896,7 @@ static std::string mdLicense(const std::string &license)
 
     if (licenseInfo.licenseFlags != LicenseFlags::None)
     {
-        for (LicenseFlags licenseFlag : std::vector<LicenseFlags>{LicenseFlags::Cc, LicenseFlags::By, LicenseFlags::Cc0, LicenseFlags::Nc, LicenseFlags::Sa, LicenseFlags::Nd})
+        for (LicenseFlags licenseFlag : std::vector<LicenseFlags>{ LicenseFlags::Cc, LicenseFlags::By, LicenseFlags::Cc0, LicenseFlags::Nc, LicenseFlags::Sa, LicenseFlags::Nd })
         {
             if (licenseInfo.licenseFlags & licenseFlag)
             {
@@ -905,8 +909,8 @@ static std::string mdLicense(const std::string &license)
     if (licenseInfo.url != "")
     {
         os << "<a href="
-           << mdHref(licenseInfo.url)
-           << " target='_blank' rel='noopener noreferrer' >" << mdSanitize(licenseInfo.displayName) << "</a>";
+            << mdHref(licenseInfo.url)
+            << " target='_blank' rel='noopener noreferrer' >" << mdSanitize(licenseInfo.displayName) << "</a>";
     }
     else
     {
@@ -924,27 +928,27 @@ static std::string mdLicense(const std::string &license)
 //     return os.str();
 // }
 static std::map<std::string, std::string> platformEnumValues =
-    {
-        {"nam", "NAM"},
-        {"ir", "IR"},
-        {"aida-x", "Aida X"},
-        {"aa-snapshot", "aa-snapshot"},
-        {"proteus", "Proteus"}};
-static std::string mdPlatform(const std::string &platform)
+{
+    {"nam", "NAM"},
+    {"ir", "IR"},
+    {"aida-x", "Aida X"},
+    {"aa-snapshot", "aa-snapshot"},
+    {"proteus", "Proteus"} };
+static std::string mdPlatform(const std::string& platform)
 {
     return mdEnum(platform, platformEnumValues);
 }
-static std::string mdUser(const std::string &user)
+static std::string mdUser(const std::string& user)
 {
     return mdSanitize(user);
 }
 
-static void mdLink(std::ostream &f, const std::string &label, const std::string &url)
+static void mdLink(std::ostream& f, const std::string& label, const std::string& url)
 {
     f << "[" << mdSanitize(label, "]") << "](" << mdSanitize(url, ")") << ")";
 }
 
-static void writeReadme(const fs::path &path, const std::string &thumbnailUrl, const Tone3000FileDownloadRequest &download)
+static void writeReadme(const fs::path& path, const std::string& thumbnailUrl, const Tone3000FileDownloadRequest& download)
 {
     //     std::ofstream of{path};
     //     if (!of.is_open())
@@ -1011,14 +1015,14 @@ static void writeReadme(const fs::path &path, const std::string &thumbnailUrl, c
     //     }
 }
 
-static void CleanUpFailedDownload(const std::filesystem::path &folder, const std::vector<CurlDownloadRequest> &requests)
+static void CleanUpFailedDownload(const std::filesystem::path& folder, const std::vector<CurlDownloadRequest>& requests)
 {
 
     std::error_code ec; // do NOT throw errors.
 
     if (fs::exists(folder))
     {
-        for (const auto &request : requests)
+        for (const auto& request : requests)
         {
             if (fs::exists(request.outputFile))
             {
@@ -1040,19 +1044,19 @@ static void CleanUpFailedDownload(const std::filesystem::path &folder, const std
                 fs::remove(folder, ec); // ignoring errors.
             }
         }
-        catch (const std::exception &)
+        catch (const std::exception&)
         {
         }
     }
 }
 
-static std::string GetHeader(const std::string &headerName, const std::vector<std::string> &htmlHeaders)
+static std::string GetHeader(const std::string& headerName, const std::vector<std::string>& htmlHeaders)
 {
     std::string needle = headerName;
     std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c)
-                   { return std::tolower(c); });
+        { return std::tolower(c); });
 
-    for (const auto &header : htmlHeaders)
+    for (const auto& header : htmlHeaders)
     {
         auto pos = header.find(':');
         if (pos == std::string::npos)
@@ -1061,7 +1065,7 @@ static std::string GetHeader(const std::string &headerName, const std::vector<st
         }
         std::string name = header.substr(0, pos);
         std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c)
-                       { return std::tolower(c); });
+            { return std::tolower(c); });
         if (name != needle)
         {
             continue;
@@ -1078,7 +1082,7 @@ static std::string GetHeader(const std::string &headerName, const std::vector<st
     return "";
 }
 
-static bool CancellableSleep(std::chrono::steady_clock::duration duration, std::function<bool()> &isCancelled)
+static bool CancellableSleep(std::chrono::steady_clock::duration duration, std::function<bool()>& isCancelled)
 {
     using clock_t = std::chrono::steady_clock;
 
@@ -1099,8 +1103,8 @@ static bool CancellableSleep(std::chrono::steady_clock::duration duration, std::
     }
 }
 std::string Tone3000DownloaderImpl::DownloadTone3000Files(
-    const Tone3000FileDownloadRequest &request,
-    Tone3000DownloadProgress &progress)
+    const Tone3000FileDownloadRequest& request,
+    Tone3000DownloadProgress& progress)
 {
 
     // fs::path bundlePath = fs::path(request.downloadPath()) / StringToSafeFilename(request.title());
@@ -1263,12 +1267,12 @@ std::shared_ptr<Tone3000Download> Tone3000DownloaderImpl::GetTone3000Tone(
 {
     std::string jsonResult = Tone3000GetText(SS("https://www.tone3000.com/api/v1/tones/" << toneId));
     std::shared_ptr<Tone3000Download> tone = std::make_shared<Tone3000Download>(jsonResult);
-    
+
     return tone;
 }
 
 Tone3000PkceParams::Tone3000PkceParams(
-    const std::string &redirectUrl)
+    const std::string& redirectUrl)
 {
 
     this->publishableKey_ = PIPEDAL_T3K_PUBLISHABLE_KEY;

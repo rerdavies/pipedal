@@ -8,8 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 
 include(FindPkgConfig)
- 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug build")
@@ -99,6 +97,7 @@ add_library(PiPedalCommon STATIC
 target_include_directories(PiPedalCommon PUBLIC "include" ${LIBNL3_INCLUDE_DIRS})
 target_link_libraries(PiPedalCommon PUBLIC ${LIBNL3_LIBRARIES} sdbus-c++-objlib asound
  )
+target_compile_options(PiPedalCommon PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS}) 
 
 
 

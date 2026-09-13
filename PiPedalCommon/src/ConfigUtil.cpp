@@ -34,7 +34,6 @@ static std::string getKey(const std::string &line, size_t length)
     std::stringstream s;
     size_t start = 0;
     size_t end = length;
-    char c;
     while (start < end && (line[start] == ' ' || line[start] == '\t'))
         ++start;
 
@@ -63,7 +62,6 @@ static std::string unquote(const std::string &value)
         if (
             (value[0] == '\'' && value[value.length() - 1] == '\'') || (value[0] == '\"' && value[value.length() - 1] == '\"'))
         {
-            char quotChar = value[0];
 
             std::stringstream ss;
             for (size_t i = 1; i < value.length() - 1; ++i)

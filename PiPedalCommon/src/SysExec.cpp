@@ -90,7 +90,6 @@ int pipedal::silentSysExec(const char *szCommand)
 int pipedal::sysExec(const char *szCommand)
 {
     char *args = strdup(szCommand);
-    int argc;
     std::vector<char *> argv;
 
     char *p = args;
@@ -156,7 +155,6 @@ std::string pipedal::getSelfExePath()
 ProcessId pipedal::sysExecAsync(const std::string&command)
 {
     char *args = strdup(command.c_str());
-    int argc;
     std::vector<char *> argv;
 
     char *p = args;

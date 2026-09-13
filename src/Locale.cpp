@@ -94,7 +94,7 @@ static int getICUVersion(void* libHandle) {
 
     // pares the dlerror to get the version number. :-/
     dlerror(); // clear the error.
-    void * nonExistentFunction = dlsym(libHandle, "nonExistentFunction");
+    (void)dlsym(libHandle, "nonExistentFunction");
 
     std::string error = dlerror();
     // "/lib/aarch64-linux-gnu/libicui18n.so.74: undefined symbol: nonExistentFunction"
@@ -172,10 +172,11 @@ public:
     ucol_strcoll_t ucol_strcoll_fn;
     ucol_setStrength_t ucol_setStrength_fn;
 
-    DynamicIcuLoader() : library_handle(nullptr),
-                         ucol_open_fn(nullptr),
+    DynamicIcuLoader() : ucol_open_fn(nullptr),
                          ucol_close_fn(nullptr),
-                         ucol_strcoll_fn(nullptr)
+                         ucol_strcoll_fn(nullptr),
+                         library_handle(nullptr)
+                         
     {
 #ifndef DISABLE_DYNAMIC_ICU_LOADER
         load();

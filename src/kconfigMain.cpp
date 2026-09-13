@@ -115,10 +115,10 @@ RadioboxOption CustomRadioboxOption(int *value, int *forceFocus)
         auto prefix = text(s.state ? "◉ " : "○ "); // NOLINT
 #endif
         auto t = text(s.label);
-        if (s.active != s.focused)
-        {
-            s.label;
-        }
+        // if (s.active != s.focused)
+        // {
+        //     s.label;
+        // }
         if (s.active)
         {
             t = t | color(Color::Red);
@@ -152,7 +152,7 @@ CheckboxOption CustomCheckboxOption(bool *forceFocus)
         auto t = text(s.label);
         if (s.active != s.focused)
         {
-            s.label;
+            //s.label;
         }
         if (s.active)
         {
@@ -191,7 +191,7 @@ CheckboxOption CustomRadioCheckboxOption(bool *selections, size_t size, size_t i
         auto t = text(s.label);
         if (s.active != s.focused)
         {
-            s.label;
+            //s.label;
         }
         if (s.active)
         {
@@ -217,8 +217,6 @@ void setBootParameters(std::shared_ptr<BootConfig> newConfig, std::function<void
 void kconfigUi(void)
 {
     const std::string kernelType = "PREEMPT_DYNAMIC";
-
-    int kernelMode = 0;
 
     const int NO_DIALOG = 0;
     const int PROCESSING_DIALOG = 1;

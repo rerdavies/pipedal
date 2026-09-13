@@ -142,7 +142,7 @@ namespace pipedal
     public:
         virtual ~json_member_reference_base() {}
         const char *name() { return this->name_; }
-        virtual bool canWrite(const CLASS *self) { return true; }
+        virtual bool canWrite(const CLASS *self) { (void)self; return true; }
         virtual void read_value(json_reader &reader, CLASS *self) = 0;
         virtual void write_value(json_writer &writer, const CLASS *self) = 0;
     };
@@ -360,7 +360,7 @@ namespace pipedal
         }
         using string_view = std::string_view;
         json_writer(std::ostream &os, bool compressed = true, bool allowNaN = false)
-            : os(os), compressed(compressed), allowNaN_(allowNaN), indent_level(0)
+            : allowNaN_(allowNaN), os(os), indent_level(0), compressed(compressed)
         {
             this->CRLF = compressed ? "" : "\r\n";
         }

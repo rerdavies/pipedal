@@ -50,7 +50,7 @@ static std::optional<std::string> readFile(const fs::path& path) {
 
 static bool isCpuThermal(const fs::path &zone_path) {
     auto type = readFile(zone_path / "type");
-    return type && (*type == "cpu-thermal") || (*type == "x86_pkg_temp");
+    return type && ((*type == "cpu-thermal") || (*type == "x86_pkg_temp"));
 }
 
 

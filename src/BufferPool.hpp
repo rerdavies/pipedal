@@ -38,7 +38,7 @@ public:
     TYPE *AllocateBuffer(size_t size)
     {
         TYPE *result= new TYPE[size];
-        for (int i = 0; i < size; ++i)
+        for (size_t i = 0; i < size; ++i)
         {
             result[i] = 0;
         }
@@ -47,7 +47,7 @@ public:
     }
 
     void Clear() {
-        for (int i = 0; i < allocatedBuffers.size(); ++i)
+        for (size_t i = 0; i < allocatedBuffers.size(); ++i)
         {
             delete[] (char*)(allocatedBuffers[i]);
         }

@@ -243,7 +243,6 @@ int uri::query_count() const
     const char *p = query_start;
     while (p != query_end && *p != '#')
     {
-        const char *nameStart = p;
         while (p != query_end && *p != '&' && *p != '#')
         {
             ++p;

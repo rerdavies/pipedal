@@ -69,7 +69,7 @@ AtomConverter::AtomConverter(MapFeature &map)
 json_variant AtomConverter::ToJson(const LV2_Atom *atom)
 {
     json_variant variant = ToVariant(const_cast<LV2_Atom*>(atom));
-    return std::move(variant);
+    return variant;
 }
 
 LV2_Atom*AtomConverter::ToAtom(const std::string&jsonString)
@@ -322,7 +322,7 @@ json_variant AtomConverter::ToVariant(LV2_Atom *atom)
         object[VTYPE_TAG] = json_variant(std::string(TypeUridToString(pVal->body.child_type)));
         object["value"] = std::move(vArray);
 
-        return std::move(object);
+        return object;
     } else if (atom->type == urids.ATOM__Property)
     {
         throw std::logic_error("Not implemented.");
@@ -378,7 +378,6 @@ bool AtomConverter::AreTypesTheSame(LV2_Atom*left, LV2_Atom *right) const
 
 void AtomConverter::ObjectToForge(const json_variant&json)
 {
-    LV2_URID bodyId = 0;
     assert(json.is_object());
     std::string oType = json[OTYPE_TAG].as_string();
     if (oType == SHORT_ATOM__Int)

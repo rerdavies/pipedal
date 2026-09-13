@@ -165,20 +165,15 @@ namespace
         std::vector<DbFileInfo> QueryTracks();
 
         bool opened = false;
+        fs::path path;
         std::filesystem::path indexPath;
         void OpenAudioDb();
         ThumbnailTemporaryFile GetUnindexedThunbnail(const std::string &fileNameOnly, int32_t width, int32_t height);
 
         std::shared_ptr<AudioFilesDb> audioFilesDb;
-        fs::path path;
         using id_t = int64_t;
 
         std::vector<DbFileInfo> UpdateDbFiles();
-        void DbSetThumbnailType(
-            int64_t idFile,
-            ThumbnailType thumbnailType,
-            const std::string &thumbnailFile = "",
-            int64_t thumbnailLastModified = 0);
         void DbSetThumbnailType(
             const std::string &fileNameOnly,
             ThumbnailType thumbnailType,
@@ -466,6 +461,7 @@ std::vector<DbFileInfo> AudioDirectoryInfoImpl::UpdateDbFiles()
         transaction->commit();
         transaction = nullptr;
     }
+    (void)(updateRequired);
     return dbFiles;
 }
 
@@ -551,21 +547,6 @@ fs::path AudioDirectoryInfoImpl::GetFolderFile() const
     return {};
 }
 
-void AudioDirectoryInfoImpl::DbSetThumbnailType(
-    int64_t idFile,
-    ThumbnailType thumbnailType,
-    const std::string &thumbnailFile,
-    int64_t thumbnailLastModified)
-{
-    if (audioFilesDb)
-    {
-        audioFilesDb->UpdateThumbnailInfo(
-            idFile,
-            thumbnailType,
-            thumbnailFile,
-            thumbnailLastModified);
-    }
-}
 void AudioDirectoryInfoImpl::DbSetThumbnailType(
     const std::string &fileNameOnly,
     ThumbnailType thumbnailType,

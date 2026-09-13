@@ -211,7 +211,7 @@ const MimeTypes&MimeTypes::instance()
     return (*m_instance);
 }
 
-const bool MimeTypes::IsValidExtension(const std::string&mimeType, const std::string&extension) const
+bool MimeTypes::IsValidExtension(const std::string&mimeType, const std::string&extension) const
 {
     auto iter = mimeTypeToExtensions.find(mimeType);
     if (iter == mimeTypeToExtensions.end()) return false;

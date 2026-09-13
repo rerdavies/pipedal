@@ -9,8 +9,16 @@ set (DISPLAY_VERSION "PiPedal v2.0.110-Release")
 
 option(PIPEDAL_DISABLE_COPYRIGHT_BUILD "Skip generation of copyright notices (use on non-Debian distros)" OFF)
 option(PIPEDAL_EXCLUDE_TESTS "Exclude test targets from default build" OFF)
+option(PIPEDAL_STRICT_COMPILE "Full warnings and errors" ON)
 
 set(PIPEDAL_T3K_PUBLISHABLE_KEY "t3k_pub_bHrH8btdwXXTtxz5ryEU8sNLF-2TGRT9")
+
+
+if (PIPEDAL_STRICT_COMPILE)
+    set(PIPEDAL_STRICT_COMPILE_FLAGS -Wall -Wextra -Werror -Wno-unused-parameter )
+else ()
+    set(PIPEDAL_STRICT_COMPILE_FLAGS)
+endif()
 
 
 # Determine Debian-compatible architecture name (portable across distros)

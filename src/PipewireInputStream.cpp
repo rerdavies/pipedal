@@ -90,7 +90,6 @@ namespace pipedal::impl
             }
         }
 
-        static const struct pw_stream_events stream_events_;
 
     public:
         PipeWireInputStreamImpl(const std::string &stream_name,
@@ -98,6 +97,11 @@ namespace pipedal::impl
                                 uint32_t rate )
             : is_running_(false)
         {
+            pw_stream_events stream_events_;
+            stream_events_.version = PW_VERSION_STREAM_EVENTS;
+            stream_events_.state_changed = on_stream_state_changed;
+            stream_events_.process = on_process;
+
 
             // Initialize PipeWire
             pw_init(nullptr, nullptr);
@@ -135,15 +139,15 @@ namespace pipedal::impl
 
             // Setup audio format
             uint8_t buffer[1024];
-            spa_pod_builder b = {0};
+            spa_pod_builder b {};
             spa_pod_builder_init(&b, buffer, sizeof(buffer));
 
             const spa_pod *params[1];
-            spa_audio_info_raw format = {
-                .format = SPA_AUDIO_FORMAT_S16,
-                .flags = SPA_AUDIO_FLAG_NONE,
-                .rate = rate,
-                .channels = channels};
+            spa_audio_info_raw format {};
+            format.format = SPA_AUDIO_FORMAT_S16;
+            format.flags = SPA_AUDIO_FLAG_NONE;
+            format.rate = rate;
+            format.channels = channels;
             if (channels == 1) 
             {
                 format.position[0] = SPA_AUDIO_CHANNEL_MONO; // Mono channel
@@ -229,11 +233,6 @@ namespace pipedal::impl
         bool IsActive() const { return is_running_; }
     };
 
-    const struct pw_stream_events PipeWireInputStreamImpl::stream_events_ = {
-        .version = PW_VERSION_STREAM_EVENTS,
-        .state_changed = on_stream_state_changed,
-        .process = on_process,
-    };
 }
 
 using namespace pipedal::impl;

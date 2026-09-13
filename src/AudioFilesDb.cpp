@@ -129,7 +129,7 @@ AudioFilesDb::AudioFilesDb(
 
 void AudioFilesDb::UpgradeDb()
 {
-    int version = QueryVersion();
+    //int version = QueryVersion();
 }
 
 int AudioFilesDb::QueryVersion()

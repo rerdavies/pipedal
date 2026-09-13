@@ -76,7 +76,7 @@ namespace pipedal
 
     // in ttl files, but not header files.
 
-    static const char *LV2_MIDI_PLUGIN = "http://lv2plug.in/ns/lv2core#MIDIPlugin";
+    // static const char *LV2_MIDI_PLUGIN = "http://lv2plug.in/ns/lv2core#MIDIPlugin";
 
     class PluginHost::Urids
     {

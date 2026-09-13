@@ -31,8 +31,8 @@
 
 using namespace pipedal;
 
-Lv2PluginChangeMonitor::Lv2PluginChangeMonitor(PiPedalModel&model)
-:model(model)
+Lv2PluginChangeMonitor::Lv2PluginChangeMonitor(PiPedalModel& model)
+    :model(model)
 {
     shutdown_eventfd = eventfd(0, 0);
     monitorThread = std::make_unique<std::thread>([this]() { ThreadProc();});
@@ -44,7 +44,7 @@ void Lv2PluginChangeMonitor::Shutdown()
     {
         terminateThread = true;
         uint64_t val = 1;
-        auto _ = write(shutdown_eventfd,(void*)&val, sizeof(val));
+        (void)write(shutdown_eventfd, (void*)&val, sizeof(val));
         monitorThread->join();
         monitorThread = nullptr;
         close(shutdown_eventfd);
@@ -67,19 +67,19 @@ void Lv2PluginChangeMonitor::ThreadProc()
         return;
     }
 
-    Finally f1 ([inotify_fd]() {
+    Finally f1([inotify_fd]() {
         close(inotify_fd);
 
-    });
+        });
     // Add the directory to the inotify watch list
     int watch_descriptor = inotify_add_watch(inotify_fd, "/usr/lib/lv2", IN_MODIFY | IN_CREATE | IN_DELETE);
     if (watch_descriptor == -1) {
         Lv2Log::error("Failed to add directory to inotify watch list");
         return;
     }
-    Finally f2([inotify_fd,watch_descriptor]() {
+    Finally f2([inotify_fd, watch_descriptor]() {
         inotify_rm_watch(inotify_fd, watch_descriptor);
-    });
+        });
 
     bool updating = false;
     clock::time_point updateTime;
@@ -87,10 +87,10 @@ void Lv2PluginChangeMonitor::ThreadProc()
     // Monitor for file system events
     while (true) {
         struct pollfd pfds[2] = {
-            {.fd = inotify_fd, .events = POLLIN},
-            {.fd = shutdown_eventfd, .events = POLLIN}
+            {.fd = inotify_fd, .events = POLLIN, .revents = 0},
+            {.fd = shutdown_eventfd, .events = POLLIN, .revents = 0}
         };
-        int ret = poll(pfds, 2,500);  // infinite wait
+        int ret = poll(pfds, 2, 500);  // infinite wait
         if (ret == -1) {
             Lv2Log::error("Error in poll()");
             break;
@@ -108,7 +108,7 @@ void Lv2PluginChangeMonitor::ThreadProc()
         if (pfds[1].revents & POLLIN) {
             // Shutdown event received
             break;
-        } 
+        }
 
         char buffer[4096];
         ssize_t num_bytes = read(inotify_fd, buffer, sizeof(buffer));
@@ -123,10 +123,12 @@ void Lv2PluginChangeMonitor::ThreadProc()
             struct inotify_event* event = reinterpret_cast<struct inotify_event*>(&buffer[i]);
             if (event->len > 0) {
                 if (event->mask & IN_MODIFY) {
-                    updated = true;                    
-                } else if (event->mask & IN_CREATE) {
                     updated = true;
-                } else if (event->mask & IN_DELETE) {
+                }
+                else if (event->mask & IN_CREATE) {
+                    updated = true;
+                }
+                else if (event->mask & IN_DELETE) {
                     updated = true;
                 }
             }

@@ -1135,7 +1135,7 @@ static std::vector<std::string> get_wireless_interfaces_sysfs()
 static bool gNetworkManagerTestExecuted = false;
 static bool gUsingNetworkManager = false;
 
-static bool IsNetworkManagerRunning()
+bool IsNetworkManagerRunning()
 {
     if (gNetworkManagerTestExecuted)
     {

@@ -149,6 +149,7 @@ void HtmlHelper::encode_url_segment(std::ostream &os, const char *pStart, const 
 
 std::string HtmlHelper::decode_url_segment(const char *pStart, const char *pEnd, bool isQuery)
 {
+    (void)isQuery;
     std::stringstream s;
     auto p = pStart;
     while (p != pEnd)

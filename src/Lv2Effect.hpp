@@ -104,7 +104,7 @@ namespace pipedal
         uint64_t maxInputControlPort = 0;
         std::vector<bool> isInputControlPort;
         std::vector<float> defaultInputControlValues;
-        std::vector<bool> isInputTriggerControlPort;;
+        std::vector<bool> isInputTriggerControlPort;
         int bypassControlIndex = -1;
 
         virtual std::string GetUri() const { return info->uri(); }
@@ -364,7 +364,7 @@ namespace pipedal
 
         virtual float GetOutputControlValue(int portIndex) const
         {
-            if (portIndex >= 0 && portIndex < controlValues.size()) {
+            if (portIndex >= 0 && (size_t)portIndex < controlValues.size()) {
                 return controlValues[portIndex];
             }
             return 0;

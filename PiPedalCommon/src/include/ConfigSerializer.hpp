@@ -232,7 +232,7 @@ namespace config_serializer
         }
 
     public:
-        virtual void Save(std::ostream &f)
+        virtual void Save(std::ostream &f) 
         {
             bool firstLine = true;
             for (const serializer_t *serializer : serializers)
@@ -274,7 +274,7 @@ namespace config_serializer
             }
         }
 
-        virtual void Load(std::istream &f)
+        virtual void Load(std::istream &f) 
         {
             std::unordered_map<std::string, serializer_t *> index;
 

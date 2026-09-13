@@ -134,7 +134,7 @@ namespace pipedal
 
         int GetIndexOfInstanceId(uint64_t instanceId)
         {
-            for (int i = 0; i < this->realtimeEffects.size(); ++i)
+            for (size_t i = 0; i < this->realtimeEffects.size(); ++i)
             {
                 if (this->realtimeEffects[i]->GetInstanceId() == instanceId)
                     return i;
@@ -143,7 +143,7 @@ namespace pipedal
         }
         IEffect *GetEffect(uint64_t instanceId)
         {
-            for (int i = 0; i < realtimeEffects.size(); ++i)
+            for (size_t i = 0; i < realtimeEffects.size(); ++i)
             {
                 if (realtimeEffects[i]->GetInstanceId() == instanceId)
                 {

@@ -225,6 +225,7 @@ namespace pipedal
                                 {
                                     std::string devName = match[1];
                                     int card = std::stoi(match[2]);
+                                    (void)card;
                                     int device = std::stoi(match[3]);
                                     rawMidiDevice = SS("hw:CARD=" << devName << ",DEV=" << device);
                                 }

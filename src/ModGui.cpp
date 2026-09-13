@@ -339,7 +339,6 @@ json_variant pipedal::MakeModGuiTemplateData(
 
     json_variant controls = json_variant::make_array();
     auto &controlArray = *controls.as_array();
-    size_t ix = 0;
     for (const auto& modGuiPort : modGui->ports())
     {
         const Lv2PortInfo &pluginPort = pluginInfo->getPort(modGuiPort.symbol());

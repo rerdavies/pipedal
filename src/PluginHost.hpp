@@ -175,8 +175,8 @@ namespace pipedal
         {
         }
 
-        LV2_PROPERTY_GETSET_SCALAR(value);
-        LV2_PROPERTY_GETSET(label);
+        LV2_PROPERTY_GETSET_SCALAR(value)
+        LV2_PROPERTY_GETSET(label)
 
         static json_map::storage_type<Lv2ScalePoint> jmap;
     };
@@ -491,7 +491,7 @@ namespace pipedal
         }
         bool hasExtension(const std::string &uri)
         {
-            for (int i = 0; i < extensions_.size(); ++i)
+            for (size_t i = 0; i < extensions_.size(); ++i)
             {
                 if (extensions_[i] == uri)
                     return true;
@@ -561,7 +561,7 @@ namespace pipedal
     public:
         Lv2PluginUiPortGroup() {}
         Lv2PluginUiPortGroup(Lv2PortGroup *pPortGroup)
-            : isA_(pPortGroup->isA()), symbol_(pPortGroup->symbol()), name_(pPortGroup->name()), uri_(pPortGroup->uri()), sideChainOf_(pPortGroup->sideChainOf())
+            : isA_(pPortGroup->isA()), uri_(pPortGroup->uri()), symbol_(pPortGroup->symbol()), name_(pPortGroup->name()), sideChainOf_(pPortGroup->sideChainOf())
         {
         }
         Lv2PluginUiPortGroup(
@@ -583,25 +583,29 @@ namespace pipedal
         }
         Lv2PluginUiPort(const Lv2PluginInfo *pPlugin, const Lv2PortInfo *pPort)
             : symbol_(pPort->symbol()), index_(pPort->index()),
+              name_(pPort->name()),
               is_input_(pPort->is_input()),
               is_sidechain_(pPort->is_sidechain()),
-              name_(pPort->name()),
               min_value_(pPort->min_value()),
               max_value_(pPort->max_value()),
-              default_value_(pPort->default_value()), range_steps_(pPort->range_steps()), display_priority_(pPort->display_priority()),
+              default_value_(pPort->default_value()),
               is_logarithmic_(pPort->is_logarithmic()),
+              display_priority_(pPort->display_priority()),
+              range_steps_(pPort->range_steps()),
               integer_property_(pPort->integer_property()),
               mod_momentaryOffByDefault_(pPort->mod_momentaryOffByDefault()),
               mod_momentaryOnByDefault_(pPort->mod_momentaryOnByDefault()),
               is_expensive_(pPort->is_expensive()),
               pipedal_graphicEq_(pPort->pipedal_graphicEq()),
-
               enumeration_property_(pPort->enumeration_property()),
-              toggled_property_(pPort->toggled_property()), not_on_gui_(pPort->not_on_gui()), scale_points_(pPort->scale_points()),
+              not_on_gui_(pPort->not_on_gui()),
+              toggled_property_(pPort->toggled_property()),
               trigger_property_(pPort->trigger_property()),
+              scale_points_(pPort->scale_points()),
               pipedal_ledColor_(pPort->pipedal_ledColor()),
-              comment_(pPort->comment()), units_(pPort->units()),
+              units_(pPort->units()),
               custom_units_(pPort->custom_units()),
+              comment_(pPort->comment()),
               connection_optional_(pPort->connection_optional())
         {
             // Use symbols to index port groups, instead of uris.
@@ -609,7 +613,7 @@ namespace pipedal
             const auto &portGroup = pPort->port_group();
             if (portGroup.length() != 0)
             {
-                for (int i = 0; i < pPlugin->port_groups().size(); ++i)
+                for (size_t i = 0; i < pPlugin->port_groups().size(); ++i)
                 {
 
                     auto &p = pPlugin->port_groups()[i];

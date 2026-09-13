@@ -18,6 +18,7 @@ set (USE_SANITIZE OFF) # seems to be broken on Ubuntu 24.10
 
 
 
+
 set(CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
@@ -182,7 +183,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if (!ENABLE_VST3)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-psabi -DARCHITECTURE=${CPACK_SYSTEM_NAME}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -DARCHITECTURE=${CPACK_SYSTEM_NAME}")
 else()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-multichar -Wno-psabi")
 endif()
@@ -404,6 +405,8 @@ set(PIPEDAL_LIBS libpipedald zip
 
 add_library(libpipedald STATIC ${PIPEDAL_SOURCES})
 
+target_compile_options(libpipedald PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
+
 target_compile_definitions(libpipedald PUBLIC "_REENTRANT")
 
 target_include_directories(libpipedald PUBLIC ${PIPEDAL_INCLUDES})
@@ -432,6 +435,8 @@ add_executable(pipedal_kconfig
 
 )
 
+target_compile_options(pipedal_kconfig PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
+
 target_link_libraries(pipedal_kconfig
   PRIVATE ftxui::screen
   PRIVATE ftxui::dom
@@ -446,6 +451,9 @@ add_executable(pipedald
     asan_options.cpp  # disable leak checking for sanitize=address.
     main.cpp
     )
+
+target_compile_options(pipedald PUBLIC ${PIPEDAL_STRICT_COMPILE_FLAGS})
+    
 target_include_directories(pipedald PRIVATE ${PIPEDAL_INCLUDES})
 
 target_compile_definitions(pipedald PRIVATE "ENABLE_BACKTRACE=${ENABLE_BACKTRACE}")
@@ -459,6 +467,8 @@ add_executable(hotspotManagerTest
     hotspotManagerTestMain.cpp
     HotspotManager.cpp HotspotManager.hpp)
 
+target_compile_options(hotspotManagerTest PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
+
 target_link_libraries(hotspotManagerTest PRIVATE ${PIPEDAL_LIBS})
 
 set_target_properties(hotspotManagerTest PROPERTIES EXCLUDE_FROM_ALL ${PIPEDAL_EXCLUDE_TESTS})
@@ -469,6 +479,8 @@ add_executable(AuxInTest
     AuxIn.cpp
     AuxInTest.cpp
 )
+
+target_compile_options(AuxInTest PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
 
 add_executable(pipedaltest
     testMain.cpp
@@ -501,6 +513,9 @@ add_executable(pipedaltest
     MemDebug.cpp
     MemDebug.hpp
     )
+
+target_compile_options(pipedaltest PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
+
 target_link_libraries(pipedaltest PRIVATE ${PIPEDAL_LIBS} ${ICU_LIBRARIES})
 target_include_directories(pipedaltest PRIVATE ${PIPEDAL_INCLUDES})
 
@@ -535,6 +550,7 @@ add_executable(jsonTest
      Promise.hpp
      PromiseTest.cpp
 )
+target_compile_options(jsonTest PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
 target_link_libraries(jsonTest PRIVATE PiPedalCommon)
 target_include_directories(jsonTest PRIVATE ${PIPEDAL_INCLUDES})
 
@@ -748,6 +764,8 @@ if(ENABLE_VST3)
 
     add_library(vst3_lib STATIC ${vst3_sources})
 
+    target_compile_options(vst3_lib PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
+
     target_include_directories(vst3_lib PRIVATE ${VST3_INCLUDES}
     )
 
@@ -807,6 +825,7 @@ add_executable(pipedalconfig
     asan_options.cpp
 
     )
+target_compile_options(pipedalconfig PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
 
 target_link_libraries(pipedalconfig PRIVATE PiPedalCommon pthread atomic uuid stdc++fs asound
 
@@ -844,6 +863,7 @@ add_executable(capturepresets
     Storage.hpp
     CommandLineParser.hpp
 )
+target_compile_options(capturepresets PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
 
 target_include_directories(capturepresets PRIVATE ${PIPEDAL_INCLUDES})
 
@@ -855,7 +875,7 @@ add_executable(makeRelease
 )
 target_include_directories(makeRelease PRIVATE ${PIPEDAL_INCLUDES})
 
-target_link_libraries(makeRelease ${PIPEDAL_LIBS})
+target_link_libraries(makeRelease PRIVATE ${PIPEDAL_LIBS})
 
 
 
@@ -868,6 +888,7 @@ add_executable(pipedal_update
     TemporaryFile.cpp TemporaryFile.hpp
     AdminInstallUpdate.cpp AdminInstallUpdate.hpp
 )
+target_compile_options(pipedal_update PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
 
 target_link_libraries(pipedal_update PRIVATE stdc++fs systemd PiPedalCommon )
 
@@ -893,7 +914,10 @@ add_executable(processcopyrights copyrightMain.cpp
     CommandLineParser.hpp
     PiPedalException.hpp
     asan_options.cpp)
-target_link_libraries(processcopyrights PRIVATE PiPedalCommon stdc++fs)
+
+    target_compile_options(processcopyrights PRIVATE ${PIPEDAL_STRICT_COMPILE_FLAGS})
+
+    target_link_libraries(processcopyrights PRIVATE PiPedalCommon stdc++fs)
 
 set (REACT_BUILD_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/react/build/)
 set (REACT_NOTICES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../build/src/notices.txt)

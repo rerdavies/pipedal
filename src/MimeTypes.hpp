@@ -37,7 +37,7 @@ namespace pipedal {
         const std::set<std::string> &AudioExtensions() const;
         const std::set<std::string> &VideoExtensions() const;
         const std::set<std::string> &MidiExtensions() const;
-        const bool IsValidExtension(const std::string&mimeType, const std::string&extension) const;
+        bool IsValidExtension(const std::string&mimeType, const std::string&extension) const;
     private:
         void AddMimeType(const std::string&extension, const std::string&mimeType);
         std::map<std::string,std::set<std::string>> mimeTypeToExtensions;

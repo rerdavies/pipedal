@@ -96,7 +96,7 @@ static int32_t ChannelToFrequency(int32_t channel)
 }
 static bool BandwidthPermitted(int32_t frequency,WifiBandwidth bandwidth, const WifiRule &rule)
 {
-    int32_t channelWidth = -1;
+    uint32_t channelWidth = -1;
     switch (bandwidth)
     {
     case WifiBandwidth::BW20:
@@ -150,8 +150,8 @@ static bool BandwidthPermitted(int32_t frequency,WifiBandwidth bandwidth, const 
     {
         return false;
     }
-    int32_t minFrequency = frequency-channelWidth/2;
-    int32_t maxFrequency = minFrequency+channelWidth;
+    uint32_t minFrequency = (uint32_t)frequency-channelWidth/2;
+    uint32_t maxFrequency = minFrequency+channelWidth;
     if (bandwidth == WifiBandwidth::BW40PLUS)
     {
         minFrequency = frequency-channelWidth/4;
@@ -261,8 +261,9 @@ std::vector<int32_t> pipedal::getValidChannels(const std::string&countryIso3661,
     } else // if (maxChannelWidthMhz <= 160)
     {
         maxBandwidth = WifiBandwidth::BW160;
-    } 
-    RegDb &regDb = RegDb::GetInstance();
+    }
+    (void)maxBandwidth;
+
     auto info = pipedal::getWifiInfo(countryIso3661);
 
     for (const auto&channelInfo: info.channels)
@@ -296,7 +297,6 @@ int32_t pipedal::getWifiRegClass(const std::string &countryIso3661, int32_t chan
     {
         maxBandwidth = WifiBandwidth::BW160;
     } 
-    RegDb &regDb = RegDb::GetInstance();
     auto info = pipedal::getWifiInfo(countryIso3661);
 
     const WifiChannelInfo *bestChannel = nullptr;

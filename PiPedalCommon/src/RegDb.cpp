@@ -362,12 +362,16 @@ struct fwdb_collection
     /* aligned to 2, then followed by s__be16 array of rule pointers */
 } __packed __aligned(4);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+//ISO C++ forbids flexible array member ‘country’ [-Werror=pedantic]
 struct fwdb_header
 {
     s__be32 magic;
     s__be32 version;
     struct fwdb_country country[];
 } __packed __aligned(4);
+#pragma GCC diagnostic pop
 
 enum fwdb_flags
 {
@@ -522,14 +526,14 @@ static bool valid_regdb(const u8 *data, unsigned int size)
     return true;
 }
 
-static void set_wmm_rule(const struct fwdb_header *db,
-                         const struct fwdb_country *country,
-                         const struct fwdb_rule *rule,
-                         WifiRule *rrule)
-{
-    // not implemented.
-    return;
-}
+// static void set_wmm_rule(const struct fwdb_header *db,
+//                          const struct fwdb_country *country,
+//                          const struct fwdb_rule *rule,
+//                          WifiRule *rrule)
+// {
+//     // not implemented.
+//     return;
+// }
 // 	struct ieee80211_wmm_rule *wmm_rule = &rrule->wmm_rule;
 // 	struct fwdb_wmm_rule *wmm;
 // 	unsigned int i, wmm_ptr;

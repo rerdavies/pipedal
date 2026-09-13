@@ -196,7 +196,7 @@ inline bool MidiChannelBinding::WantsMidiMessage(uint8_t midi_cc0,uint8_t midi_c
     {
         if (channel_ < 0) return true;
 
-        return midi_cc0 & 0x0F == channel_;
+        return (midi_cc0 & 0x0F) == channel_;
     } else {
         return acceptCommonMessages_;
     }
@@ -209,7 +209,7 @@ inline bool MidiChannelBinding::WantProgramChange(uint8_t midi_cc0,uint8_t midi_
         return false;
     }
     if (channel_ < 0) return true;
-    return midi_cc0 & 0x0F == channel_;
+    return (midi_cc0 & 0x0F) == channel_;
 }
 
 inline bool MidiChannelBinding::WantsDevice(LV2_URID deviceUrid)

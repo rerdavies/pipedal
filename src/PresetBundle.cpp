@@ -555,13 +555,13 @@ static void ExtractFileVersion(std::string &baseName, int &n)
     if (baseName.ends_with(')'))
     {
         size_t endPos = baseName.length() - 1;
-        int startPos = baseName.find_last_of('(');
+        size_t startPos = baseName.find_last_of('(');
         if (startPos != std::string::npos)
         {
             std::string number = baseName.substr(startPos + 1, endPos - (startPos + 1));
             std::istringstream ss(number);
             ss >> n;
-            if (!ss.fail())
+            if (ss.eof() && !ss.fail())
             {
                 while (startPos > 0 && baseName[startPos - 1] == ' ')
                 {

@@ -225,7 +225,7 @@ void ModWebInterceptImpl::get_response(
         {
             // a request for a plugin resource file.
             fs::path resourcefile = pluginInfo->modGui()->resourceDirectory();
-            for (size_t i = 1; i < request_uri.segment_count(); ++i)
+            for (int i = 1; i < request_uri.segment_count(); ++i)
             {
                 resourcefile /= request_uri.segment(i);
             }
@@ -265,7 +265,7 @@ static std::string makeCns(const std::string &encodedUri, int64_t instanceId)
     for (char c : encodedUri)
     {
         if (
-            (c >= 'a' && c <= 'z') || (c >= 'A' & c <= 'Z') || (c >= '0' && c <= '9'))
+            (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
         {
             ss << c;
         }

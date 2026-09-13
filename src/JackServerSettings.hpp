@@ -51,12 +51,12 @@ namespace pipedal
             uint32_t bufferSize,
             uint32_t numberOfBuffers)
             : valid_(true),
+              isOnboarding_(false),
               alsaInputDevice_(alsaInputDevice),
               alsaOutputDevice_(alsaOutputDevice),
               sampleRate_(sampleRate),
               bufferSize_(bufferSize),
-              numberOfBuffers_(numberOfBuffers),
-              isOnboarding_(false)
+              numberOfBuffers_(numberOfBuffers)
         {
             FixUpDeviceNames();
         }

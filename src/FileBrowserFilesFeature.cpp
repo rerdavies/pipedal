@@ -181,7 +181,7 @@ void FileBrowserFilesFeature::MakeDirectoryMap(const std::filesystem::path&rootB
 
 char *FileBrowserFilesFeature::GetUploadPath(const char *fileBrowserPath)
 {
-    if (fileBrowserPath == nullptr | fileBrowserPath[0] == '\0')
+    if (fileBrowserPath == nullptr || fileBrowserPath[0] == '\0')
     {
         return strdup("");
     }
@@ -303,7 +303,7 @@ void FileBrowserFilesFeature::PublishRecursive(
     const std::filesystem::path &resourcePath,
     const std::filesystem::path &browserPath)
 {
-    for (const std::filesystem::directory_entry directoryEntry : std::filesystem::directory_iterator{resourcePath})
+    for (const std::filesystem::directory_entry &directoryEntry : std::filesystem::directory_iterator{resourcePath})
     {
         std::string fileName = directoryEntry.path().filename();
         if (directoryEntry.is_directory())

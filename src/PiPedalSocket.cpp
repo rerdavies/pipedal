@@ -989,7 +989,7 @@ private:
 
     public:
         RequestReservation(int reservationId, ResponseFn onResponse, ErrorFn errorFn)
-            : IRequestReservation(reservationId), responseFn(onResponse), errorFn(errorFn), hasErrorFn(true)
+            : IRequestReservation(reservationId), responseFn(onResponse), hasErrorFn(true), errorFn(errorFn)
         {
         }
         RequestReservation(int reservationId, ResponseFn onResponse)

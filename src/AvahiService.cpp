@@ -240,33 +240,6 @@ void AvahiService::EntryGroupCallback(AvahiEntryGroup *g, AvahiEntryGroupState s
     }
 }
 
-static int toRawDns(char *rawResult, size_t size, const std::string &name)
-{
-    // from standard name format to <nn>xyz<nn>foo<nn>com<00> format
-    size_t len = name.length();
-
-    rawResult[0] = 0;
-    if (len + 1 >= size - 1)
-        return 0;
-
-    rawResult[len + 1] = 0;
-    int count = 0;
-    for (int i = len - 1; i >= 0; --i)
-    {
-        if (name[i] == '.')
-        {
-            rawResult[i + 1] = (char)count;
-            count = 0;
-        }
-        else
-        {
-            rawResult[i + 1] = name[i];
-            ++count;
-        }
-    }
-    rawResult[0] = count;
-    return len + 1;
-}
 void AvahiService::create_group(AvahiClient *c)
 {
     this->createPending = false;
@@ -427,8 +400,6 @@ void AvahiService::Start()
 {
 
     int error;
-    int ret = 1;
-    struct timeval tv;
     this->clientErrno = 0;
     SetState(ServiceState::Initializing);
     for (int retry = 0; retry < 3; ++retry)
@@ -457,7 +428,6 @@ void AvahiService::Start()
             }
         }
 
-        ret = 0;
         return;
     fail:
         Stop();

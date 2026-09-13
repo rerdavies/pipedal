@@ -56,7 +56,7 @@ namespace pipedal {
         bool ThreadedIrqs() const { return threadedIrqs; }
         void ThreadedIrqs(bool value);
 
-        const DynamicSchedulerT DynamicScheduler() const { return dynamicScheduler; }
+        DynamicSchedulerT DynamicScheduler() const { return dynamicScheduler; }
         void DynamicScheduler(DynamicSchedulerT value);
 
 

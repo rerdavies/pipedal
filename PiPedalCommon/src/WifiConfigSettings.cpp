@@ -70,18 +70,6 @@ static std::string getWifiCountryCode()
     return "";
 }
 
-static void setWifiCountryCode(const std::string &countryCode)
-{
-    if (!WifiConfigSettings::ValidateCountryCode(countryCode))
-    {
-        throw std::runtime_error("Invalid country code.");
-    }
-    SysExecOutput result = sysExecForOutput("iw", SS("reg set " << countryCode));
-    if (result.exitCode != EXIT_SUCCESS)
-    {
-        throw std::runtime_error(SS("Failed to set country code: " << result.output));
-    }
-}
 bool WifiConfigSettings::ValidateCountryCode(const std::string &text)
 {
     if (text.length() != 2)
@@ -452,7 +440,7 @@ int32_t pipedal::ChannelToChannelNumber(const std::string &channel)
 {
     std::string t = channel;
     // remove deprecated band specs.
-    if (t.size() > 1 && t[0] == 'a' || t[0] == 'g')
+    if (t.size() > 1 && (t[0] == 'a' || t[0] == 'g'))
     {
         t = t.substr(1);
     }
@@ -466,7 +454,7 @@ static uint32_t ParseChannel(const std::string &channel)
 {
     std::string t = channel;
     // remove dprecated band specs.
-    if (t.size() > 1 && t[0] == 'a' || t[0] == 'g')
+    if (t.size() > 1 && (t[0] == 'a' || t[0] == 'g'))
     {
         t = t.substr(1);
     }
@@ -557,134 +545,6 @@ bool WifiConfigSettings::ValidateChannel(const std::string &countryCode, const s
     return true;
 }
 
-static const char *trueValues[]{
-    "true",
-    "on",
-    "yes"
-    "1",
-    nullptr};
-static const char *falseValues[]{
-    "false",
-    "off",
-    "no",
-    "0",
-    nullptr};
-
-static bool Matches(const std::string &value, const char **matches)
-{
-    while (*matches)
-    {
-        if (value == *matches)
-            return true;
-        ++matches;
-    }
-    return false;
-}
-
-static bool TryStringToBool(const std::string &value, bool *outputValue)
-{
-    if (Matches(value, trueValues))
-    {
-        *outputValue = true;
-        return true;
-    }
-    if (Matches(value, falseValues))
-    {
-        *outputValue = false;
-        return true;
-    }
-    *outputValue = false;
-    return false;
-}
-
-static WifiConfigSettings::ssid_t readSsid(std::istream &ss)
-{
-    using ssid_t = WifiConfigSettings::ssid_t;
-    char c;
-
-    ssid_t result;
-    while (ss.peek() == ' ')
-    {
-        ss >> c;
-    }
-    if (ss.peek() == '"')
-    {
-        ss >> c;
-        while (!ss.eof() && ss.peek() != '"')
-        {
-            ss >> c;
-            if (c == '\\')
-            {
-                if (ss.eof())
-                {
-                    break;
-                }
-                ss >> c;
-                switch (c)
-                {
-                case 'n':
-                    result.push_back((uint8_t)'\n');
-                    break;
-                case 'r':
-                    result.push_back((uint8_t)'\r');
-                    break;
-                case 't':
-                    result.push_back((uint8_t)'\t');
-                    break;
-                case 'b':
-                    result.push_back((uint8_t)'\b');
-                    break;
-                default:
-                    result.push_back((uint8_t)c);
-                    break;
-                }
-            }
-            else
-            {
-                result.push_back((uint8_t)c);
-            }
-        }
-    }
-    else
-    {
-        while (!ss.eof())
-        {
-            if (c == ':')
-            {
-                break;
-            }
-            ss >> c;
-            if (c == ':')
-            {
-                break;
-            }
-            result.push_back((uint8_t)c);
-        }
-    }
-    return result;
-}
-static std::vector<WifiConfigSettings::ssid_t> stringToSsidArray(const std::string &value)
-{
-    using ssid_t = WifiConfigSettings::ssid_t;
-    std::istringstream ss(value);
-
-    std::vector<WifiConfigSettings::ssid_t> result;
-    while (true)
-    {
-        ssid_t ssid = readSsid(ss);
-        if (ssid.size() == 0)
-        {
-            break;
-        }
-        result.push_back(ssid);
-        if (ss.peek() == ':')
-        {
-            char c;
-            ss >> c;
-        }
-    }
-    return result;
-}
 void WifiConfigSettings::ParseArguments(
     const std::vector<std::string> &argv,
     HotspotAutoStartMode startMode,

@@ -164,6 +164,7 @@ private:
     }
     virtual void onStateChanged(const uint32_t &new_state, const uint32_t &old_state, const uint32_t &reason)
     {
+        (void)old_state; (void)reason;
         EventTrace("onStateChanged", nm_impl::NetworkManagerStateToString(new_state));
 
         OnStateChanged.fire(new_state);

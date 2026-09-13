@@ -39,10 +39,10 @@ namespace pipedal {
 
         static const char DEVICEID_FILE_NAME[];
 
-        void Load(
+        virtual void Load(
             std::filesystem::path path = "/var/pipedal/config/service.conf"
         );
-        void Save();
+        virtual void Save();
 
 
         std::string uuid;
@@ -50,5 +50,9 @@ namespace pipedal {
         uint32_t server_port = 80;
     private: 
         std::filesystem::path filename;
+        // Prevent compiler warnings.
+        virtual void Save(std::ostream &f) override { base::Save(f); }
+        virtual void Load(std::istream &f) override { base::Load(f); }
     };
+    
 }

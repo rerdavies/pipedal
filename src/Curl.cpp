@@ -364,7 +364,6 @@ namespace pipedal
             outputHeadersOpt = &defaultHeaders;
         }
 
-        bool bResult = true;
 
         std::stringstream ssArgs;
 
@@ -822,7 +821,6 @@ namespace pipedal
             outputHeadersOpt = &defaultHeaders;
         }
 
-        bool bResult = true;
 
         std::stringstream ssArgs;
 

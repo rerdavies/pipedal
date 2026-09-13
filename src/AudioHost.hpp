@@ -96,7 +96,7 @@ namespace pipedal
         }
 
     private:
-        int responseLength = 0;
+        uint responseLength = 0;
         uint8_t atomBuffer[2048];
         std::vector<uint8_t> longAtomBuffer;
 
@@ -109,16 +109,16 @@ namespace pipedal
             std::function<void(const std::string &jsonResjult)> onSuccess_,
             std::function<void(const std::string &error)> onError_,
             size_t sampleTimeout)
-            : onPatchRequestComplete(onPatchRequestcomplete_),
-              clientId(clientId_),
+            : clientId(clientId_),
               instanceId(instanceId_),
               uridUri(uridUri_),
+              requestType(RequestType::PatchGet),
+              onPatchRequestComplete(onPatchRequestcomplete_),
               onSuccess(onSuccess_),
               onError(onError_),
               sampleTimeout((int64_t)sampleTimeout)
 
         {
-            requestType = RequestType::PatchGet;
         }
         RealtimePatchPropertyRequest(
             std::function<void(RealtimePatchPropertyRequest *)> onPatchRequestcomplete_,
@@ -129,10 +129,11 @@ namespace pipedal
             std::function<void(const std::string &jsonResjult)> onSuccess_,
             std::function<void(const std::string &error)> onError_,
             size_t sampleTimeout)
-            : onPatchRequestComplete(onPatchRequestcomplete_),
-              clientId(clientId_),
+            : clientId(clientId_),
               instanceId(instanceId_),
               uridUri(uridUri_),
+              requestType(RequestType::PatchSet),
+              onPatchRequestComplete(onPatchRequestcomplete_),
               onSuccess(onSuccess_),
               onError(onError_),
               sampleTimeout(sampleTimeout)

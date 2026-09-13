@@ -80,7 +80,6 @@ std::vector<std::string> StdErrorCapture::GetOutputLines() {
 
     if (f.is_open())
     {
-        char buffer[1024];
 
         std::string line;
         while (true)

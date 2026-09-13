@@ -224,7 +224,7 @@ namespace pipedal
             for (size_t i = 0; i < queries_.size(); ++i)
             {
                 if (queries_[i].key == key)
-                    true;
+                    return true;
             }
             return false;
         }
