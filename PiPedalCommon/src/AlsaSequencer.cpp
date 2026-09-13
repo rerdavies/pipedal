@@ -91,11 +91,11 @@ namespace pipedal
 
             int myClientId = -1;
             int32_t midiChannel()  { 
-                std::lock_guard { connectionsMutex};
+                std::lock_guard lock { connectionsMutex};
                 return midiChannel_;
             }
             void midiChannel(uint32_t value) { 
-                std::lock_guard { connectionsMutex};
+                std::lock_guard lock { connectionsMutex};
                 midiChannel_ = value; 
             }
 
