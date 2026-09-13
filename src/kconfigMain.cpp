@@ -65,6 +65,9 @@ using namespace ftxui;
 using Clock = ftxui::animation::Clock;
 using namespace pipedal;
 
+
+bool noSudo = false;
+
 std::string spinnerText(const Clock::time_point &startTime)
 {
     using namespace std::chrono;
@@ -255,6 +258,7 @@ void kconfigUi(void)
     bool configRequired = false;
 
     std::unique_ptr<BootConfig> bootConfig;
+    
     using DynamicSchedulerT = BootConfig::DynamicSchedulerT;
     try
     {
@@ -277,17 +281,27 @@ void kconfigUi(void)
     bool forceThreadedIrqFocus = false;
 
 
-    int dynamicSchedulerIndex = (int)dynamicScheduler;
     std::vector<ConstStringRef> preemptModeLabelRefs = {
         " none               ",
         " voluntary          ",
         " full (recommended) "};
+
+    std::vector<BootConfig::DynamicSchedulerT> preemptModeValues = {
+        BootConfig::DynamicSchedulerT::None,
+        BootConfig::DynamicSchedulerT::Voluntary,
+        BootConfig::DynamicSchedulerT::Full};
+    if (bootConfig->SupportedSchedulers().contains(BootConfig::DynamicSchedulerT::Lazy)
+        || bootConfig->SupportedSchedulers().size() == 0
+    ) {
+        preemptModeLabelRefs[1] =         " lazy               ";
+        preemptModeValues[1] = BootConfig::DynamicSchedulerT::Lazy;
+    }
     bool preemptModeSelections[3]; // std::vector<bool> is bizarrely specialized, so it doesn't wrok.
 
 
     for (int i = 0; i < 3; ++i)
     {
-        preemptModeSelections[i] = (i == dynamicSchedulerIndex);
+        preemptModeSelections[i] = (preemptModeValues[i] == dynamicScheduler);
     }
 
 
@@ -353,7 +367,7 @@ void kconfigUi(void)
             }
             else
             {
-                newBootConfig->DynamicScheduler((DynamicSchedulerT)schedulerIndex);
+                newBootConfig->DynamicScheduler(preemptModeValues[schedulerIndex]);
 
                 if (newBootConfig->Changed())
                 {                
@@ -677,7 +691,6 @@ void printHelp()
 int main(int argc, char**argv)
 {
     bool help = false;
-    bool noSudo = false;
     CommandLineParser cmdline;
     cmdline.AddOption("-h",&help);
     cmdline.AddOption("--help",&help);

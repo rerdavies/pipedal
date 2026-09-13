@@ -24,6 +24,7 @@
 #include <functional>
 #include <thread>
 #include <memory>
+#include <set>
 
 namespace pipedal {
     class BootConfig {
@@ -41,9 +42,10 @@ namespace pipedal {
             None = 0,
             Voluntary = 1,
             Full = 2,
-
+            Lazy = 3, // introduced in Linux Kernel 7.0
             NotApplicable = -1,
             Unknown = -2,
+            Unspecified = -3,
 
         };
 
@@ -56,9 +58,11 @@ namespace pipedal {
         bool ThreadedIrqs() const { return threadedIrqs; }
         void ThreadedIrqs(bool value);
 
-        const DynamicSchedulerT DynamicScheduler() const { return dynamicScheduler; }
+        DynamicSchedulerT DynamicScheduler() const { return dynamicScheduler; }
         void DynamicScheduler(DynamicSchedulerT value);
 
+        const std::set<DynamicSchedulerT> &SupportedSchedulers() { return supportedSchedulers; }
+        void  SupportedSchedulers(std::set<DynamicSchedulerT>&&value); 
 
         bool  CanWriteConfig();
 
@@ -76,6 +80,7 @@ namespace pipedal {
         BootLoaderT bootLoader = BootLoaderT::Unknown;
         std::string kernelType;
         std::string preemptMode;
+        std::set<DynamicSchedulerT> supportedSchedulers;
         DynamicSchedulerT dynamicScheduler = DynamicSchedulerT::NotApplicable;
         bool canSetThreadIrqs = false;
         bool threadedIrqs = false;
