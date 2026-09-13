@@ -2937,6 +2937,20 @@ export class PiPedalModel //implements PiPedalModel
 
     }
 
+    // Like listenForMidiEvent, but receives every MIDI channel-voice message
+    // instead of only the ones MIDI learn can bind to. Cancel with
+    // cancelListenForMidiEvent.
+    monitorMidiEvents(onReceived: (midiMessage: MidiMessage) => void): ListenHandle {
+        let handle = this.nextListenHandle++;
+
+        this.midiListeners.push(new MidiEventListener(handle, onReceived));
+
+        this.webSocket?.send("monitorMidiEvents", { handle: handle });
+        return {
+            _handle: handle
+        };
+    }
+
     monitorPatchProperty(
         instanceId: number,
         propertyUri: string,

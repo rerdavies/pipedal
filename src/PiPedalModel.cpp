@@ -2648,10 +2648,26 @@ void PiPedalModel::DeleteMidiListeners(int64_t clientId)
             --i;
         }
     }
-    if (audioHost)
+    UpdateMidiListenerState();
+}
+
+void PiPedalModel::UpdateMidiListenerState()
+{
+    if (!audioHost)
     {
-        audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+        return;
     }
+    bool monitorAll = false;
+    for (const auto &listener : midiEventListeners)
+    {
+        if (listener.listenForAllEvents)
+        {
+            monitorAll = true;
+            break;
+        }
+    }
+    audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    audioHost->SetMonitorAllMidiEvents(monitorAll);
 }
 
 void PiPedalModel::OnPatchSetReply(uint64_t instanceId, LV2_URID patchSetProperty, const LV2_Atom *atomValue)
@@ -2758,19 +2774,17 @@ void PiPedalModel::OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     bool isNote = (cc0 & 0xF0) == 0x90; // Note On
-    if (isNote && cc2 == 0)
-    {
-        return; // Note off. Oopsie.
-    }
     bool isControl = (cc0 & 0xF0) == 0xB0; // Control Change
-    if (!isNote && !isControl)
-    {
-        return; // Not a note on or control change.
-    }
+    // What MIDI learn is able to bind to. Monitor listeners get everything.
+    bool isBindable = (isNote && cc2 != 0) || isControl;
 
     for (int i = 0; i < midiEventListeners.size(); ++i)
     {
         auto &listener = midiEventListeners[i];
+        if (!listener.listenForAllEvents && !isBindable)
+        {
+            continue;
+        }
         auto subscriber = this->GetNotificationSubscriber(listener.clientId);
         if (subscriber)
         {
@@ -2782,15 +2796,15 @@ void PiPedalModel::OnNotifyMidiListen(uint8_t cc0, uint8_t cc1, uint8_t cc2)
             --i;
         }
     }
-    audioHost->SetListenForMidiEvent(midiEventListeners.size() != 0);
+    UpdateMidiListenerState();
 }
 
-void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle)
+void PiPedalModel::ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForAllEvents)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
-    MidiListener listener{clientId, clientHandle};
+    MidiListener listener{clientId, clientHandle, listenForAllEvents};
     midiEventListeners.push_back(listener);
-    audioHost->SetListenForMidiEvent(true);
+    UpdateMidiListenerState();
 }
 
 void PiPedalModel::CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle)
@@ -2805,10 +2819,7 @@ void PiPedalModel::CancelListenForMidiEvent(int64_t clientId, int64_t clientHand
             break;
         }
     }
-    if (midiEventListeners.size() == 0)
-    {
-        audioHost->SetListenForMidiEvent(false);
-    }
+    UpdateMidiListenerState();
 }
 
 void PiPedalModel::MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri)
