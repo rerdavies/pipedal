@@ -91,11 +91,11 @@ namespace pipedal
 
             int myClientId = -1;
             int32_t midiChannel()  { 
-                std::lock_guard lock{ connectionsMutex};
+                std::lock_guard lock { connectionsMutex};
                 return midiChannel_;
             }
             void midiChannel(uint32_t value) { 
-                std::lock_guard lock{ connectionsMutex};
+                std::lock_guard lock { connectionsMutex};
                 midiChannel_ = value; 
             }
 
@@ -991,9 +991,11 @@ namespace pipedal
                 snd_seq_event_t *event;
                 while (snd_seq_event_input(seqHandle, &event) > 0)
                 {
-                    if (event->type == SND_SEQ_EVENT_CLIENT_START)
+                    if (event->type == SND_SEQ_EVENT_CLIENT_START ||
+                        event->type == SND_SEQ_EVENT_PORT_START)
                     {
-                        // Get the client name for logging/debugging
+                        // A client may be announced before its MIDI ports exist.
+                        // Re-run configured connections when each port is ready.
                         snd_seq_client_info_t *client_info;
                         snd_seq_client_info_alloca(&client_info);
                         if (snd_seq_get_any_client_info(seqHandle, event->data.addr.client, client_info) >= 0) {
