@@ -495,6 +495,11 @@ void PluginHost::LoadLilv(const char *lv2Path)
         else if (pluginInfo->hasUnsupportedPatchProperties())
         {
             Lv2Log::debug("Plugin %s (%s) skipped. (Has unsupported patch parameters).", pluginInfo->name().c_str(), pluginInfo->uri().c_str());
+            if (pluginInfo->modGui())
+            {
+                Lv2Log::debug("But plugin %s has a MOD gui!", pluginInfo->name().c_str());
+
+            }
         }
 #if !SUPPORT_MIDI
         else if (pluginInfo->plugin_class() == LV2_MIDI_PLUGIN)
@@ -655,12 +660,17 @@ static bool ports_sort_compare(std::shared_ptr<Lv2PortInfo> &p1, const std::shar
     return p1->index() < p2->index();
 }
 
+
 static bool isSidechainGroupName(const Lv2PortGroup &portGroup)
 {
+    // Catches plugins that have not properly flagged their side-chain inputs with pg:sideChainOf.
+    // Notably, JUCE plugins (which aren't currently supported anyway), and Dusk Multi-Comp particularly (which also isn't supported.)
+    // Any group that contains sidechain, side_chain, or side_chain in either the name or portgroup symbol is 
+    // considered to be a sidechain.
     std::string text = portGroup.name() + " " + portGroup.symbol();
     std::transform(
         text.begin(), text.end(), text.begin(),
-        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        [](char c) { return static_cast<char>(std::tolower(c)); });
     return text.find("sidechain") != std::string::npos
         || text.find("side chain") != std::string::npos
         || text.find("side_chain") != std::string::npos;
@@ -821,9 +831,22 @@ Lv2PluginInfo::FindWritablePathProperties(PluginHost *lv2Host, const LilvPlugin 
                     if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__String))
                     {
                         // String properties have no generic control, but they don't make a plugin unusable either.
+                        // Just ignore them.
                     } else if (lilv_world_ask(pWorld, propertyUri, lv2Host->lilvUris->rdfs__range, lv2Host->lilvUris->atom__Float))
                     {
-                        // Numeric patch properties are rendered with generic PiPedal controls.
+                        // Numeric patch properties CAN be rendered with generic PiPedal controls,
+                        // but we choose not to, because the results are generally unusable (too many 
+                        // controls, in the wrong order because numeric patch properties are presented in random order)
+                        const bool ENABLE_FLOAT_PATCH_PROPERTIES = false;
+                        if (!ENABLE_FLOAT_PATCH_PROPERTIES)
+                        {
+                            unsupportedPatchProperty = false;
+                            std::string strPluginUri = pluginUri.AsUri();
+                            std::string strPropertyUri = propertyUri.AsUri();
+                            Lv2Log::debug("JUCE float patch properties: %s,%s",
+                                strPluginUri.c_str(),
+                                strPropertyUri.c_str());
+                        }
                     } else {
                         std::string strPluginUri = pluginUri.AsUri();
                         if (strPluginUri == "urn:brummer:neuralrack") {
@@ -1000,7 +1023,7 @@ Lv2PluginInfo::Lv2PluginInfo(PluginHost *lv2Host, LilvWorld *pWorld, const LilvP
                     if (pg->uri() == port->port_group())
                     {
                         // JUCE exports named sidechain groups but currently omits
-                        // pg:sideChainOf, so retain the semantic group-name fallback.
+                        // pg:sideChainOf, so fall back to checking the portgroup name and key as well.
                         if (!pg->sideChainOf().empty() || isSidechainGroupName(*pg))
                         {
                             port->is_sidechain(true);
