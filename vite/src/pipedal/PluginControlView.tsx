@@ -55,6 +55,7 @@ import ToobFrequencyResponseView from './ToobFrequencyResponseView';
 import ToolTipEx from './ToolTipEx';
 import MidiChannelBindingControl from './MidiChannelBindingControl';
 import MidiChannelBinding from './MidiChannelBinding';
+import PatchPropertyControl from './PatchPropertyControl';
 
 
 export const StandardItemSize = { width: 80, height: 110 };
@@ -707,6 +708,27 @@ const PluginControlView =
                             this.push_control(result, pluginControl, controlValues);
                         }
                     }
+                }
+                // Numeric (atom:Float) patch properties get generic controls, in
+                // lv2:index order, with the property label as a tiebreaker.
+                const numericPatchProperties = plugin.patchProperties
+                    .filter((property) => property.writable && property.isNumeric())
+                    .sort((left, right) => {
+                        const leftIndex = left.index < 0 ? Number.MAX_SAFE_INTEGER : left.index;
+                        const rightIndex = right.index < 0 ? Number.MAX_SAFE_INTEGER : right.index;
+                        if (leftIndex !== rightIndex) {
+                            return leftIndex - rightIndex;
+                        }
+                        return (left.label || left.uri).localeCompare(right.label || right.uri);
+                    });
+                for (const patchProperty of numericPatchProperties) {
+                    result.push(
+                        <PatchPropertyControl
+                            key={"patch-" + patchProperty.uri}
+                            instanceId={this.props.instanceId}
+                            property={patchProperty}
+                        />
+                    );
                 }
                 for (let i = 0; i < plugin.fileProperties.length; ++i) {
                     let fileProperty = plugin.fileProperties[i];
