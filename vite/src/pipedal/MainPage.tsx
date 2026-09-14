@@ -1,4 +1,5 @@
 // Copyright (c) Robin E.R. Davies
+// Copyright (c) Fulgencio Ruiz Rubio.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -102,10 +103,10 @@ const styles = ({ palette }: Theme) => {
             flex: "0 0 64px", width: "100%", paddingLeft: 24, paddingRight: 16, paddingBottom: 16
         }),
         controlContent: css({
-            flex: "1 1 auto", width: "100%", overflowY: "hidden", minHeight: 185
+            flex: "1 1 auto", width: "100%", overflowY: "hidden", minHeight: 185, marginBottom: "2rem"
         }),
         controlContentSmall: css({
-            flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden",
+            flex: "0 0 162px", width: "100%", height: 162, overflowY: "hidden", marginBottom: "2rem"
         }),
         title: css({ fontSize: "1.1rem", fontWeight: 700, marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.75 }),
         author: css({ fontWeight: 500, fontSize: "0.8rem", marginRight: 8, textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.75 })
