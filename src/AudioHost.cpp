@@ -944,7 +944,22 @@ private:
             event, this, fnMidiValueChanged);
         if (listenForMidiEvent)
         {
-            if (event.size >= 3)
+            if (monitorAllMidiEvents)
+            {
+                // Diagnostics: report the message as received, with no
+                // filtering, so the monitor shows what the device actually
+                // sent. Per-listener filtering happens in PiPedalModel, so
+                // MIDI learn still sees only what it can bind to.
+                if (event.size >= 1)
+                {
+                    MidiNotifyBody notifyBody(
+                        event.buffer[0],
+                        event.size >= 2 ? event.buffer[1] : (uint8_t)0,
+                        event.size >= 3 ? event.buffer[2] : (uint8_t)0);
+                    realtimeWriter.OnMidiListen(notifyBody);
+                }
+            }
+            else if (event.size >= 3)
             {
                 uint8_t cmd = (uint8_t)(event.buffer[0] & 0xF0);
                 bool isNote = cmd == 0x90 && event.buffer[2] != 0; // note on with velocity > 0.
@@ -2356,11 +2371,16 @@ public:
         return result;
     }
     std::atomic<bool> listenForMidiEvent = false;
+    std::atomic<bool> monitorAllMidiEvents = false;
     std::atomic<bool> listenForAtomOutput = false;
 
     virtual void SetListenForMidiEvent(bool listen)
     {
         this->listenForMidiEvent = listen;
+    }
+    virtual void SetMonitorAllMidiEvents(bool monitor)
+    {
+        this->monitorAllMidiEvents = monitor;
     }
     virtual void SetListenForAtomOutput(bool listen)
     {

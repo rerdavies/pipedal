@@ -41,6 +41,8 @@ import IconButtonEx from './IconButtonEx';
 import MidiBinding from './MidiBinding';
 import SystemMidiBindingView from './SystemMidiBindingView';
 import Snackbar from '@mui/material/Snackbar';
+import MidiMonitorDialog from './MidiMonitorDialog';
+import TuneIcon from '@mui/icons-material/Tune';
 
 const styles = (theme: Theme) => createStyles({
     dialogAppBar: css({
@@ -103,6 +105,7 @@ export interface SystemMidiBindingDialogState {
     listenSymbol: string;
     listenSnackbarOpen: boolean;
     systemMidiBindings: BindingEntry[];
+    midiMonitorOpen: boolean;
 
 }
 
@@ -119,7 +122,8 @@ export const SystemMidiBindingDialog =
                     listenInstanceId: -2,
                     listenSymbol: "",
                     listenSnackbarOpen: false,
-                    systemMidiBindings: this.createBindings()
+                    systemMidiBindings: this.createBindings(),
+                    midiMonitorOpen: false
                 };
                 this.handleClose = this.handleClose.bind(this);
                 this.onMidiBindingsChanged = this.onMidiBindingsChanged.bind(this);
@@ -289,6 +293,14 @@ export const SystemMidiBindingDialog =
                                         <Typography variant="h6" className={classes.dialogTitle}>
                                             System MIDI Bindings
                                         </Typography>
+                                        <IconButtonEx
+                                            tooltip="MIDI monitor"
+                                            color="inherit"
+                                            onClick={() => this.setState({ midiMonitorOpen: true })}
+                                            aria-label="midi monitor"
+                                            size="large">
+                                            <TuneIcon />
+                                        </IconButtonEx>
                                     </Toolbar>
                                 </AppBar>
                             </div>
@@ -315,6 +327,10 @@ export const SystemMidiBindingDialog =
                             autoHideDuration={1500}
                             onClose={() => this.setState({ listenSnackbarOpen: false })}
                             message="Listening for MIDI input"
+                        />
+                        <MidiMonitorDialog
+                            open={this.state.midiMonitorOpen}
+                            onClose={() => this.setState({ midiMonitorOpen: false })}
                         />
                     </DialogEx >
                 );
