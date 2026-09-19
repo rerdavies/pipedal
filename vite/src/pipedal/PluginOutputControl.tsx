@@ -1,4 +1,5 @@
 // Copyright (c) 2023 Robin Davies
+// Copyright (c) Fulgencio Ruiz Rubio.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -27,7 +28,7 @@ import { UiControl } from './Lv2Plugin';
 import Typography from '@mui/material/Typography';
 import { PiPedalModel, PiPedalModelFactory, MonitorPortHandle, State } from './PiPedalModel';
 import { isDarkMode } from './DarkMode';
-import GxTunerControl from './GxTunerControl';
+import TunerControl from './TunerControl';
 import Units from './Units';
 import ControlTooltip from './ControlTooltip';
 import { css } from '@emotion/react';
@@ -425,7 +426,7 @@ const PluginOutputControl =
                     item_width = undefined;
                     return (
                         <div style={{ display: "flex", flexDirection: "column", width: item_width, margin: 8, height: 98 }}>
-                            <GxTunerControl instanceId={this.props.instanceId} symbolName={control.symbol}
+                            <TunerControl instanceId={this.props.instanceId} symbolName={control.symbol}
                                 valueIsMidi={control.units === Units.midiNote}
                             />
                         </div >
