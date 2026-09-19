@@ -417,6 +417,9 @@ private:
     int64_t snapshotRequestId = 0;
 
     int selectedBank = -1;
+    int selectedBankMSB = 0;
+    int selectedBankLSB = 0;
+
     int64_t midiProgramChangeId = 0;
 
     class Uris
@@ -933,7 +936,7 @@ private:
     }
     static bool isBankChange(MidiEvent &event)
     {
-        return (event.size == 3 && event.buffer[0] == 0xB0 && event.buffer[1] == 0x00);
+        return (event.size == 3 && event.buffer[0] == 0xB0 && (event.buffer[1] == 0x00 || event.buffer[1] == 32));
     }
 
     bool ProcessMidiMonitor(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
@@ -987,7 +990,23 @@ private:
         }
         else if (isBankChange(event))
         {
-            this->selectedBank = event.buffer[2];
+
+            if (event.buffer[0] == 0) 
+            {
+                selectedBankMSB = event.buffer[2] & 0x7F;
+            } else if (event.buffer[1] == 32) 
+            {
+                selectedBankLSB = event.buffer[2] & 0x7F;
+            }
+            // earlier verions of PiPedal incorrectly used only the MSB to select the bank. 
+            // provide backward compatibility for this behaviour.
+            // Yes, this means that Bank=(1,0) selects bank 1 instead of bank 128.
+            if (selectedBankLSB == 0) 
+            {
+                selectedBank = selectedBankMSB;
+            } else {
+                selectedBank = selectedBankMSB*127+selectedBankLSB;
+            }
         }
         else if (this->nextBankMidiBinding.IsTriggered(event))
         {
