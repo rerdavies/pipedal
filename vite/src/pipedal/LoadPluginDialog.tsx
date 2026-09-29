@@ -50,6 +50,14 @@ import WithStyles, {withTheme} from './WithStyles';
 import { withStyles } from "tss-react/mui";
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
+import ListSubheader from '@mui/material/ListSubheader';
+import {
+    CATEGORY_FILTER_PREFIX,
+    getPluginCategory,
+    getPluginTypeColor,
+    getUiPluginCategory,
+    orderedPluginCategories,
+} from './PluginCategories';
 
 import { css } from '@emotion/react';
 
@@ -172,7 +180,7 @@ type PluginGridState = {
     selected_uri?: string,
     search_string: string;
     search_collapsed: boolean;
-    filterType: PluginType,
+    filterType: string,
     client_width: number,
     client_height: number,
     grid_cell_width: number,
@@ -198,10 +206,10 @@ export const LoadPluginDialog =
                 this.model = PiPedalModelFactory.getInstance();
                 this.searchInputRef = React.createRef<HTMLInputElement>();
 
-                let filterType_ = PluginType.Plugin; // i.e. "Any".
+                let filterType_: string = PluginType.Plugin; // i.e. "Any".
                 let persistedFilter = window.localStorage.getItem(FILTER_STORAGE_KEY);
                 if (persistedFilter) {
-                    filterType_ = persistedFilter as PluginType;
+                    filterType_ = persistedFilter;
                 }
 
                 this.state = {
@@ -345,7 +353,7 @@ export const LoadPluginDialog =
             }
 
             onFilterChange(e: any) {
-                let filterValue = e.target.value as PluginType;
+                let filterValue = e.target.value as string;
 
                 window.localStorage.setItem(FILTER_STORAGE_KEY, filterValue as string);
 
@@ -493,8 +501,15 @@ export const LoadPluginDialog =
             createFilterChildren(result: ReactNode[], classNode: PluginClass, level: number): void {
                 for (let i = 0; i < classNode.children.length; ++i) {
                     let child = classNode.children[i];
-                    let name = "\u00A0".repeat(level * 3 + 1) + child.display_name;
-                    result.push((<MenuItem key={child.plugin_type} value={child.plugin_type}>{name}</MenuItem>));
+                    const color = getPluginTypeColor(child.plugin_type);
+                    result.push((
+                        <MenuItem key={child.plugin_type} value={child.plugin_type}
+                            sx={{ pl: 2 + level * 2, gap: 1.25 }}>
+                            <PluginIcon pluginType={child.plugin_type} size={20}
+                                opacity={1} color={color} />
+                            {child.display_name}
+                        </MenuItem>
+                    ));
                     if (child.children.length !== 0) {
                         this.createFilterChildren(result, child, level + 1);
                     }
@@ -504,12 +519,67 @@ export const LoadPluginDialog =
                 let classes = this.model.plugin_classes.get();
                 let result: ReactNode[] = [];
 
-                result.push((<MenuItem key={PluginType.Plugin} value={PluginType.Plugin}>&nbsp;All</MenuItem>));
-                this.createFilterChildren(result, classes, 1);
+                result.push((
+                    <MenuItem key={PluginType.Plugin} value={PluginType.Plugin}
+                        sx={{ gap: 1.25 }}>
+                        <PluginIcon pluginType={PluginType.Plugin} size={20} opacity={0.8} />
+                        All plugins
+                    </MenuItem>
+                ));
+                const availableCategoryIds = new Set(
+                    this.state.uiPlugins.map(plugin => getUiPluginCategory(plugin).id));
+                for (const category of orderedPluginCategories) {
+                    if (!availableCategoryIds.has(category.id)) {
+                        continue;
+                    }
+                    result.push((
+                        <ListSubheader key={`${category.id}-heading`}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                color: category.color,
+                                fontWeight: 700,
+                                lineHeight: '36px',
+                            }}>
+                            {category.label}
+                        </ListSubheader>
+                    ));
+                    result.push((
+                        <MenuItem key={`${category.id}-all`}
+                            value={`${CATEGORY_FILTER_PREFIX}${category.id}`}
+                            sx={{ pl: 4, gap: 1.25 }}>
+                            <span style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: 2,
+                                background: category.color,
+                                flex: '0 0 auto',
+                            }} />
+                            All {category.label}
+                        </MenuItem>
+                    ));
+                    const classNodes = classes.children
+                        .filter(classNode =>
+                            getPluginCategory(classNode.plugin_type).id === category.id)
+                        .sort((left, right) =>
+                            left.display_name.localeCompare(right.display_name));
+                    for (const classNode of classNodes) {
+                        result.push((
+                            <MenuItem key={classNode.plugin_type} value={classNode.plugin_type}
+                                sx={{ pl: 6, gap: 1.25 }}>
+                                <PluginIcon pluginType={classNode.plugin_type} size={20}
+                                    opacity={1} color={category.color} />
+                                {classNode.display_name}
+                            </MenuItem>
+                        ));
+                        this.createFilterChildren(result, classNode, 2);
+                    }
+                }
                 return result;
 
             }
-            getFilteredPlugins(plugins: UiPlugin[], searchString: string | null, filterType: PluginType | null, favoritesList: FavoritesList | null): UiPlugin[] {
+            getFilteredPlugins(plugins: UiPlugin[], searchString: string | null, filterType: string | null, favoritesList: FavoritesList | null): UiPlugin[] {
                 try {
                     if (searchString === null) {
                         searchString = this.state.search_string;
@@ -530,7 +600,16 @@ export const LoadPluginDialog =
                         if (this.props.modGuiOnly == true && !plugin.modGui)
                             continue;
                         try {
-                            if (filterType === PluginType.Plugin || rootClass.is_type_of(filterType, plugin.plugin_type)) {
+                            const isCategoryFilter = filterType.startsWith(CATEGORY_FILTER_PREFIX);
+                            const categoryId = isCategoryFilter
+                                ? filterType.substring(CATEGORY_FILTER_PREFIX.length)
+                                : "";
+                            const filterMatches =
+                                filterType === PluginType.Plugin
+                                || (isCategoryFilter
+                                    ? getUiPluginCategory(plugin).id === categoryId
+                                    : rootClass.is_type_of(filterType as PluginType, plugin.plugin_type));
+                            if (filterMatches) {
                                 let score: number = 0;
                                 if (plugin.is_vst3) {
                                     score = searchFilter.score(plugin.name, plugin.plugin_display_type, plugin.author_name, "vst3");
@@ -553,6 +632,15 @@ export const LoadPluginDialog =
                     results.sort((left: { score: number; plugin: UiPlugin }, right: { score: number; plugin: UiPlugin }) => {
                         if (right.score < left.score) return -1;
                         if (right.score > left.score) return 1;
+                        if (filterType === PluginType.Plugin) {
+                            const categoryOrder =
+                                getUiPluginCategory(left.plugin).rank -
+                                getUiPluginCategory(right.plugin).rank;
+                            if (categoryOrder !== 0) return categoryOrder;
+                            const typeOrder = left.plugin.plugin_display_type.localeCompare(
+                                right.plugin.plugin_display_type);
+                            if (typeOrder !== 0) return typeOrder;
+                        }
                         return left.plugin.name.localeCompare(right.plugin.name);
                     });
                     let t: UiPlugin[] = [];
@@ -648,6 +736,7 @@ export const LoadPluginDialog =
                 if (value.uri === "http://two-play.com/plugins/toob-nam") {
                     pluginType = PluginType.NamPlugin;
                 }
+                const category = getUiPluginCategory(value);
                 return (
                     <div key={value.uri}
                         onDoubleClick={(e) => { this.onDoubleClick(e, value.uri) }}
@@ -659,7 +748,8 @@ export const LoadPluginDialog =
                             <SelectHoverBackground selected={value.uri === this.state.selected_uri} showHover={true} />
                             <div className={classes.content}>
                                 <div className={classes.iconBorder} >
-                                    <PluginIcon pluginType={pluginType} size={24} opacity={0.6} />
+                                    <PluginIcon pluginType={pluginType} size={24}
+                                        opacity={1} color={category.color} />
                                 </div>
                                 <div className={classes.content2}>
                                     <div className={classes.label} style={{ display: "flex", flexFlow: "row nowrap", alignItems: "center" }} >
@@ -677,7 +767,8 @@ export const LoadPluginDialog =
 
                                     </div>
                                     <Typography color="textSecondary" noWrap>
-                                        {value.plugin_display_type} {this.stereo_indicator(value)}
+                                        {category.label} / {value.plugin_display_type}
+                                        {this.stereo_indicator(value)}
 
                                     </Typography>
                                 </div>
