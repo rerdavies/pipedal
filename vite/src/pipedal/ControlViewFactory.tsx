@@ -36,6 +36,7 @@ import ToobPlayerFactory from './ToobPlayerView';
 import ToobNamViewFactory from './ToobNamView';
 import ToobParametericEqViewFactory from './ToobParametricEqView';
 import {ToobParametricEqViewFactoryStereo} from './ToobParametricEqView';
+import { dragonflyViewFactories } from './DragonflyView';
 
 
 let pluginFactories: IControlViewFactory[] = [
@@ -48,6 +49,7 @@ let pluginFactories: IControlViewFactory[] = [
     new ToobNamViewFactory(),
     new ToobParametericEqViewFactory(),
     new ToobParametricEqViewFactoryStereo(),
+    ...dragonflyViewFactories,
 ];
 
 
@@ -78,10 +80,16 @@ export function GetControlView(
             />
         );
     } else {
-        for (let i = 0; i < pluginFactories.length; ++i) {
-            let factory = pluginFactories[i];
-            if (factory.uri === pedalboardItem.uri) {
-                return factory.Create(model, pedalboardItem);
+        // A custom control view is the default, but when the user switches on
+        // the MOD UI we must fall through to PluginControlView, which hosts the
+        // plugin's modgui. Otherwise the custom factory would short-circuit the
+        // toggle and the MOD UI could never be shown for a plugin that has one.
+        if (!showModUi) {
+            for (let i = 0; i < pluginFactories.length; ++i) {
+                let factory = pluginFactories[i];
+                if (factory.uri === pedalboardItem.uri) {
+                    return factory.Create(model, pedalboardItem);
+                }
             }
         }
         let uiPlugin = model.getUiPlugin(pedalboardItem.uri);
