@@ -936,7 +936,9 @@ private:
     }
     static bool isBankChange(MidiEvent &event)
     {
-        return (event.size == 3 && event.buffer[0] == 0xB0 && (event.buffer[1] == 0x00 || event.buffer[1] == 32));
+        return (event.size == 3 
+            && (event.buffer[0] & 0xF0) == 0xB0 
+            && (event.buffer[1] == 0x00 || event.buffer[1] == 32));
     }
 
     bool ProcessMidiMonitor(Lv2EventBufferWriter &eventBufferWriter, Lv2EventBufferWriter::LV2_EvBuf_Iterator &iterator, MidiEvent &event)
