@@ -340,7 +340,7 @@ public:
                 {
                     {
                         std::lock_guard lock{sync};
-                        if (latency >= 2000)
+                        if (current_latency >= 2000)
                         {
                             latency = NO_SIGNAL_VALUE;
                         }
