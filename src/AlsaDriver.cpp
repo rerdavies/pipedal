@@ -78,6 +78,7 @@ namespace pipedal
 
         if (channelsMax <= 2)
             return false;
+        return false; // Local multichannel-interface fix: do not collapse ALSA devices to stereo based on channel maps.
         if (channelsMin == channelsMax)
             return false;
         if (channelsMin > 2)
