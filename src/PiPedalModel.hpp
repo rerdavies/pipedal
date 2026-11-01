@@ -164,6 +164,9 @@ namespace pipedal
         public:
             int64_t clientId;
             int64_t clientHandle;
+            // MIDI learn wants only bindable messages; the MIDI monitor wants
+            // everything the device sends.
+            bool listenForAllEvents = false;
         };
         class AtomOutputListener
         {
@@ -180,6 +183,9 @@ namespace pipedal
             LV2_URID propertyUrid;
         };
         void DeleteMidiListeners(int64_t clientId);
+        // Recomputes the two audio-host flags from the current listener set.
+        // Call with the mutex held after any change to midiEventListeners.
+        void UpdateMidiListenerState();
         void DeleteAtomOutputListeners(int64_t clientId);
 
         std::vector<MidiListener> midiEventListeners;
@@ -490,7 +496,7 @@ namespace pipedal
         JackServerSettings GetJackServerSettings();
         void SetJackServerSettings(const JackServerSettings &jackServerSettings);
 
-        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle);
+        void ListenForMidiEvent(int64_t clientId, int64_t clientHandle, bool listenForAllEvents = false);
         void CancelListenForMidiEvent(int64_t clientId, int64_t clientHandle);
 
         void MonitorPatchProperty(int64_t clientId, int64_t clientHandle, uint64_t instanceId, const std::string &propertyUri);

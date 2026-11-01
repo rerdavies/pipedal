@@ -1276,6 +1276,17 @@ public:
     }
     REGISTER_MESSAGE_HANDLER(listenForMidiEvent)
 
+    // Same listener list as listenForMidiEvent, but the listener receives every
+    // MIDI channel-voice message instead of only the ones MIDI learn can bind
+    // to. Cancelled with cancelListenForMidiEvent.
+    void handle_monitorMidiEvents(int replyTo, json_reader *pReader)
+    {
+        ListenForMidiEventBody body;
+        pReader->read(&body);
+        this->model.ListenForMidiEvent(this->clientId, body.handle_, true);
+    }
+    REGISTER_MESSAGE_HANDLER(monitorMidiEvents)
+
     void handle_cancelListenForMidiEvent(int replyTo, json_reader *pReader)
     {
         uint64_t handle;
