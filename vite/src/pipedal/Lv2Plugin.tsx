@@ -1013,14 +1013,7 @@ export class Lv2PatchPropertyInfo {
         this.shortName = input.shortName;
         this.fileTypes = input.fileTypes;
         this.supportedExtensions = input.supportedExtensions;
-        this.minValue = input.minValue ?? 0;
-        this.maxValue = input.maxValue ?? 1;
-        this.defaultValue = input.defaultValue ?? this.minValue;
-        this.logarithmic = input.logarithmic ?? false;
-        this.integer = input.integer ?? false;
-        this.enumeration = input.enumeration ?? false;
-        this.toggled = input.toggled ?? false;
-        this.scalePoints = ScalePoint.deserialize_array(input.scalePoints ?? []);
+        this.portInfo = input.portInfo ? new UiControl().deserialize(input.portInfo) : null;
         return this;
     }
     static deserialize_array(input: any): Lv2PatchPropertyInfo[] {
@@ -1040,37 +1033,29 @@ export class Lv2PatchPropertyInfo {
     shortName: string = "";
     fileTypes: string[] = [];
     supportedExtensions: string[] = [];
-    minValue: number = 0;
-    maxValue: number = 1;
-    defaultValue: number = 0;
-    logarithmic: boolean = false;
-    integer: boolean = false;
-    enumeration: boolean = false;
-    toggled: boolean = false;
-    scalePoints: ScalePoint[] = [];
+    portInfo: UiControl | null = null;
 
-    isNumeric(): boolean {
+    isFloat(): boolean {
         return this.type === "http://lv2plug.in/ns/ext/atom#Float";
     }
+    isDouble(): boolean {
+        return this.type === "http://lv2plug.in/ns/ext/atom#Double";
+    }
+    isInteger(): boolean {
+        return this.type === "http://lv2plug.in/ns/ext/atom#Integer";
+    }
+    isLong(): boolean {
+        return this.type === "http://lv2plug.in/ns/ext/atom#Long";
+    }
+    isBoolean(): boolean {
+        return this.type === "http://lv2plug.in/ns/ext/atom#Bool";
+    }
 
-    // Present a numeric patch property as if it were an ordinary control port,
-    // so that the standard control renderers can be re-used for it.
-    toUiControl(): UiControl {
-        return new UiControl().deserialize({
-            symbol: this.uri,
-            name: this.shortName || this.label || "Parameter",
-            index: this.index,
-            is_input: this.writable,
-            min_value: this.minValue,
-            max_value: this.maxValue,
-            default_value: this.defaultValue,
-            is_logarithmic: this.logarithmic,
-            integer_property: this.integer,
-            enumeration_property: this.enumeration,
-            toggled_property: this.toggled,
-            scale_points: this.scalePoints,
-            comment: this.comment
-        });
+    isNumeric(): boolean {
+        if (!this.type.startsWith("http://lv2plug.in/ns/ext/atom#")) {
+            return false;
+        }
+        return this.isFloat() || this.isDouble() || this.isInteger() || this.isLong() || this.isBoolean();
     }
 };
 

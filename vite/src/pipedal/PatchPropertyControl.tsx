@@ -1,11 +1,10 @@
 // Copyright (c) 2026 Thomas Rapolani
 // SPDX-License-Identifier: MIT
 
-import { useEffect, useMemo, useState } from "react";
-import { Lv2PatchPropertyInfo } from "./Lv2Plugin";
+import { useEffect, useState } from "react";
+import { Lv2PatchPropertyInfo, UiControl } from "./Lv2Plugin";
 import { ListenHandle, PiPedalModelFactory } from "./PiPedalModel";
 import PluginControl from "./PluginControl";
-
 interface PatchPropertyControlProps {
     instanceId: number;
     property: Lv2PatchPropertyInfo;
@@ -13,7 +12,10 @@ interface PatchPropertyControlProps {
 
 export default function PatchPropertyControl(props: PatchPropertyControlProps) {
     const model = PiPedalModelFactory.getInstance();
-    const uiControl = useMemo(() => props.property.toUiControl(), [props.property]);
+    let uiControl: UiControl | null  = props.property.portInfo;
+    if (uiControl === null) {
+        throw new Error("Numeric patch property does not have a portInfo value.")
+    }
     const [value, setValue] = useState(uiControl.default_value);
 
     useEffect(() => {
@@ -59,6 +61,8 @@ export default function PatchPropertyControl(props: PatchPropertyControlProps) {
                         .then((currentValue) => {
                             if (typeof currentValue === "number") {
                                 setValue(currentValue);
+                            } else {
+                                console.error(`Invalid value received for LV2 patch property ${props.property.uri}`);
                             }
                         });
                 }
