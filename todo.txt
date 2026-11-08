@@ -1,4 +1,1 @@
-
-Check for libzstd.so dependency.
-Check sqlite package leaks
-Check x64 avx/non-avx binaries.
+Verify that we have not static linked to sqllite.
