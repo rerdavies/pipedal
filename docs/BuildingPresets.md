@@ -41,4 +41,4 @@ PiPedal includes a selection of pre-installed plugins from the TooB plugin colle
 guitar effects. See the [Using Lv2 Plugins](UsingLv2Plugins.md) section of the documentation for more details. 
 
 --------
-[<< How to Use PiPedal](HowToUsePiPedal.md) | [Up](Documentation.md) | [An Intro to Snapshots >>](Snapshots.md)
+[<< How to Use PiPedal](HowToUsePiPedal.md) | [Up](Documentation.md) | [Using MIDI with PiPedal>>](UsingMidi.md)

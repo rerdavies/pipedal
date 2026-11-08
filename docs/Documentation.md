@@ -13,8 +13,10 @@
 &nbsp;
 #### [What PiPedal Is](WhatPiPedalIs.md)
 #### [Machine Learning in PiPedal (A History)](PiPedalHistory.md)
+&nbsp;
 #### [How to Use PiPedal](HowToUsePiPedal.md)
 #### [How to Build Presets With PiPedal](BuildingPresets.md)
+#### [Using MIDI with PiPedal](UsingMidi.md)
 #### [An Intro to Snapshots](Snapshots.md)  
 #### [Neural Amp Modeler Calibration](NamCalibration.md)  
 #### [Choosing a USB Audio Adapter](ChoosingAUsbAudioAdapter.md)  
@@ -38,4 +40,9 @@
 #### [The Build Systems](TheBuildSystem.md)
 #### [How to Debug PiPedal](Debugging.md)
 #### [PiPedal Architecture](Architecture.md)
+
+&nbsp;
+
+#### [Appendix A: MIDI Implementation](MidiImplementation.md)
+
 

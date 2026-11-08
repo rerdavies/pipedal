@@ -10,7 +10,7 @@ which runs on a service account without privileges.
 
 See figure 1 for a diagram of the high-level architecture of PiPedal.
 
-![](img/Architecture.png)
+![](img/Architecture.svg)
 
 Fig 1. PiPedal Architecture.
 
@@ -20,7 +20,7 @@ When debugging React code, an instance of the React development server must be s
 start the development server `cd` to the react directory, and run `./start`.
 Figure 2 shows the architecture of PiPedal when running with the React debug server.
 
-![](img/DebugArchitecture.png)
+![](img/DebugArchitecture.svg)
 
 Fig 2. PiPedal architecture when using the React development server.
 
@@ -47,4 +47,4 @@ The `fakeAndroid` setting determines whether the web application will use touch-
 Note that, when connecting directly to the pipedald web server on port 80, or port 8080, the web server intercepts all requests to documents in the `var` directory, including the `var/config.json` file, and instead returns data that reflects the configuration of the pipedald service. The contents of the `public/var` directory will be completely ignored. The `debug` setting will be true if the pipedald service is a Debug build, and will be false if the pipedald service is a Release build. The `fakeAndroid` setting will always be false.
 
 -----
-[<< How to Debug PiPedal](Debugging.md) | [Up](Documentation.md)
+[<< How to Debug PiPedal](Debugging.md) | [Up](Documentation.md) | [Appendix A: MIDI Implementation >>](MidiImplementation.md)
