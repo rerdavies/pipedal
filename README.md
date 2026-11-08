@@ -1,7 +1,7 @@
 
 <img src='docs/GithubBanner.png' width="100%" /><br/>
 
-<a href="https://rerdavies.github.io/pipedal/ReleaseNotes"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
+a href="https://rerdavies.github.io/pipedal/ReleaseNotes"><img src="https://img.shields.io/github/v/release/rerdavies/pipedal?color=%23808080"/></a>
 <a href="https://rerdavies.github.io/pipedal/download"><img src="https://img.shields.io/badge/Download-008060" /></a>
 <a href="https://rerdavies.github.io/pipedal/Documentation"><img src="https://img.shields.io/badge/Docmentation-0060d0"/></a>
 <a href="https://rerdavies.github.io/pipedal/LicensePiPedal.html"><img src="https://img.shields.io/badge/MIT-MIT?label=license&color=%23808080"/></a>
@@ -70,6 +70,9 @@ PiPedal includes a pre-installed selection of LV2 plugins from the ToobAmp colle
 If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboards, controllers, or midi floor boards) to control PiPedal while performing. A simple interface allows you to select how you would like to bind PiPedal controls to midi messages. 
 
 
+
+#### [System Requirements](https://rerdavies.github.io/pipedal/SystemRequirements.html)
+
 ----
 &nbsp;
 
@@ -83,8 +86,10 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 &nbsp;
 #### [What PiPedal Is](https://rerdavies.github.io/pipedal/WhatPiPedalIs.html)
 #### [Machine Learning in PiPedal (A History)](https://rerdavies.github.io/pipedal/PiPedalHistory.html)
+&nbsp;
 #### [How to Use PiPedal](https://rerdavies.github.io/pipedal/HowToUsePiPedal.html)
 #### [How to Build Presets With PiPedal](https://rerdavies.github.io/pipedal/BuildingPresets.html)
+#### [Using MIDI with PiPedal](https://rerdavies.github.io/pipedal/UsingMidi.html)
 #### [An Intro to Snapshots](https://rerdavies.github.io/pipedal/Snapshots.html)  
 #### [Neural Amp Modeler Calibration](https://rerdavies.github.io/pipedal/NamCalibration.html)  
 #### [Choosing a USB Audio Adapter](https://rerdavies.github.io/pipedal/ChoosingAUsbAudioAdapter.html)  
@@ -109,6 +114,12 @@ If your USB audio adapter has MIDI connectors, you can use MIDI devices (keyboar
 #### [How to Debug PiPedal](https://rerdavies.github.io/pipedal/Debugging.html)
 #### [PiPedal Architecture](https://rerdavies.github.io/pipedal/Architecture.html)
 
+&nbsp;
+
+#### [Appendix A: MIDI Implementation](https://rerdavies.github.io/pipedal/MidiImplementation.html)
+
+
+&nbsp;
  
 <hr style="margin-top: 32px; margin-left: 32px; width: 50%;" />
 <p id="fn1" style="margin-left: 32px; margin-right: 32px; font-size: 0.8em;">
