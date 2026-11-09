@@ -22,7 +22,7 @@ Use your Raspberry Pi, or Ubuntu amd/x86-64 computer as a guitar effects pedal. 
 PiPedal running on a Raspberry Pi 4 or Pi 5 provides stable super-low-latency audio via external USB audio devices, or internal Raspberry Pi audio hats.
 
 PiPedal runs on Raspbery Pi OS (Bookworm or Trixie), or Ubuntu 24.x or later (amd64/x86-64 and aarch64). Make sure you follow the [Ubuntu post-install 
-instructions](https://rerdavies.github.io/pipedal/Configuring.html) to make sure your Ubuntu OS is using a  realtime-capable kernel.
+instructions](https://rerdavies.github.io/pipedal/Configuring.html) to ensure your Ubuntu OS is using a  realtime-capable kernel.
 
 <img src="docs/gallery/dark-sshot1.png"></img>
 
