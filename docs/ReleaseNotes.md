@@ -5,18 +5,23 @@ Various bug fixes and improvements to documentation. Probable fixes for outstand
 with M-VAVE Chocolate Bluetooth MIDI controllers.
 
 - Add MIDI documentation, and MIDI Implementation chart.
-- Accept MIDI bank changes on channels other than channel 0
-- Improvements to handling of Bluetooth MIDI device plug-and-play connections (@SuprDuprNatural)
-- Recover from MIDI device underruns properly (@SuprDuprNatural)
-- Fix audio dropouts when loading audio files in TooB Plugins
+- Accept MIDI bank changes on channels other than MIDI channel 0.
+- Use MIDI CC0 and CC32 controls (Bank MSB and LSB, respectively) for bank selection. *
+- Improvements to handling of Bluetooth MIDI device plug-and-play connections. (@SuprDuprNatural)
+- Recover from MIDI device underruns properly. (@SuprDuprNatural)
+- Fix audio dropouts when loading audio files in TooB Plugins.
 - TooB Convolution Reverb (mono) does not bypass correctly when Tails are disabled.
-- Fix volume of S24_LE/S24_BE audio formats (@diamondsea11)
-- Fix pipedal latency test reporting for large buffer sizes (@)
-- Fix web server crash on request to invalid page.
+- Fix volume of S24_LE/S24_BE audio formats. (@diamondsea11)
+- Fix pipedal latency test reporting for large buffer sizes. 
+- Fix web server crash on request to an invalid page.
 - Adjustments to pipedal_kconfig to allow selection of Linux 7.0 lazy preemption kernel option.
 - Improve recognition of side-chain ports on mis-authored plugins (@diamondsea11)
-- Various malformed lockguards, leading to possible crashes and undefined behavior. (@diamondsea11)
+- Various malformed lockguards, and minor bugs leading to possible crashes and undefined behavior. (@diamondsea11)
 
+&nbsp;
+
+* PiPedal now correctly accepts MIDI Bank Changes on MIDI CC0/CC32 (MIDI Bank MSB and LSB, respectively). Previous versions of PiPedal would incorrectly accept bank selects on MIDI CC0 only. In order to preserve backward compatibility, PiPedal will also accept a bank changes on MIDI CC0 only, as long as MIDI CC32 is zero; however, this behaviour is deprecated, and may be removed in a future version of PiPedal. A known issue: this means that you cannot select the 128th PiPedal bank using MIDI Bank Select, should you&mdash;heaven forbid&mdash;happen to have more than 127 banks.
+  
 ## PiPedal 2.0.110-Release
 7 new factory presets. If upgrading, you will find them added to the Factory Presets bank.
 
