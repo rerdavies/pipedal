@@ -104,7 +104,55 @@ std::vector<std::string> ReadFileArgs(const fs::path &path)
     return split(line, ' ');
 }
 
+
 using namespace pipedal;
+
+static std::set<BootConfig::DynamicSchedulerT> GetSupportedSchedulers()
+{
+    // /sys/kernel/debug/sched/preempt contains the current preempt modes.
+    // The selected mode is surrounded by parens. There's whitespace between each option.
+    // e.g. "(full) lazy".
+    // Separate out the names of the supported preempt modes.
+    std::set<BootConfig::DynamicSchedulerT> modes;
+    const fs::path preemptPath = "/sys/kernel/debug/sched/preempt";
+
+    std::ifstream stream(preemptPath);
+    if (!stream.is_open())
+    {
+        return modes;
+    }
+
+    std::string line;
+    while (std::getline(stream, line))
+    {
+        std::istringstream iss(line);
+        std::string token;
+        while (iss >> token)
+        {
+            std::string mode = token;
+            if (!mode.empty() && mode.front() == '(' && mode.back() == ')')
+            {
+                mode = mode.substr(1, mode.size() - 2);
+            }
+            if (mode == "none") 
+            {
+                modes.insert(BootConfig::DynamicSchedulerT::None);
+            } else if (mode == "voluntary")
+            {
+                modes.insert(BootConfig::DynamicSchedulerT::Voluntary);
+            } else if (mode == "full") 
+            {
+                modes.insert(BootConfig::DynamicSchedulerT::Full);
+            } else if (mode == "lazy") 
+            {
+                modes.insert(BootConfig::DynamicSchedulerT::Lazy);
+            }
+        }
+    }
+    modes.insert(BootConfig::DynamicSchedulerT::None);
+    return modes;
+}
+
 BootConfig::BootConfig()
 {
     if (fs::exists("/boot/firmware/cmdline.txt"))
@@ -119,6 +167,8 @@ BootConfig::BootConfig()
     {
         this->bootLoader = BootLoaderT::Unknown;
     }
+
+    this->supportedSchedulers = GetSupportedSchedulers();
 
     this->kernelType = GetKernelType();
 
@@ -144,6 +194,10 @@ BootConfig::BootConfig()
         {
             this->dynamicScheduler = DynamicSchedulerT::None;
         }
+        else if (arg == "preempt=lazy")
+        {
+            this->dynamicScheduler = DynamicSchedulerT::Lazy;
+        }
         else if (arg.starts_with("preempt="))
         {
             this->dynamicScheduler = DynamicSchedulerT::Unknown;
@@ -151,6 +205,17 @@ BootConfig::BootConfig()
         else if (arg == "threadirqs")
         {
             this->threadedIrqs = true;
+        }
+    }
+    if (this->dynamicScheduler == DynamicSchedulerT::Unknown) 
+    {
+        // if not specified on commandline, default preempt mode is lazy or voluntary.
+        if (this->supportedSchedulers.contains(DynamicSchedulerT::Lazy)) 
+        {
+            this->dynamicScheduler == DynamicSchedulerT::Lazy;
+        } else if (this->supportedSchedulers.contains(DynamicSchedulerT::Voluntary))
+        {
+            this->dynamicScheduler == DynamicSchedulerT::Voluntary;
         }
     }
     this->canSetThreadIrqs = this->kernelType == "PREEMPT" || this->kernelType == "PREEMPT_DYNAMIC";
@@ -220,6 +285,8 @@ static std::string commandLineOption(BootConfig::DynamicSchedulerT dynamicSchedu
         return "preempt=voluntary";
     case BootConfig::DynamicSchedulerT::Full:
         return "preempt=full";
+    case BootConfig::DynamicSchedulerT::Lazy:
+        return "preempt=lazy";
     default:
         throw std::range_error("Invalid value.");
     }
@@ -462,4 +529,9 @@ void BootConfig::ThreadedIrqs(bool value)
         this->threadedIrqs = value;
         this->changed = true;
     }
+}
+
+void  BootConfig::SupportedSchedulers(std::set<DynamicSchedulerT>&&value)
+{
+    this->supportedSchedulers = std::move(value);
 }

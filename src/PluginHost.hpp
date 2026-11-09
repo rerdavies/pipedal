@@ -349,15 +349,9 @@ namespace pipedal
         std::string shortName_;
         std::vector<std::string> fileTypes_;
         std::vector<std::string> supportedExtensions_;
-        float minValue_ = 0;
-        float maxValue_ = 1;
-        float defaultValue_ = 0;
-        bool logarithmic_ = false;
-        bool integer_ = false;
-        bool enumeration_ = false;
-        bool toggled_ = false;
-        std::vector<Lv2ScalePoint> scalePoints_;
+        std::shared_ptr<Lv2PortInfo> portInfo_; // JUCE port info.
 
+        
     public:
         Lv2PatchPropertyInfo() {}
         Lv2PatchPropertyInfo(PluginHost *pluginHost, const LilvNode *propertyUri);
@@ -372,14 +366,7 @@ namespace pipedal
         LV2_PROPERTY_GETSET(shortName);
         LV2_PROPERTY_GETSET(fileTypes);
         LV2_PROPERTY_GETSET(supportedExtensions);
-        LV2_PROPERTY_GETSET_SCALAR(minValue);
-        LV2_PROPERTY_GETSET_SCALAR(maxValue);
-        LV2_PROPERTY_GETSET_SCALAR(defaultValue);
-        LV2_PROPERTY_GETSET_SCALAR(logarithmic);
-        LV2_PROPERTY_GETSET_SCALAR(integer);
-        LV2_PROPERTY_GETSET_SCALAR(enumeration);
-        LV2_PROPERTY_GETSET_SCALAR(toggled);
-        LV2_PROPERTY_GETSET(scalePoints);
+        LV2_PROPERTY_GETSET(portInfo)
 
         DECLARE_JSON_MAP(Lv2PatchPropertyInfo);
     };

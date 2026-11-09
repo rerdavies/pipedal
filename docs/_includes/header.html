@@ -24,6 +24,27 @@
     display: none;
   }
 
+  .midi-table TH {
+    border: 2px solid black; 
+    text-align: left;
+  }
+
+  .midi-table TD {
+    border: 2px solid black; 
+  }
+  .midi-table .tdl  {
+    border-top: 2px solid black; 
+    border-bottom: 2px solid black; 
+    border-left: 2px solid black; 
+    border-right: 0px solid black; 
+  }
+  .midi-table .tdr  {
+    border-top: 2px solid black; 
+    border-bottom: 2px solid black; 
+    border-left: 0px solid black; 
+    border-right: 2px solid black; 
+  }
+
   @media only screen and (min-height: 500px) {
     .sticky-header {
       z-index: 9;
@@ -44,6 +65,7 @@
       display: block;
       height: 54px;
     }
+  }
 </style>
 <header class="site-header sticky-header">
 

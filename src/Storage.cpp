@@ -3376,18 +3376,20 @@ static void CleanDirectory(const fs::path& path)
     std::vector<fs::path> paths;
 
     try {
-        for (const auto& directoryEntry : fs::directory_iterator(path))
-        {
-            paths.push_back(directoryEntry.path());
-        }
-        for (const auto& path : paths)
-        {
-            try {
-                fs::remove_all(path);
-            }
-            catch (const std::exception&)
+        if (fs::exists(path) && fs::is_directory(path)) {
+            for (const auto& directoryEntry : fs::directory_iterator(path))
             {
+                paths.push_back(directoryEntry.path());
+            }
+            for (const auto& path : paths)
+            {
+                try {
+                    fs::remove_all(path);
+                }
+                catch (const std::exception&)
+                {
 
+                }
             }
         }
     }

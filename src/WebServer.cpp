@@ -1189,7 +1189,14 @@ namespace pipedal
                 contentLength = std::filesystem::file_size(filename);
                 res.set(HttpField::content_encoding, "gzip");
             } else {
-                contentLength = std::filesystem::file_size(filename);                
+                try {
+                    contentLength = std::filesystem::file_size(filename);                
+                } catch (const std::exception&)
+                {
+                        NotFound(*con, requestUri.str());
+                        return;
+
+                }
             }
 
             if (req.method() != HttpVerb::get)

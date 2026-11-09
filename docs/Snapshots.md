@@ -14,11 +14,12 @@ You can create up to six snapshots for any given preset. A snapshot differs from
 - Switching between snapshots does not reload the plugins you are using. Snapshots contain only control values.
 - Because effects are not reloaded, you won't get discontinuities in the output of effects with long tails (like reverb effects, for example).
 - Loading a snapshot is much faster than loading a preset, because new plugins don't have to be created.
-- You can configure PiPedal to switch between snapshots in response to MIDI messages from a MIDI foot controller or other device.`
+- You can configure PiPedal to switch between snapshots in response to MIDI messages from a MIDI foot controller or other device.
+- While PiPedal works hard to prevent discontinuities and glitches with moderate-sized presets, dropouts do occasionally occur when switching presets. Snapshots help mitigate this issue by allowing you to change control values without reloading plugins.
 
 Snapshots are particularly useful if you have a USB or MIDI foot controller. You can configure PiPedal to switch between snapshots when you step on buttons on your foot controller. To configure MIDI bindings for snapshots, select <b><i>Settings</i></b> from the main menu, and tap on <b><i>System MIDI bindings</i></b>.
 
-But snapshots are equally useful when you are using PiPedal's <b><i>Performance View</i></b>. To access the <b><i>Performance View</i></b> click on the <b><i>Performance View</i></b> menu item in the main PiPedal menu.
+Snapshots are equally useful when you are using PiPedal's <b><i>Performance View</i></b>. To access the <b><i>Performance View</i></b> click on the <b><i>Performance View</i></b> menu item in the main PiPedal menu.
   
 
 <img src="img/PerformanceView-ss.png" width="80%" />
@@ -47,4 +48,4 @@ If you make structural changes to a preset that add a new plugin, there will not
  
 
 --------
-[<< How to Build Presets With PiPedal](BuildingPresets.md) | [Up](Documentation.md) | [Neural Amp Modeler Calibration >>](NamCalibration.md)  
+[<< Using MIDI with PiPedal](UsingMidi.md) | [Up](Documentation.md) | [Neural Amp Modeler Calibration >>](NamCalibration.md)  

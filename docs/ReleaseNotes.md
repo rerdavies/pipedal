@@ -1,4 +1,22 @@
 # Release Notes
+## PiPedal 2.0.111-Release
+
+Various bug fixes and improvements to documentation. Probable fixes for outstanding issues 
+with M-VAVE Chocolate Bluetooth MIDI controllers.
+
+- Add MIDI documentation, and MIDI Implementation chart.
+- Accept MIDI bank changes on channels other than channel 0
+- Improvements to handling of Bluetooth MIDI device plug-and-play connections (@SuprDuprNatural)
+- Recover from MIDI device underruns properly (@SuprDuprNatural)
+- Fix audio dropouts when loading audio files in TooB Plugins
+- TooB Convolution Reverb (mono) does not bypass correctly when Tails are disabled.
+- Fix volume of S24_LE/S24_BE audio formats (@diamondsea11)
+- Fix pipedal latency test reporting for large buffer sizes (@)
+- Fix web server crash on request to invalid page.
+- Adjustments to pipedal_kconfig to allow selection of Linux 7.0 lazy preemption kernel option.
+- Improve recognition of side-chain ports on mis-authored plugins (@diamondsea11)
+- Various malformed lockguards, leading to possible crashes and undefined behavior. (@diamondsea11)
+
 ## PiPedal 2.0.110-Release
 7 new factory presets. If upgrading, you will find them added to the Factory Presets bank.
 
