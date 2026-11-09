@@ -9,6 +9,7 @@ with M-VAVE Chocolate Bluetooth MIDI controllers.
 - Improvements to handling of Bluetooth MIDI device plug-and-play connections (@SuprDuprNatural)
 - Recover from MIDI device underruns properly (@SuprDuprNatural)
 - Fix audio dropouts when loading audio files in TooB Plugins
+- TooB Convolution Reverb (mono) does not bypass correctly when Tails are disabled.
 - Fix volume of S24_LE/S24_BE audio formats (@diamondsea11)
 - Fix pipedal latency test reporting for large buffer sizes (@)
 - Fix web server crash on request to invalid page.
